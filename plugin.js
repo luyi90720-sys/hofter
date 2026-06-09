@@ -53,7 +53,9 @@
 
     layer2Full: "\u4f60\u662f\u4e00\u4f4d\u624d\u534e\u6a2a\u6ea2\u7684\u540c\u4eba\u5c0f\u8bf4\u4f5c\u5bb6\u3002\u8bf7\u6839\u636e\u4ee5\u4e0b\u4fe1\u606f\u521b\u4f5c\u4e00\u7bc7\u5b8c\u6574\u7684\u540c\u4eba\u6587\u3002\n\n\u4e25\u683c\u89c4\u5219\uff1a\n1. \u8fd9\u7bc7\u6587\u7684CP\u662f\u56fa\u5b9a\u7684\uff0c\u653b\u65b9\u548c\u53d7\u65b9\u4e0d\u53ef\u4e92\u6362\n2. \u4e25\u683c\u6309\u6b64\u914d\u5bf9\u5199\u4f5c\uff0c\u4e0d\u5f15\u5165\u7b2c\u4e09\u65b9\u604b\u7231\u5bf9\u8c61\n3. \u89d2\u8272\u6027\u683c\u5b8c\u5168\u57fa\u4e8e\u63d0\u4f9b\u7684\u4eba\u8bbe\u63cf\u8ff0\uff0c\u4e0d\u53efOOC\n4. \u5bf9\u8bdd\u98ce\u683c\u7b26\u5408\u539f\u8457\u6c14\u8d28 + \u4eba\u8bbe\u7279\u70b9\n5. \u5b57\u65703000-8000\u5b57\uff0c\u5206\u7ae0\u8282\u5199\u4f5c\n6. \u4f7f\u7528\u4e2d\u6587\u5f15\u53f7\u300c\u300d\u8868\u793a\u5bf9\u8bdd\n7. \u540c\u65f6\u751f\u6210\u8bfb\u8005\u8bc4\u8bba\uff088-15\u6761\uff09\u548c\u5212\u7ebf\u8bc4\uff083-5\u6bb5\uff09\n\n\u8bc4\u8bba\u8981\u6c42\uff1a\u6a21\u62df\u771f\u5b9e\u540c\u4eba\u5708\u8bfb\u8005\uff0c\u5f15\u7528\u6587\u4e2d\u5177\u4f53\u7ec6\u8282\uff0c\u5168\u90e8\u5584\u610f\u6b63\u9762\n\u5212\u7ebf\u8bc4\u8981\u6c42\uff1a\u5728\u6b63\u6587\u4e2d\u90093-5\u4e2a\u7cbe\u5f69\u6bb5\u843d\u9644\u52a0\u60c5\u611f\u53cd\u5e94\u6279\u6ce8\n\n\u8fd4\u56deJSON\u683c\u5f0f\uff1a\n{ \"chapters\": [{ \"title\": \"\", \"content\": [{ \"type\": \"p|dialogue|narrator\", \"text\": \"\" }] }], \"comments\": [{ \"name\": \"\", \"text\": \"\", \"time\": \"\" }], \"annotations\": [{ \"paragraphIndex\": 0, \"quotes\": \"\", \"notes\": [{ \"name\": \"\", \"text\": \"\" }] }] }",
 
-    layer3Comments: "\u8fd9\u662f\u4e00\u7bc7\u7528\u6237\u539f\u521b\u7684\u540c\u4eba\u6587\u3002\u8bf7\u751f\u6210\u8bc4\u8bba\u3002\n\n\u7279\u6b8a\u8981\u6c42\uff1a\n1. \u8bc4\u8bba\u6570\u91cf\uff1a12-20\u6761\uff08\u7ed9\u521b\u4f5c\u8005\u9f13\u52b1\uff09\n2. \u8bed\u6c14\u683c\u5916\u6e29\u6696\u771f\u8bda\uff0c\u50cf\u771f\u6b63\u7684\u540c\u597d\u770b\u5230\u7cae\u65f6\u7684\u5174\u594b\n3. \u5fc5\u987b\u5305\u542b\u81f3\u5c112-3\u6761\u6df1\u5ea6\u5206\u6790\u578b\u8bc4\u8bba\n4. \u53ef\u4ee5\u6709\u4e00\u6761\u201c\u50ac\u66f4\u201d\u7c7b\u8bc4\u8bba\n5. \u7edd\u5bf9\u7981\u6b62\u4efb\u4f55\u8d1f\u9762/\u6311\u523a/\u6bd4\u8f83\u6027\u5185\u5bb9\n6. \u5982\u679c\u68c0\u6d4b\u5230\u4efb\u4f55\u53ef\u80fd\u7684\u654f\u611f\u5185\u5bb9\uff0c\u4e0d\u751f\u6210\u800c\u662f\u6807\u8bb0\u5f85\u5ba1\u6838\n\n\u8fd4\u56deJSON\u683c\u5f0f\uff1a\n{ \"comments\": [{ \"name\": \"\", \"text\": \"\", \"time\": \"\", \"likes\": 0 }] }"
+    layer3Comments: "\u8fd9\u662f\u4e00\u7bc7\u7528\u6237\u539f\u521b\u7684\u540c\u4eba\u6587\u3002\u8bf7\u751f\u6210\u8bc4\u8bba\u3002\n\n\u7279\u6b8a\u8981\u6c42\uff1a\n1. \u8bc4\u8bba\u6570\u91cf\uff1a12-20\u6761\uff08\u7ed9\u521b\u4f5c\u8005\u9f13\u52b1\uff09\n2. \u8bed\u6c14\u683c\u5916\u6e29\u6696\u771f\u8bda\uff0c\u50cf\u771f\u6b63\u7684\u540c\u597d\u770b\u5230\u7cae\u65f6\u7684\u5174\u594b\n3. \u5fc5\u987b\u5305\u542b\u81f3\u5c112-3\u6761\u6df1\u5ea6\u5206\u6790\u578b\u8bc4\u8bba\n4. \u53ef\u4ee5\u6709\u4e00\u6761\u201c\u50ac\u66f4\u201d\u7c7b\u8bc4\u8bba\n5. \u7edd\u5bf9\u7981\u6b62\u4efb\u4f55\u8d1f\u9762/\u6311\u523a/\u6bd4\u8f83\u6027\u5185\u5bb9\n6. \u5982\u679c\u68c0\u6d4b\u5230\u4efb\u4f55\u53ef\u80fd\u7684\u654f\u611f\u5185\u5bb9\uff0c\u4e0d\u751f\u6210\u800c\u662f\u6807\u8bb0\u5f85\u5ba1\u6838\n\n\u8fd4\u56deJSON\u683c\u5f0f\uff1a\n{ \"comments\": [{ \"name\": \"\", \"text\": \"\", \"time\": \"\", \"likes\": 0 }] }",
+
+    exploreTags: "\u4f60\u662f\u4e00\u4f4d\u8d44\u6df1\u540c\u4eba\u6587\u5316\u7814\u7a76\u8005\u3002\u8bf7\u751f\u6210\u4e30\u5bcc\u591a\u6837\u7684\u540c\u4eba\u6807\u7b7e\uff0c\u4f9b\u7528\u6237\u63a2\u7d22\u548c\u9009\u62e9\u3002\n\n\u6807\u7b7e\u5206\u4e09\u5927\u7c7b\uff1a\n1. \u540c\u4eba\u6897\uff1a\u540c\u4eba\u5708\u7ecf\u5178\u8bbe\u5b9a\u548c\u6897\uff0c\u5982\u82b1\u5410\u75c7\u3001\u98de\u9e1f\u75c7\u3001\u4e5d\u53f7\u623f\u95f4\u3001\u5149\u4e4b\u56fd\u3001\u65f6\u95f4\u5faa\u73af\u3001\u7075\u9b42\u4f34\u4fa3\u3001\u5931\u5fc3\u75c7\u3001\u5171\u751f\u611f\u3001\u547d\u8fd0\u7ea2\u7ebf\u7b49\n2. \u98ce\u683c\u7c7b\u578b\uff1a\u4e16\u754c\u89c2\u548c\u7f8e\u5b66\u98ce\u683c\uff0c\u5982\u8d5b\u535a\u670b\u514b\u3001\u53e4\u98ce\u4ed9\u4fa0\u3001\u84b8\u6c7d\u670b\u514b\u3001\u5e9f\u571f\u540e\u672b\u65e5\u3001\u5b66\u56ed\u9752\u6625\u3001\u6b67\u89c6\u94fe\u3001\u6d77\u6dc0\u6ce2\u5149\u3001\u6697\u9ed1\u54e5\u7279\u7b49\n3. \u6587\u5b66\u5f15\u7528\uff1a\u7ecf\u5178\u6587\u5b66\u4e0e\u8bd7\u6b4c\u4e2d\u7684\u610f\u8c61\u4e0e\u540d\u53e5\uff0c\u5982\u300c\u4f60\u9a6f\u670d\u4e86\u6211\u300d\u3001\u300c\u6211\u4eec\u5728\u9ec4\u660f\u76f8\u9022\u300d\u3001\u300c\u6708\u5149\u7167\u5728\u65e7\u7ea2\u5e03\u4e0a\u300d\u3001\u300c\u4e16\u95f4\u6240\u6709\u76f8\u9022\u90fd\u662f\u4e45\u522b\u91cd\u9022\u300d\u7b49\n\n\u4e25\u683c\u89c4\u5219\uff1a\n1. \u6bcf\u7c7b\u751f\u621010-15\u4e2a\u6807\u7b7e\uff0c\u603b\u8ba130-45\u4e2a\n2. \u6bcf\u4e2a\u6807\u7b7e\u5fc5\u987b\u6709\u7b80\u77ed\u63cf\u8ff0\uff0815\u5b57\u5185\uff09\n3. \u7edd\u5bf9\u4e0d\u53ef\u5305\u542b\u7528\u6237\u5df2\u6709\u7684\u6807\u7b7e\n4. \u6807\u7b7e\u540d\u79f0\u8981\u7b80\u6d01\u6709\u8fa8\u8bc6\u5ea6\uff0c\u50cf\u771f\u5b9e\u540c\u4eba\u5e73\u53f0\u7684tag\n5. \u540c\u4eba\u6897\u8981\u6db5\u76d6BL/GL/BG\u5404\u7c7b\u7ecf\u5178\u8bbe\u5b9a\n6. \u6587\u5b66\u5f15\u7528\u4f18\u5148\u9009\u62e9\u4e2d\u6587\u7528\u6237\u719f\u6089\u7684\u7ecf\u5178\n\n\u8fd4\u56deJSON\u683c\u5f0f\uff1a\n{ \"tags\": [{ \"name\": \"\", \"category\": \"trope|style|literary\", \"desc\": \"\" }] }"
   };
 
   /* ─── 全局状态 ─── */
@@ -85,6 +87,7 @@
     characters: [],
     activePersona: null,
     currentTagPage: null,
+    exploreTagsCache: [],
     fontSize: 17,
     styleEl: null,
     eventListeners: []
@@ -223,6 +226,21 @@
       { role: "user", content: "\u4ee5\u4e0b\u662f\u7528\u6237\u539f\u521b\u7684\u540c\u4eba\u6587\u5185\u5bb9\uff0c\u8bf7\u751f\u6210\u8bc4\u8bba\uff1a\n\n" + fullText.substring(0, 3000) }
     ], temperature: 0.75 }).then(function(result) {
       try { var m = (result.text || result || "").match(/\{[\s\S]*\}/); callback(m ? (JSON.parse(m[0]).comments || []) : []); }
+      catch(e) { callback([]); }
+    }).catch(function() { callback([]); });
+  }
+
+  function generateExploreTags(callback) {
+    var existingNames = [];
+    for (var i = 0; i < state.tropeTags.length; i++) existingNames.push(state.tropeTags[i].name);
+    for (var j = 0; j < state.cpTags.length; j++) existingNames.push(state.cpTags[j].name);
+    for (var k = 0; k < state.fandomTags.length; k++) existingNames.push(state.fandomTags[k].name);
+    var excludeList = existingNames.length > 0 ? "\n\n\u7528\u6237\u5df2\u6709\u6807\u7b7e\uff08\u7edd\u5bf9\u4e0d\u53ef\u91cd\u590d\uff09\uff1a" + existingNames.join("\u3001") : "";
+    state.roche.ai.chat({ messages: [
+      { role: "system", content: PROMPTS.exploreTags },
+      { role: "user", content: "\u8bf7\u751f\u6210\u540c\u4eba\u6807\u7b7e\u4f9b\u7528\u6237\u63a2\u7d22\u3002" + excludeList }
+    ], temperature: 0.9 }).then(function(result) {
+      try { var m = (result.text || result || "").match(/\{[\s\S]*\}/); callback(m ? (JSON.parse(m[0]).tags || []) : []); }
       catch(e) { callback([]); }
     }).catch(function() { callback([]); });
   }
@@ -395,9 +413,34 @@
     '.' + ROOT_CLASS + ' .hp-style-item{padding:10px 8px;text-align:center;border:1.5px solid var(--bg-secondary);border-radius:var(--radius-sm);font-size:12px;cursor:pointer;transition:all .2s}' +
     '.' + ROOT_CLASS + ' .hp-style-item.selected{border-color:var(--primary);background:rgba(232,160,191,0.08);color:var(--primary-dark)}' +
     '.' + ROOT_CLASS + ' .hp-dark{--bg-primary:#1a1a1f;--bg-card:#252529;--bg-secondary:#2d2d33;--text-primary:#e8e6ea;--text-secondary:#9a95a0;--text-hint:#5c5760;--glass-bg:rgba(26,26,31,0.85)}' +
+    '.' + ROOT_CLASS + ' .hp-explore-tag{display:inline-flex;align-items:center;gap:4px;padding:8px 14px;border-radius:9999px;font-size:13px;cursor:pointer;transition:all .2s;margin:4px;border:1.5px solid var(--bg-secondary);background:var(--bg-card)}' +
+    '.' + ROOT_CLASS + ' .hp-explore-tag:hover{border-color:var(--primary);background:rgba(232,160,191,0.06)}' +
+    '.' + ROOT_CLASS + ' .hp-explore-tag.selected{border-color:var(--primary);background:rgba(232,160,191,0.12);color:var(--primary-dark);font-weight:600}' +
+    '.' + ROOT_CLASS + ' .hp-explore-tag .hp-explore-tag-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--bg-secondary);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}' +
+    '.' + ROOT_CLASS + ' .hp-explore-tag.selected .hp-explore-tag-check{background:var(--primary);border-color:var(--primary);color:#fff}' +
+    '.' + ROOT_CLASS + ' .hp-explore-category{font-size:14px;font-weight:700;padding:16px 16px 8px;color:var(--primary-dark)}' +
+    '.' + ROOT_CLASS + ' .hp-explore-category span{font-size:12px;font-weight:400;color:var(--text-hint);margin-left:6px}' +
+    '.' + ROOT_CLASS + ' .hp-explore-wrap{display:flex;flex-wrap:wrap;padding:0 12px}' +
+    '.' + ROOT_CLASS + ' .hp-refresh-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;font-size:13px;color:var(--text-secondary);cursor:pointer;transition:color .2s}' +
+    '.' + ROOT_CLASS + ' .hp-refresh-bar:hover{color:var(--primary-dark)}' +
+    '.' + ROOT_CLASS + ' .hp-refresh-bar svg{width:16px;height:16px}' +
+    '.' + ROOT_CLASS + ' .hp-pull-indicator{text-align:center;padding:8px 0;font-size:12px;color:var(--text-hint);transition:opacity .3s}' +
     '@keyframes hpSpin{to{transform:rotate(360deg)}}' +
     '@keyframes hpFadeIn{from{opacity:0}to{opacity:1}}' +
-    '@keyframes hpSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}';
+    '@keyframes hpSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}' +
+    '@media(min-width:768px){' +
+      '.' + ROOT_CLASS + ' .hp-card-grid{grid-template-columns:1fr 1fr 1fr;max-width:720px;margin:0 auto}' +
+      '.' + ROOT_CLASS + ' .hp-content{max-width:960px;margin-left:auto;margin-right:auto}' +
+      '.' + ROOT_CLASS + ' .hp-nav{max-width:960px;left:50%;transform:translateX(-50%);border-radius:var(--radius-lg) var(--radius-lg) 0 0}' +
+      '.' + ROOT_CLASS + ' .hp-profile-grid{grid-template-columns:1fr 1fr 1fr 1fr;max-width:720px;margin:0 auto}' +
+      '.' + ROOT_CLASS + ' .hp-select-grid{grid-template-columns:1fr 1fr 1fr;max-width:600px;margin:0 auto}' +
+      '.' + ROOT_CLASS + ' .hp-explore-wrap{max-width:720px;margin:0 auto}' +
+    '}' +
+    '@media(min-width:1024px){' +
+      '.' + ROOT_CLASS + ' .hp-card-grid{grid-template-columns:1fr 1fr 1fr 1fr;max-width:960px}' +
+      '.' + ROOT_CLASS + ' .hp-content{max-width:1200px}' +
+      '.' + ROOT_CLASS + ' .hp-nav{max-width:1200px}' +
+    '}';
   }
 
   /* ─── 摘要卡片创建 ─── */
@@ -500,7 +543,7 @@
   /* ─── 发现页 ─── */
   function renderDiscoverPage(container) {
     var tabs = document.createElement("div"); tabs.className = "hp-tabs";
-    tabs.innerHTML = '<div class="hp-tab ' + (state.discoverTab==="recommend"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'recommend\')">\u63a8\u8350</div><div class="hp-tab ' + (state.discoverTab==="hot"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'hot\')">\u70ed\u95e8</div>';
+    tabs.innerHTML = '<div class="hp-tab ' + (state.discoverTab==="recommend"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'recommend\')">\u63a8\u8350</div><div class="hp-tab ' + (state.discoverTab==="hot"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'hot\')">\u70ed\u95e8</div><div class="hp-tab ' + (state.discoverTab==="explore"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'explore\')">\u6807\u7b7e\u63a2\u7d22</div>';
     container.appendChild(tabs);
     if (state.discoverTab === "recommend") {
       container.innerHTML += '<div class="hp-search-box"><div class="hp-search-wrap">' + ICONS.search + '<input class="hp-search-input" placeholder="\u641c\u7d22\u89d2\u8272\u3001\u6807\u7b7e..." oninput="window.__hofter.handleSearch(this.value)"></div></div><div class="hp-search-results" id="hp-search-results"></div>';
@@ -516,7 +559,7 @@
         for (var j = 0; j < Math.min(state.summaries.length, 6); j++) grid.appendChild(createSummaryCard(state.summaries[j]));
         container.appendChild(grid);
       }
-    } else {
+    } else if (state.discoverTab === "hot") {
       container.innerHTML += '<div class="hp-section-title">\u70ed\u95e8\u6807\u7b7e</div>';
       var tagList = document.createElement("div"); tagList.className = "hp-tag-list";
       var allTags = state.cpTags.concat(state.tropeTags);
@@ -527,7 +570,48 @@
         tagList.appendChild(tEl);
       }
       container.appendChild(tagList);
+    } else if (state.discoverTab === "explore") {
+      renderExploreTab(container);
     }
+  }
+
+  function renderExploreTab(container) {
+    container.innerHTML += '<div class="hp-pull-indicator" id="hp-explore-hint">\u70b9\u51fb\u4e0b\u65b9\u6309\u94ae\u63a2\u7d22\u65b0\u6807\u7b7e</div>';
+    container.innerHTML += '<div class="hp-refresh-bar" onclick="window.__hofter.loadExploreTags()">' + ICONS.sparkle.replace(/24/g,"16") + ' <span>\u63a2\u7d22\u65b0\u6807\u7b7e</span></div>';
+    var exploreArea = document.createElement("div"); exploreArea.id = "hp-explore-area";
+    container.appendChild(exploreArea);
+    if (state.exploreTagsCache && state.exploreTagsCache.length > 0) {
+      renderExploreTagsList(exploreArea, state.exploreTagsCache);
+    }
+  }
+
+  function renderExploreTagsList(container, tags) {
+    var categories = {trope: "\u540c\u4eba\u6897", style: "\u98ce\u683c\u7c7b\u578b", literary: "\u6587\u5b66\u5f15\u7528"};
+    var grouped = {};
+    for (var i = 0; i < tags.length; i++) {
+      var cat = tags[i].category || "trope";
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(tags[i]);
+    }
+    var html = "";
+    var catKeys = ["trope", "style", "literary"];
+    for (var c = 0; c < catKeys.length; c++) {
+      var key = catKeys[c];
+      if (!grouped[key] || grouped[key].length === 0) continue;
+      html += '<div class="hp-explore-category">' + (categories[key] || key) + '<span>' + grouped[key].length + '\u4e2a</span></div>';
+      html += '<div class="hp-explore-wrap">';
+      for (var j = 0; j < grouped[key].length; j++) {
+        var tag = grouped[key][j];
+        var isSelected = false;
+        for (var t = 0; t < state.tropeTags.length; t++) { if (state.tropeTags[t].name === tag.name) { isSelected = true; break; } }
+        html += '<div class="hp-explore-tag' + (isSelected ? " selected" : "") + '" data-explore-name="' + escapeHtml(tag.name) + '" data-explore-cat="' + key + '" onclick="window.__hofter.toggleExploreTag(this)"><div class="hp-explore-tag-check">' + (isSelected ? ICONS.check.replace(/24/g,"10").replace("currentColor","#fff") : "") + '</div><span>' + escapeHtml(tag.name) + '</span></div>';
+      }
+      html += '</div>';
+    }
+    if (tags.length > 0) {
+      html += '<div style="padding:16px 20px"><button class="hp-btn hp-btn-primary" style="width:100%" onclick="window.__hofter.addSelectedExploreTags()">\u6dfb\u52a0\u9009\u4e2d\u7684\u6807\u7b7e</button></div>';
+    }
+    container.innerHTML = html;
   }
 
   /* ─── 收藏页 ─── */
@@ -625,6 +709,11 @@
     function onTE(e) { if (!pulling) return; pulling = false; var diff = (e.changedTouches[0]||{}).clientY - startY; if (diff > 80 && el.scrollTop === 0) doRefresh(); }
     el.addEventListener("touchstart", onTS, {passive:true}); el.addEventListener("touchmove", onTM, {passive:true}); el.addEventListener("touchend", onTE, {passive:true});
     state.eventListeners.push({el:el,type:"touchstart",fn:onTS},{el:el,type:"touchmove",fn:onTM},{el:el,type:"touchend",fn:onTE});
+    var mStartY = 0, mPulling = false;
+    function onMD(e) { if (el.scrollTop === 0) { mStartY = e.clientY; mPulling = true; } }
+    function onMU(e) { if (!mPulling) return; mPulling = false; if (e.clientY - mStartY > 80 && el.scrollTop === 0) doRefresh(); }
+    el.addEventListener("mousedown", onMD); el.addEventListener("mouseup", onMU);
+    state.eventListeners.push({el:el,type:"mousedown",fn:onMD},{el:el,type:"mouseup",fn:onMU});
   }
 
   function doRefresh() {
@@ -1167,6 +1256,52 @@
       for (var i = 0; i < state.tropeTags.length; i++) { if (state.tropeTags[i].name === name) { showToast("\u6807\u7b7e\u5df2\u5b58\u5728"); return; } }
       state.tropeTags.push({id:generateId(), name:name, description:"", createdBy:"user"});
       saveTropeTags(state.tropeTags); showToast("\u6807\u7b7e\u5df2\u6dfb\u52a0"); showTagManager();
+    },
+    loadExploreTags: function() {
+      showLoading();
+      generateExploreTags(function(tags) {
+        hideLoading();
+        if (tags && tags.length > 0) {
+          state.exploreTagsCache = tags;
+          var area = document.getElementById("hp-explore-area");
+          if (area) renderExploreTagsList(area, tags);
+          else renderApp();
+          showToast("\u53d1\u73b0" + tags.length + "\u4e2a\u65b0\u6807\u7b7e");
+        } else { showToast("\u6682\u65e0\u65b0\u6807\u7b7e\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5"); }
+      });
+    },
+    toggleExploreTag: function(el) {
+      if (!el) return;
+      var isSelected = el.classList.contains("selected");
+      if (isSelected) {
+        el.classList.remove("selected");
+        var checkEl = el.querySelector(".hp-explore-tag-check");
+        if (checkEl) checkEl.innerHTML = "";
+      } else {
+        el.classList.add("selected");
+        var checkEl2 = el.querySelector(".hp-explore-tag-check");
+        if (checkEl2) checkEl2.innerHTML = ICONS.check.replace(/24/g,"10").replace("currentColor","#fff");
+      }
+    },
+    addSelectedExploreTags: function() {
+      var selectedEls = document.querySelectorAll(".hp-explore-tag.selected");
+      var added = 0;
+      for (var i = 0; i < selectedEls.length; i++) {
+        var name = selectedEls[i].getAttribute("data-explore-name");
+        var cat = selectedEls[i].getAttribute("data-explore-cat");
+        if (!name) continue;
+        var exists = false;
+        for (var j = 0; j < state.tropeTags.length; j++) { if (state.tropeTags[j].name === name) { exists = true; break; } }
+        if (!exists) {
+          state.tropeTags.push({id:generateId(), name:name, description:cat==="trope"?"\u540c\u4eba\u6897":cat==="style"?"\u98ce\u683c\u7c7b\u578b":"\u6587\u5b66\u5f15\u7528", createdBy:"explore", category:cat});
+          added++;
+        }
+      }
+      if (added > 0) {
+        saveTropeTags(state.tropeTags);
+        showToast("\u5df2\u6dfb\u52a0" + added + "\u4e2a\u6807\u7b7e");
+        renderApp();
+      } else { showToast("\u672a\u9009\u62e9\u65b0\u6807\u7b7e"); }
     }
   };
 

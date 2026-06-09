@@ -233,7 +233,7 @@
     '.' + ROOT_CLASS + ' *{box-sizing:border-box;margin:0;padding:0}' +
     '.' + ROOT_CLASS + ' .hp-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);position:sticky;top:0;z-index:100;min-height:48px}' +
     '.' + ROOT_CLASS + ' .hp-header-title{font-size:17px;font-weight:700;text-align:center;flex:1}' +
-    '.' + ROOT_CLASS + ' .hp-header-left,.hp-header-right{display:flex;align-items:center;gap:8px;min-width:60px}' +
+    '.' + ROOT_CLASS + ' .hp-header-left,' + '.' + ROOT_CLASS + ' .hp-header-right{display:flex;align-items:center;gap:8px;min-width:60px}' +
     '.' + ROOT_CLASS + ' .hp-header-right{justify-content:flex-end}' +
     '.' + ROOT_CLASS + ' .hp-icon-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;color:var(--text-primary);transition:background .2s;position:relative}' +
     '.' + ROOT_CLASS + ' .hp-icon-btn:hover{background:var(--bg-secondary)}' +
@@ -1066,7 +1066,7 @@
     clearCache: function() {
       state.summaries = []; state.publishedWorks = []; state.favorites = []; state.readHistory = []; state.readLater = [];
       saveSummariesCache([]); savePublishedWorks([]); saveFavoritesData({favorites:[],readHistory:[],readLater:[]});
-      if (state.roche && state.roche.storage) { state.roche.storage.remove("summaries_cache"); state.roche.storage.remove("published_works"); }
+      if (state.roche && state.roche.storage) { state.roche.storage.delete("summaries_cache"); state.roche.storage.delete("published_works"); }
       showToast("\u7f13\u5b58\u5df2\u6e05\u9664"); renderApp();
     },
     showPublishSheet: showPublishSheet,

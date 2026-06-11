@@ -212,15 +212,17 @@
           else if (result && result.text) raw = result.text;
           else if (result && result.content) raw = result.content;
           else raw = String(result || "");
-          var stripped = raw.replace(/<inline_check>[\s\S]*?<\/inline_check>/gi, "").replace(/<macro_cot>[\s\S]*?<\/macro_cot>/gi, "").replace(/<core_philosophy>[\s\S]*?<\/core_philosophy>/gi, "").replace(/<knowledge_base>[\s\S]*?<\/knowledge_base>/gi, "").replace(/<output_protocol>[\s\S]*?<\/output_protocol>/gi, "");
+          console.log("[hofter] L1 raw length:", raw.length, "first200:", raw.substring(0, 200));
+          var stripped = raw.replace(/<inline_check>[\s\S]*?<\/inline_check>/gi, "").replace(/<macro_cot>[\s\S]*?<\/macro_cot>/gi, "").replace(/<core_philosophy>[\s\S]*?<\/core_philosophy>/gi, "").replace(/<knowledge_base>[\s\S]*?<\/knowledge_base>/gi, "").replace(/<output_protocol>[\s\S]*?<\/output_protocol>/gi, "").replace(/<inline_check_system>[\s\S]*?<\/inline_check_system>/gi, "");
           var m = stripped.match(/\{[\s\S]*\}/);
-          if (!m) { callback(null); return; }
+          if (!m) { console.log("[hofter] L1 no JSON found, stripped first500:", stripped.substring(0, 500)); callback(null); return; }
           var jsonStr = m[0];
           var parsed = JSON.parse(jsonStr);
+          console.log("[hofter] L1 parsed, summaries count:", (parsed.summaries || []).length);
           callback(parsed.summaries || parsed.results || null);
         }
-        catch(e) { callback(null); }
-      }).catch(function(e) { callback(null); });
+        catch(e) { console.log("[hofter] L1 parse error:", e.message); callback(null); }
+      }).catch(function(e) { console.log("[hofter] L1 chat error:", e); callback(null); });
     };
     if (shouldAttachMemory()) loadMountedMemories(function(mt) { doChat(mt); }); else doChat("");
   }
@@ -870,7 +872,9 @@
   function doRefresh() {
     if (state.isLoading) return; showLoading();
     var lockTag = state.currentTagPage || null;
+    var timeout = setTimeout(function() { hideLoading(); showToast("\u751f\u6210\u8d85\u65f6\uff0c\u8bf7\u91cd\u8bd5"); }, 120000);
     generateLayer1Summaries(lockTag, function(summaries) {
+      clearTimeout(timeout);
       hideLoading();
       if (summaries && summaries.length > 0) {
         for (var i = 0; i < summaries.length; i++) summaries[i].id = summaries[i].id || generateId();

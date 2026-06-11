@@ -227,27 +227,38 @@
     var doChat = function(memText) {
       var systemPrompt = PROMPTS.layer1Summary;
       systemPrompt = systemPrompt.replace("[FRONTEND_INJECT_TAGS_HERE]", tagStr);
-      state.roche.ai.chat({ messages: [
+      var chatMessages = [
         { role: "system", content: systemPrompt },
         { role: "user", content: ctx.join("\n") + (memText ? "\n\n\u3010\u8fd1\u671f\u4e92\u52a8\u8bb0\u5fc6\uff08\u4ec5\u4f9b\u53c2\u8003\u7d20\u6750\uff09\u3011\n" + memText : "") }
-      ], temperature: 0.85 }).then(function(result) {
-        try {
-          var raw = "";
-          if (result && typeof result === "string") raw = result;
-          else if (result && result.text) raw = result.text;
-          else if (result && result.content) raw = result.content;
-          else raw = String(result || "");
-          debugLog("L1 raw len:" + raw.length + " first100:" + raw.substring(0, 100));
-          var stripped = raw.replace(/<inline_check>[\s\S]*?<\/inline_check>/gi, "").replace(/<macro_cot>[\s\S]*?<\/macro_cot>/gi, "").replace(/<core_philosophy>[\s\S]*?<\/core_philosophy>/gi, "").replace(/<knowledge_base>[\s\S]*?<\/knowledge_base>/gi, "").replace(/<output_protocol>[\s\S]*?<\/output_protocol>/gi, "").replace(/<inline_check_system>[\s\S]*?<\/inline_check_system>/gi, "");
-          var m = stripped.match(/\{[\s\S]*\}/);
-          if (!m) { debugLog("L1 no JSON found, stripped:" + stripped.substring(0, 300)); callback(null); return; }
-          var jsonStr = m[0];
-          var parsed = JSON.parse(jsonStr);
-          debugLog("L1 parsed OK, count:" + (parsed.summaries || []).length);
-          callback(parsed.summaries || parsed.results || null);
+      ];
+      debugLog("L1 calling ai.chat, msgs count:" + chatMessages.length + " sysLen:" + systemPrompt.length + " usrLen:" + chatMessages[1].content.length);
+      try {
+        var chatPromise = state.roche.ai.chat({ messages: chatMessages, temperature: 0.85 });
+        debugLog("L1 ai.chat returned type:" + typeof chatPromise + " isPromise:" + !!(chatPromise && chatPromise.then));
+        if (!chatPromise || !chatPromise.then) {
+          debugLog("L1 ai.chat did NOT return a promise! val:" + JSON.stringify(chatPromise).substring(0, 200));
+          callback(null); return;
         }
-        catch(e) { debugLog("L1 parse error:" + e.message); callback(null); }
-      }).catch(function(e) { debugLog("L1 chat error:" + (e&&e.message?e.message:String(e))); callback(null); });
+        chatPromise.then(function(result) {
+          debugLog("L1 promise resolved! type:" + typeof result + " keys:" + (result ? Object.keys(result).join(",") : "null"));
+          try {
+            var raw = "";
+            if (result && typeof result === "string") raw = result;
+            else if (result && result.text) raw = result.text;
+            else if (result && result.content) raw = result.content;
+            else raw = String(result || "");
+            debugLog("L1 raw len:" + raw.length + " first200:" + raw.substring(0, 200));
+            var stripped = raw.replace(/<inline_check>[\s\S]*?<\/inline_check>/gi, "").replace(/<macro_cot>[\s\S]*?<\/macro_cot>/gi, "").replace(/<core_philosophy>[\s\S]*?<\/core_philosophy>/gi, "").replace(/<knowledge_base>[\s\S]*?<\/knowledge_base>/gi, "").replace(/<output_protocol>[\s\S]*?<\/output_protocol>/gi, "").replace(/<inline_check_system>[\s\S]*?<\/inline_check_system>/gi, "");
+            var m = stripped.match(/\{[\s\S]*\}/);
+            if (!m) { debugLog("L1 no JSON found, stripped:" + stripped.substring(0, 300)); callback(null); return; }
+            var jsonStr = m[0];
+            var parsed = JSON.parse(jsonStr);
+            debugLog("L1 parsed OK, count:" + (parsed.summaries || []).length);
+            callback(parsed.summaries || parsed.results || null);
+          }
+          catch(e) { debugLog("L1 parse error:" + e.message); callback(null); }
+        }).catch(function(e) { debugLog("L1 chat catch:" + (e&&e.message?e.message:String(e))); callback(null); });
+      } catch(e) { debugLog("L1 sync error:" + e.message); callback(null); }
     };
     if (shouldAttachMemory()) loadMountedMemories(function(mt) { doChat(mt); }); else doChat("");
   }
@@ -1589,7 +1600,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "1.1.1",
+    version: "1.1.2",
     apps: [
       {
         id: "hofter-home",

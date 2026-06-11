@@ -82,6 +82,7 @@
     cpTags: [],
     tropeTags: [],
     fandomTags: [],
+    worldbookCategories: [],
     settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false },
     isLoading: false,
     conversations: [],
@@ -188,7 +189,7 @@
       ctx.push("CP #" + (i+1) + ": " + tag.name + " (id:" + tag.id + ")");
       ctx.push("  \u5de6\u4f4d(" + tag.leftSide.name + "): " + (tag.leftSide.persona || tag.leftSide.bio || "\u65e0\u63cf\u8ff0"));
       ctx.push("  \u53f3\u4f4d(" + tag.rightSide.name + "): " + (tag.rightSide.persona || tag.rightSide.bio || "\u65e0\u63cf\u8ff0"));
-      if (tag.fandomTags && tag.fandomTags.length > 0) ctx.push("  \u5708\u5b50: " + tag.fandomTags.join(", "));
+      if (tag.fandomTags && tag.fandomTags.length > 0) ctx.push("  \u2501\u2501 \u5708\u5b50/\u4e16\u754c\u4e66\u8bbe\u5b9a \u2501\u2501\n" + tag.fandomTags.join("\u3001"));
       ctx.push("");
     }
     ctx.push("\u2501\u2501 \u524d\u7aef\u6ce8\u5165\u7684Tag \u2501\u2501");
@@ -223,6 +224,9 @@
       "\u2501\u2501 \u89d2\u8272\u4eba\u8bbe \u2501\u2501",
       "\u5de6\u4f4d\uff08" + cpTag.leftSide.name + "\uff09\uff1a", cpTag.leftSide.persona || cpTag.leftSide.bio || "\u65e0\u63cf\u8ff0", "",
       "\u53f3\u4f4d\uff08" + cpTag.rightSide.name + "\uff09\uff1a", cpTag.rightSide.persona || cpTag.rightSide.bio || "\u65e0\u63cf\u8ff0"].join("\n");
+    if (cpTag.fandomTags && cpTag.fandomTags.length > 0) {
+      userMsg += "\n\n\u2501\u2501 \u5708\u5b50/\u4e16\u754c\u4e66\u8bbe\u5b9a \u2501\u2501\n" + cpTag.fandomTags.join("\u3001");
+    }
 
     var wordCountMin = state.settings.wordCountMin || 3000;
     var wordCountMax = state.settings.wordCountMax || 8000;
@@ -284,6 +288,9 @@
       "\u2501\u2501 \u524d\u6587\u4fe1\u606f \u2501\u2501"].join("\n");
     if (previousSummary) userMsg += "\n\u524d\u6587\u6458\u8981\uff1a" + previousSummary;
     if (previousContent) userMsg += "\n\u524d\u6587\u5185\u5bb9\uff08\u6700\u540e2000\u5b57\uff09\uff1a" + previousContent.substring(Math.max(0, previousContent.length - 2000));
+    if (cpTag.fandomTags && cpTag.fandomTags.length > 0) {
+      userMsg += "\n\n\u2501\u2501 \u5708\u5b50/\u4e16\u754c\u4e66\u8bbe\u5b9a \u2501\u2501\n" + cpTag.fandomTags.join("\u3001");
+    }
 
     var doChat = function(memText) {
       state.roche.ai.chat({ messages: [
@@ -306,10 +313,20 @@
     for (var i = 0; i < state.tropeTags.length; i++) existingNames.push(state.tropeTags[i].name);
     for (var j = 0; j < state.cpTags.length; j++) existingNames.push(state.cpTags[j].name);
     for (var k = 0; k < state.fandomTags.length; k++) existingNames.push(state.fandomTags[k].name);
+    var cpInspiration = "";
+    if (state.cpTags.length > 0) {
+      var sampleCount = Math.min(3, state.cpTags.length);
+      var shuffledCp = state.cpTags.slice();
+      for (var si = shuffledCp.length - 1; si > 0; si--) { var sj = Math.floor(Math.random() * (si + 1)); var tmp = shuffledCp[si]; shuffledCp[si] = shuffledCp[sj]; shuffledCp[sj] = tmp; }
+      var sampled = shuffledCp.slice(0, sampleCount);
+      var cpNames = [];
+      for (var ci = 0; ci < sampled.length; ci++) cpNames.push(sampled[ci].name);
+      cpInspiration = "\n\n\u7528\u6237\u5173\u6ce8\u7684CP\uff08\u53ef\u4f5c\u4e3a\u7075\u611f\u53c2\u8003\uff09\uff1a" + cpNames.join("\u3001");
+    }
     var excludeList = existingNames.length > 0 ? "\n\n\u7528\u6237\u5df2\u6709\u6807\u7b7e\uff08\u7edd\u5bf9\u4e0d\u53ef\u91cd\u590d\uff09\uff1a" + existingNames.join("\u3001") : "";
     state.roche.ai.chat({ messages: [
       { role: "system", content: PROMPTS.exploreTags },
-      { role: "user", content: "\u8bf7\u751f\u6210\u540c\u4eba\u6807\u7b7e\u4f9b\u7528\u6237\u63a2\u7d22\u3002" + excludeList }
+      { role: "user", content: "\u8bf7\u751f\u6210\u540c\u4eba\u6807\u7b7e\u4f9b\u7528\u6237\u63a2\u7d22\u3002" + excludeList + cpInspiration }
     ], temperature: 0.9 }).then(function(result) {
       try { var m = (result.text || result || "").match(/\{[\s\S]*\}/); callback(m ? (JSON.parse(m[0]).tags || []) : []); }
       catch(e) { callback([]); }
@@ -527,7 +544,18 @@
     card.className = "hp-card";
     var tropeHtml = "";
     if (summary.tropeTags && summary.tropeTags.length > 0) {
-      for (var t = 0; t < summary.tropeTags.length; t++) tropeHtml += '<span class="hp-tag">' + escapeHtml(summary.tropeTags[t]) + '</span>';
+      for (var t = 0; t < summary.tropeTags.length; t++) {
+        var tropeName = summary.tropeTags[t];
+        var tropeId = "";
+        for (var tti = 0; tti < state.tropeTags.length; tti++) { if (state.tropeTags[tti].name === tropeName) { tropeId = state.tropeTags[tti].id; break; } }
+        if (!tropeId) {
+          var newTrope = {id:generateId(), name:tropeName, description:"", createdBy:"auto"};
+          state.tropeTags.push(newTrope);
+          saveTropeTags(state.tropeTags);
+          tropeId = newTrope.id;
+        }
+        tropeHtml += '<span class="hp-tag hp-tag-sm" onclick="event.stopPropagation();window.__hofter.openTagPage(\'' + tropeId + '\')">' + escapeHtml(tropeName) + '</span>';
+      }
     }
     card.innerHTML =
       '<div class="hp-card-cover" style="background:' + (summary.coverGradient || randomGradient()) + '"><div class="hp-card-cover-title">' + escapeHtml(summary.title) + '</div></div>' +
@@ -655,7 +683,7 @@
 
   function renderExploreTab(container) {
     container.innerHTML += '<div class="hp-pull-indicator" id="hp-explore-hint">\u70b9\u51fb\u4e0b\u65b9\u6309\u94ae\u63a2\u7d22\u65b0\u6807\u7b7e</div>';
-    container.innerHTML += '<div class="hp-refresh-bar" onclick="window.__hofter.loadExploreTags()">' + ICONS.sparkle.replace(/24/g,"16") + ' <span>\u63a2\u7d22\u65b0\u6807\u7b7e</span></div>';
+    container.innerHTML += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div class="hp-refresh-bar" onclick="window.__hofter.loadExploreTags()" style="flex:1">' + ICONS.sparkle.replace(/24/g,"16") + ' <span>\u63a2\u7d22\u65b0\u6807\u7b7e</span></div><div class="hp-icon-btn" onclick="window.__hofter.loadExploreTags()" style="width:32px;height:32px">' + ICONS.refresh.replace(/24/g,"18") + '</div></div>';
     var exploreArea = document.createElement("div"); exploreArea.id = "hp-explore-area";
     container.appendChild(exploreArea);
     if (state.exploreTagsCache && state.exploreTagsCache.length > 0) {
@@ -730,13 +758,33 @@
   function renderTagPage(container) {
     var tag = state.currentTagPage; if (!tag) return;
     container.innerHTML = '<div class="hp-section-title">' + escapeHtml(tag.name) + ' \u7684\u540c\u4eba\u6587</div>';
-    state.roche.storage.get("tag_page_cache_" + tag.id).then(function(cached) {
-      var items = cached || [];
+    var isCpTag = false;
+    for (var ci = 0; ci < state.cpTags.length; ci++) { if (state.cpTags[ci].id === tag.id) { isCpTag = true; break; } }
+    if (isCpTag) {
+      var items = [];
+      for (var si = 0; si < state.summaries.length; si++) {
+        if (state.summaries[si].cpTagId === tag.id) items.push(state.summaries[si]);
+      }
       if (items.length === 0) { container.innerHTML += '<div class="hp-empty">' + ICONS.refresh + '<p>\u4e0b\u62c9\u5237\u65b0\u83b7\u53d6\u5185\u5bb9</p></div>'; return; }
       var grid = document.createElement("div"); grid.className = "hp-card-grid";
-      for (var i = 0; i < items.length; i++) grid.appendChild(createSummaryCard(items[i]));
+      for (var gi = 0; gi < items.length; gi++) grid.appendChild(createSummaryCard(items[gi]));
       container.appendChild(grid);
-    });
+    } else {
+      var items2 = [];
+      var tagName = tag.name;
+      for (var si2 = 0; si2 < state.summaries.length; si2++) {
+        var s = state.summaries[si2];
+        var tags = s.tags || [];
+        var hasTag = false;
+        for (var ti = 0; ti < tags.length; ti++) { if (tags[ti] === tagName) { hasTag = true; break; } }
+        if (!hasTag && s.tropeTags) { for (var ti2 = 0; ti2 < s.tropeTags.length; ti2++) { if (s.tropeTags[ti2] === tagName) { hasTag = true; break; } } }
+        if (hasTag) items2.push(s);
+      }
+      if (items2.length === 0) { container.innerHTML += '<div class="hp-empty">' + ICONS.tag.replace(/24/g,"36").replace("currentColor","var(--text-hint)") + '<p>\u6682\u65e0\u5305\u542b\u6b64\u6807\u7b7e\u7684\u540c\u4eba\u6587</p><p style="font-size:13px;color:var(--text-hint)">\u5237\u65b0\u9996\u9875\u83b7\u53d6\u66f4\u591a\u5185\u5bb9</p></div>'; return; }
+      var grid2 = document.createElement("div"); grid2.className = "hp-card-grid";
+      for (var gi2 = 0; gi2 < items2.length; gi2++) grid2.appendChild(createSummaryCard(items2[gi2]));
+      container.appendChild(grid2);
+    }
   }
 
   /* ─── 开屏引导 ─── */
@@ -803,8 +851,16 @@
       hideLoading();
       if (summaries && summaries.length > 0) {
         for (var i = 0; i < summaries.length; i++) summaries[i].id = summaries[i].id || generateId();
-        if (lockTag) state.roche.storage.set("tag_page_cache_" + lockTag.id, summaries);
-        else saveSummariesCache(summaries);
+        if (lockTag) {
+          for (var j = 0; j < summaries.length; j++) {
+            var exists = false;
+            for (var k = 0; k < state.summaries.length; k++) { if (state.summaries[k].id === summaries[j].id) { exists = true; break; } }
+            if (!exists) state.summaries.push(summaries[j]);
+          }
+          saveSummariesCache(state.summaries);
+        } else {
+          saveSummariesCache(summaries);
+        }
         renderApp();
         showToast("\u5237\u65b0\u6210\u529f\uff0c\u83b7\u53d6" + summaries.length + "\u6761\u65b0\u5185\u5bb9");
       } else { showToast("\u5237\u65b0\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
@@ -865,6 +921,9 @@
       '<div class="hp-settings-section"><div class="hp-section-title">\u8bb0\u5fc6\u6302\u8f7d</div>' +
       '<div class="hp-settings-row"><span>\u4f20\u5165\u6982\u7387\uff1a' + s.memoryAttachProbability + '%</span><input type="range" class="hp-slider" min="0" max="100" value="' + s.memoryAttachProbability + '" oninput="window.__hofter.setMemoryProb(this.value)"></div>' +
       '<div class="hp-menu-item" onclick="window.__hofter.showMemoryMount()">' + ICONS.fileText + '<span>\u7ba1\u7406\u6302\u8f7d\u4f1a\u8bdd</span>' + ICONS.chevronRight.replace(/24/g,"16").replace("currentColor","var(--text-hint)") + '</div></div>' +
+      '<div class="hp-settings-section"><div class="hp-section-title">\u751f\u6210\u8bbe\u7f6e</div>' +
+      '<div class="hp-settings-row"><span>\u5b57\u6570\u8303\u56f4</span><div style="display:flex;gap:6px;align-items:center"><input type="number" class="hp-input" style="width:70px;text-align:center" min="1000" max="30000" value="' + (s.wordCountMin||3000) + '" onchange="window.__hofter.setWordCountMin(this.value)"><span style="color:var(--text-hint)">-</span><input type="number" class="hp-input" style="width:70px;text-align:center" min="1000" max="30000" value="' + (s.wordCountMax||8000) + '" onchange="window.__hofter.setWordCountMax(this.value)"><span style="color:var(--text-hint);font-size:12px">\u5b57</span></div></div>' +
+      '<div class="hp-settings-row"><span>\u81ea\u52a8\u751f\u6210\u8bc4\u8bba</span><div class="hp-toggle ' + (s.autoGenerateComments?"on":"") + '" onclick="window.__hofter.toggleAutoComments()"></div></div></div>' +
       '<div class="hp-settings-section"><div class="hp-section-title">\u5176\u4ed6</div>' +
       '<div class="hp-menu-item" onclick="window.__hofter.clearCache()">' + ICONS.trash + '<span>\u6e05\u9664\u7f13\u5b58</span></div></div>';
     page.appendChild(body); overlay.appendChild(page); state.containerEl.appendChild(overlay);
@@ -1100,7 +1159,7 @@
     }
     html += '</div>';
     html += renderComments(fc.comments || [], summary.isByUser);
-    html += '<div class="hp-reader-action-bar"><div class="hp-action-btn" onclick="window.__hofter.toggleLike(this)">' + ICONS.heart + '<span>\u8d5e</span></div><div class="hp-action-btn" onclick="window.__hofter.showCommentInput()">' + ICONS.comment + '<span>\u8bc4\u8bba</span></div><div class="hp-action-btn" onclick="window.__hofter.toggleCollect()">' + ICONS.bookmark + '<span>\u6536\u85cf</span></div><div class="hp-action-btn" onclick="window.__hofter.toggleReaderBookmark()">' + ICONS.star + '<span>\u7a0d\u540e\u8bfb</span></div><div class="hp-action-btn">' + ICONS.share + '<span>\u5206\u4eab</span></div></div>';
+    html += '<div class="hp-reader-action-bar"><div class="hp-action-btn" onclick="window.__hofter.toggleLike(this)">' + ICONS.heart + '<span>\u8d5e</span></div><div class="hp-action-btn" onclick="window.__hofter.showCommentInput()">' + ICONS.comment + '<span>\u8bc4\u8bba</span></div><div class="hp-action-btn" onclick="window.__hofter.toggleCollect()">' + ICONS.bookmark + '<span>\u6536\u85cf</span></div><div class="hp-action-btn" onclick="window.__hofter.toggleReaderBookmark()">' + ICONS.star + '<span>\u7a0d\u540e\u8bfb</span></div><div class="hp-action-btn" onclick="window.__hofter.continueReading()">' + ICONS.refresh + '<span>\u8ffd\u66f4</span></div></div>';
     contentEl.innerHTML = html;
   }
 
@@ -1166,7 +1225,14 @@
       var t = state.cpTags[i];
       html += '<div class="hp-tag-item"><span>' + escapeHtml(t.name) + '</span><span class="hp-tag-remove" onclick="window.__hofter.removeCpTag(\'' + t.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
     }
-    html += '</div><div class="hp-section-title">\u8bbe\u5b9a\u6807\u7b7e</div><div class="hp-tag-list">';
+    html += '</div><div style="padding:12px 20px"><div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">\u65b0\u5efaCP\u6807\u7b7e</div><div style="display:flex;gap:8px;align-items:center"><select id="hp-new-cp-left" class="hp-input" style="flex:1"><option value="">\u9009\u62e9\u5de6\u4f4d</option>';
+    for (var ci = 0; ci < state.personas.length; ci++) { html += '<option value="' + state.personas[ci].id + '">' + escapeHtml(state.personas[ci].name || state.personas[ci].handle) + ' (\u4eba\u8bbe)</option>'; }
+    for (var cj = 0; cj < state.characters.length; cj++) { html += '<option value="' + state.characters[cj].id + '">' + escapeHtml(state.characters[cj].name || state.characters[cj].handle) + ' (\u89d2\u8272)</option>'; }
+    html += '</select><span style="color:var(--primary)">\u00d7</span><select id="hp-new-cp-right" class="hp-input" style="flex:1"><option value="">\u9009\u62e9\u53f3\u4f4d</option>';
+    for (var ck = 0; ck < state.personas.length; ck++) { html += '<option value="' + state.personas[ck].id + '">' + escapeHtml(state.personas[ck].name || state.personas[ck].handle) + ' (\u4eba\u8bbe)</option>'; }
+    for (var cl = 0; cl < state.characters.length; cl++) { html += '<option value="' + state.characters[cl].id + '">' + escapeHtml(state.characters[cl].name || state.characters[cl].handle) + ' (\u89d2\u8272)</option>'; }
+    html += '</select></div><button class="hp-btn hp-btn-primary hp-btn-sm" style="margin-top:8px;width:100%" onclick="window.__hofter.addNewCpTag()">\u521b\u5efaCP\u6807\u7b7e</button></div>';
+    html += '<div class="hp-section-title">\u8bbe\u5b9a\u6807\u7b7e</div><div class="hp-tag-list">';
     for (var j = 0; j < state.tropeTags.length; j++) {
       var tr = state.tropeTags[j];
       html += '<div class="hp-tag-item"><span>' + escapeHtml(tr.name) + '</span><span class="hp-tag-remove" onclick="window.__hofter.removeTropeTag(\'' + tr.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
@@ -1237,6 +1303,9 @@
     goBackFromTag: function() { state.currentTagPage = null; state.currentPage = "home"; renderApp(); },
     toggleCpMode: function() { state.settings.cpMode = state.settings.cpMode === "unrestricted" ? "default" : "unrestricted"; saveSettings(state.settings); showSettings(); },
     setMemoryProb: function(val) { state.settings.memoryAttachProbability = parseInt(val, 10); saveSettings(state.settings); },
+    setWordCountMin: function(val) { state.settings.wordCountMin = parseInt(val, 10) || 3000; saveSettings(state.settings); },
+    setWordCountMax: function(val) { state.settings.wordCountMax = parseInt(val, 10) || 8000; saveSettings(state.settings); },
+    toggleAutoComments: function() { state.settings.autoGenerateComments = !state.settings.autoGenerateComments; saveSettings(state.settings); showSettings(); },
     toggleTheme: function() { state.settings.theme = state.settings.theme === "dark" ? "light" : "dark"; saveSettings(state.settings); renderApp(); },
     setFontSize: function(val) { state.fontSize = parseInt(val, 10); state.settings.fontSize = state.fontSize; saveSettings(state.settings); },
     clearCache: function() {
@@ -1353,6 +1422,37 @@
       }
       saveFavoritesData({favorites:state.favorites, readHistory:state.readHistory, readLater:state.readLater});
     },
+    continueReading: function() {
+      var summary = state.currentReadingSummary;
+      if (!summary) { showToast("\u65e0\u6cd5\u8ffd\u66f4"); return; }
+      showLoading();
+      var prevContent = "";
+      if (summary.fullContent && summary.fullContent.chapters) {
+        for (var i = 0; i < summary.fullContent.chapters.length; i++) {
+          var ch = summary.fullContent.chapters[i];
+          for (var j = 0; j < ch.content.length; j++) prevContent += ch.content[j].text + "\n";
+        }
+      }
+      generateContinuation(summary, prevContent, summary.continuationSummary || "", function(result) {
+        hideLoading();
+        if (result && result.chapters) {
+          if (!summary.fullContent) summary.fullContent = {chapters:[], comments:[], annotations:[]};
+          for (var ci = 0; ci < result.chapters.length; ci++) summary.fullContent.chapters.push(result.chapters[ci]);
+          if (result.comments && result.comments.length > 0) {
+            if (!summary.fullContent.comments) summary.fullContent.comments = [];
+            for (var di = 0; di < result.comments.length; di++) summary.fullContent.comments.push(result.comments[di]);
+          }
+          if (result.annotations && result.annotations.length > 0) {
+            if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
+            summary.fullContent.annotations = summary.fullContent.annotations.concat(result.annotations);
+          }
+          if (result.continuation_summary) summary.continuationSummary = result.continuation_summary;
+          saveSummariesCache(state.summaries);
+          renderReaderContent(summary);
+          showToast("\u8ffd\u66f4\u6210\u529f\uff01");
+        } else { showToast("\u8ffd\u66f4\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
+      });
+    },
     showCommentInput: function() { var input = document.getElementById("hp-comment-input"); if (input) input.focus(); },
     submitComment: function() { var input = document.getElementById("hp-comment-input"); if (input && input.value.trim()) { showToast("\u8bc4\u8bba\u53d1\u5e03\u6210\u529f"); input.value = ""; } },
     reportComment: function(el) { if (el) el.textContent = "\u5df2\u4e3e\u62a5"; el.style.color = "var(--text-hint)"; showToast("\u5df2\u4e3e\u62a5\uff0c\u611f\u8c22\u53cd\u9988"); },
@@ -1366,6 +1466,21 @@
       for (var i = 0; i < state.tropeTags.length; i++) { if (state.tropeTags[i].name === name) { showToast("\u6807\u7b7e\u5df2\u5b58\u5728"); return; } }
       state.tropeTags.push({id:generateId(), name:name, description:"", createdBy:"user"});
       saveTropeTags(state.tropeTags); showToast("\u6807\u7b7e\u5df2\u6dfb\u52a0"); showTagManager();
+    },
+    addNewCpTag: function() {
+      var leftSel = document.getElementById("hp-new-cp-left");
+      var rightSel = document.getElementById("hp-new-cp-right");
+      if (!leftSel || !rightSel || !leftSel.value || !rightSel.value) { showToast("\u8bf7\u9009\u62e9\u5de6\u53f3\u4f4d"); return; }
+      var leftId = leftSel.value, rightId = rightSel.value;
+      var leftChar = getCharById(leftId), leftPersona = getPersonaById(leftId);
+      var rightChar = getCharById(rightId), rightPersona = getPersonaById(rightId);
+      var leftSide = leftChar ? {id:leftChar.id, name:leftChar.name||leftChar.handle, persona:leftChar.persona||leftChar.bio||"", avatar:leftChar.avatar||""} : (leftPersona ? {id:leftPersona.id, name:leftPersona.name||leftPersona.handle, persona:leftPersona.persona||leftPersona.bio||"", avatar:leftPersona.avatar||""} : null);
+      var rightSide = rightChar ? {id:rightChar.id, name:rightChar.name||rightChar.handle, persona:rightChar.persona||rightChar.bio||"", avatar:rightChar.avatar||""} : (rightPersona ? {id:rightPersona.id, name:rightPersona.name||rightPersona.handle, persona:rightPersona.persona||rightPersona.bio||"", avatar:rightPersona.avatar||""} : null);
+      if (!leftSide || !rightSide) { showToast("\u9009\u62e9\u65e0\u6548"); return; }
+      var tagName = leftSide.name + " \u00d7 " + rightSide.name;
+      for (var i = 0; i < state.cpTags.length; i++) { if (state.cpTags[i].name === tagName) { showToast("CP\u6807\u7b7e\u5df2\u5b58\u5728"); return; } }
+      state.cpTags.push({id:generateId(), name:tagName, leftSide:leftSide, rightSide:rightSide, fandomTags:[], createdBy:"user"});
+      saveCpTags(state.cpTags); showToast("CP\u6807\u7b7e\u5df2\u521b\u5efa"); showTagManager();
     },
     closeApp: function() { if (state.roche && state.roche.ui) state.roche.ui.closeApp(); },
     loadExploreTags: function() {
@@ -1420,7 +1535,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "1.0.0",
+    version: "1.1.0",
     apps: [
       {
         id: "hofter-home",
@@ -1455,6 +1570,9 @@
             }
             if (roche.character) {
               promises.push(roche.character.list().then(function(list) { state.characters = list || []; }).catch(function(){}));
+            }
+            if (roche.worldbook) {
+              promises.push(roche.worldbook.list().then(function(cats) { state.worldbookCategories = cats || []; }).catch(function(){}));
             }
             Promise.all(promises).then(function() {
               if (state.settings.activePersonaId) {

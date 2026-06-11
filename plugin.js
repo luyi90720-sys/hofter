@@ -1589,7 +1589,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "1.1.0",
+    version: "1.1.1",
     apps: [
       {
         id: "hofter-home",

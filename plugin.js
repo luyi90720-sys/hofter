@@ -892,14 +892,14 @@
 
     function resetStallTimer() {
       clearTimeout(_stallTimer);
-      /* 如果90秒内fullContent没有增长，视为停滞，fallback到非流式 */
+      /* 如果180秒内fullContent没有增长，视为停滞，fallback到非流式 */
       _stallTimer = setTimeout(function() {
         if (_fallbackUsed || _done) return;
-        debugLog("stream: stall detected (no new content for 90s), falling back to non-stream");
+        debugLog("stream: stall detected (no new content for 180s), falling back to non-stream");
         _fallbackUsed = true;
         try { if (readerRef) readerRef.cancel(); } catch(e) {}
         doNonStreamFallback();
-      }, 90000);
+      }, 180000);
     }
 
     function extractDeltaText(dataStr) {
@@ -962,6 +962,8 @@
             if (_debugChunkCount <= 5) {
               debugLog("stream chunk #" + _debugChunkCount + " len:" + chunk.length + " preview:" + chunk.substring(0, 200));
             }
+            /* 每收到chunk都重置stall timer——连接还活着 */
+            resetStallTimer();
             rawBuffer += chunk;
             /* 从rawBuffer中提取所有完整的data:行 */
             var searchFrom = 0;

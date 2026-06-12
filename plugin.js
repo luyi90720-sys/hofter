@@ -586,11 +586,11 @@
         var sseBuffer = "";
         var noDataTimeout = setTimeout(function() {
           if (fullContent.length === 0) {
-            debugLog("stream: no data after 15s, falling back to non-stream");
+            debugLog("stream: no data after 90s, falling back to non-stream");
             try { reader.cancel(); } catch(e) {}
             doNonStreamFallback();
           }
-        }, 15000);
+        }, 90000);
         function pump() {
           reader.read().then(function(result) {
             if (result.done) {

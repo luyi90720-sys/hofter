@@ -3711,7 +3711,37 @@
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showRegenerateSheet()">' + ICONS.sparkle + '<span>\u91cd\u65b0\u751f\u6210\u6b63\u6587</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.continueReading()">' + ICONS.refresh + '<span>\u8ffd\u66f4\u7eed\u7ae0</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showModelContext()">' + ICONS.textSize + '<span>\u67e5\u770b\u6a21\u578b\u4e0a\u4e0b\u6587</span></div>' +
+        '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showContentSummary()">' + ICONS.fileText + '<span>\u67e5\u770b\u6458\u8981</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.shareWork()">' + ICONS.share + '<span>\u5206\u4eab</span></div>';
+      overlay.appendChild(sheet); state.containerEl.appendChild(overlay);
+    },
+    showContentSummary: function() {
+      var summary = state.currentReadingSummary;
+      if (!summary) { showToast("\u65e0\u6458\u8981"); return; }
+      var existing = document.getElementById("hp-summary-panel");
+      if (existing) { existing.remove(); return; }
+      var overlay = document.createElement("div"); overlay.id = "hp-summary-panel";
+      overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99997;display:flex;align-items:flex-end;justify-content:center";
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+      var sheet = document.createElement("div"); sheet.className = "hp-sheet";
+      var contSummary = summary.contentSummary || "";
+      var contSummaryLabel = contSummary ? "\u5185\u5bb9\u6458\u8981" : "";
+      var briefSummary = summary.briefSummary || summary.continuationSummary || "";
+      var briefSummaryLabel = briefSummary ? (contSummary ? "\u8ffd\u66f4\u6458\u8981" : "\u6458\u8981") : "";
+      var html = '<div class="hp-sheet-handle"></div>';
+      html += '<div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u6458\u8981</div></div>';
+      if (contSummary) {
+        html += '<div style="padding:8px 16px"><div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:6px">' + contSummaryLabel + '</div>';
+        html += '<div style="font-size:14px;line-height:1.7;color:var(--text-primary)">' + escapeHtml(contSummary) + '</div></div>';
+      }
+      if (briefSummary) {
+        html += '<div style="padding:8px 16px"><div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:6px">' + briefSummaryLabel + '</div>';
+        html += '<div style="font-size:14px;line-height:1.7;color:var(--text-primary)">' + escapeHtml(briefSummary) + '</div></div>';
+      }
+      if (!contSummary && !briefSummary) {
+        html += '<div style="padding:16px;font-size:14px;color:var(--text-hint)">\u6682\u65e0\u6458\u8981</div>';
+      }
+      sheet.innerHTML = html;
       overlay.appendChild(sheet); state.containerEl.appendChild(overlay);
     },
     showRegenerateSheet: function() {
@@ -3815,7 +3845,7 @@
       html += '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="hp-btn hp-btn-outline" onclick="document.getElementById(\'hp-continue-panel\').remove()">\u53d6\u6d88</button>';
       html += '<button class="hp-btn hp-btn-primary" onclick="window.__hofter.doContinueReading()">\u5f00\u59cb\u8ffd\u66f4</button></div></div>';
       panel.innerHTML = html;
-      document.body.appendChild(panel);
+      state.containerEl.appendChild(panel);
     },
     doContinueReading: function() {
       var panel = document.getElementById("hp-continue-panel");
@@ -3933,7 +3963,7 @@
       panel.appendChild(header);
       panel.appendChild(tabs);
       panel.appendChild(body);
-      document.body.appendChild(panel);
+      state.containerEl.appendChild(panel);
     },
     goChapter: function(chNum) {
       var summary = state.currentReadingSummary;

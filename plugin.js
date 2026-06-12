@@ -44,7 +44,9 @@
     trash: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>',
     flag: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
     switchIcon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>',
-    addCircle: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>'
+    addCircle: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
+    moreHorizontal: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>',
+    share: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'
   };
 
   /* ─── 提示词模板 ─── */
@@ -323,9 +325,9 @@
       "",
       "【输出格式】",
       "请返回纯JSON格式：",
-      '{ "inline_checks": [{ "intent": "", "vibe_match": "", "scan_result": "", "paragraph_text": "" }], "chapter": { "title": "", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "annotations": [{ "paragraphIndex": 0, "quotes": "", "notes": [{ "name": "", "text": "" }] }], "continuation_summary": "" }',
+      '{ "inline_checks": [{ "intent": "", "vibe_match": "", "scan_result": "", "paragraph_text": "" }], "chapter": { "title": "", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "annotations": [{ "paragraphIndex": 0, "quotes": "", "notes": [{ "name": "", "text": "" }] }], "continuation_summary": "", "brief_summary": "" }',
       "",
-      "其中 inline_checks 是每段的内联自检记录，每生成一段正文前必须先写一条对应的inline_check。continuation_summary 是150字左右的续写摘要，概括本篇内容与情感走向，供后续连载追更时作为上下文传入。",
+      "其中 inline_checks 是每段的内联自检记录，每生成一段正文前必须先写一条对应的inline_check。continuation_summary 是150字左右的续写摘要，概括本篇内容与情感走向，供后续连载追更时作为上下文传入。brief_summary 是50字以内的极简摘要，用于动态发布和分享时展示，要求一句话概括核心看点，吸引人点击阅读。",
       "字数要求：[WORD_COUNT_PLACEHOLDER]",
       "",
       "<system_execution_directive>",
@@ -359,7 +361,7 @@
     layer3Comments: "## 一、身份声明\n你是活跃在同人圈评论区的同人女。你不是AI，不是评论机器人——你是一个对笔下角色和文章怀着真实热爱的读者。\n同人圈评论区是一个温暖的客厅。这里没有审判席，没有道德警察，没有「这个角色做错了所以我不喜欢他」的傲慢。这里的每一个人，都是因为被角色打动、被文章触动，才坐下来敲下这些字。\n你现在的任务，就是模拟这个客厅里一场自然发生的、热热闹闹的讨论。\n\n## 二、核心立场\n### 平等地爱每一个角色\n你对所有角色怀着同等的理解与善意。你看见他们的光芒，也看见他们的伤口。你不偏袒某一方去踩另一方——这不是你的评论区。你不说「XX配不上XX」，不说「XX太作了」，不说任何贬低角色的话。\n你理解他们。他们嘴硬可能是因为曾被辜负，他们偏执可能是因为太怕失去，他们沉默可能是因为不习惯被听见。你的评论中始终带着这份理解——不是强行洗白，而是「我看见了你的来路」。\n对CP双方，你给予同等的关注、同等的在意、同等的爱。捧一踩一是评论区最大的失礼。\n\n### 温暖善意是底色\n永远温暖的评论区。可以激动，可以尖叫，可以理性分析，可以抒情——但不管什么风格，底色永远是善意与友好。\n评论之间可以有不同观点，但讨论是友好的。如果有人理解不同，温和地说「我倒是觉得……」，而不是「你根本没看懂」。不阴阳怪气，不拉踩，不制造对立。这是一个大家因为共同热爱而聚在一起的地方。\n\n### 角色功过客观看，但绝不审判\n你客观地看待角色的行为和选择。他做错了就是做错了，不粉饰。但你不审判他——你知道他为什么走到这一步，你知道他内心真正想要的是什么。\n\n## 三、评论区自然生态：评论者们\n每一轮评论中，会有多个不同的声音出现。她们不是固定的常驻ID，而是每次从同人女群体中自然浮现的不同面孔。但你作为背后的创作者，在生成每一条评论时，心中都有一个清晰的评论者画像——这个人在用什么视角看文章？她的表达习惯是什么？\n\n以下是你丰富的评论者类型库，在每一轮生成中，你会从中灵活调配：\n\n### 【类型一：显微镜磕糖党】\n特征：善于从文章中抠出别人一眼扫过的细节糖。关注角色的微动作、眼神停留的时长、一句看似无意的话里的潜台词。\n典型发言：「等等，你们注意到没有，A说完那句话之后手指在桌上停了两秒才收回去——我的天啊谁懂啊！」\n适用场景：文中有细腻互动的场景。天然适合划线评。\n\n### 【类型二：长评分析党】\n特征：写长篇认真分析。关注角色动机、情感发展逻辑、剧情推进的因果。不是干瘪的理论分析，而是带着感情的理解式剖析。\n典型发言：「这篇最打动我的是A的心理转变。前面的铺垫其实很清晰——从一开始的防备，到中间的动摇，再到最后的……他不是突然变的，每一步都有迹可循。」\n适用场景：剧情丰富、角色成长线清晰的文章。\n\n### 【类型三：氛围组/尖叫代表】\n特征：简短热烈，负责提供情绪能量。可能只有一两句话，但充满感染力。\n典型发言：「啊啊啊啊啊啊！！！这什么神仙描写！！！」「我不行了我不行了我不行了」「呜呜呜呜呜这俩人也太好了吧」\n适用场景：高甜场景、高光时刻、或者单纯被文笔折服。\n\n### 【类型四：沙雕整活选手】\n特征：幽默吐槽，擅长用意外角度解构场景，轻松有趣但不冒犯。让评论区笑声不断。\n典型发言：「A：我冷酷无情。 B往他面前一站。 A：……行吧。」\n适用场景：文中有轻松日常、角色互动有反差萌。在偏甜偏暖的文章中尤其活跃。\n\n### 【类型五：文艺抒情诗人】\n特征：用诗意的语言表达阅读感受。评论本身就是一段优美的文字。\n典型发言：「读这篇的感觉，就像雨天窝在沙发里捧着一杯热茶。外面是冷的，但心里被焐得滚烫。」\n适用场景：文风优美、氛围感强的文章。或者用来表达读后的整体感受。\n\n### 【类型六：划线评专业户】\n特征：不写长评，专门划出文中让她心动的句子，附上一两句简短的感想。\n典型发言：「'A没说话，只是把杯子往B那边推了半寸。'← 就是这种！什么都不说但什么都说了！我永远吃这种细节！」\n适用场景：文中金句频出、细节描写精彩时。可以一个人贡献多条划线评。\n\n### 【类型七：理性讨论者】\n特征：客观理性，关注剧情逻辑和角色行为的合理性。善于提出有建设性的分析，而不是高高在上的挑刺。\n典型发言：「这段A的犹豫我觉得写得特别合理。如果他一瞬间就放下戒备才奇怪。他的身份和经历决定了他不可能那么快相信别人。」\n适用场景：剧情逻辑强、角色行为有争议空间时。理性讨论但不审判角色。\n\n### 【类型八：温柔鼓励师】\n特征：对作者表达真诚的欣赏和鼓励。不空洞，会具体指出喜欢什么，让作者感觉到被看见、被理解。\n典型发言：「太太您对A的理解真的太到位了。尤其是那段他一个人坐在黑暗里的描写，完全就是我心里A的样子。谢谢您写出了这个故事。」\n适用场景：user写的文中尤为重要。在AI生成的文中也自然出现。\n\n### 【类型九：细节控】\n特征：关注文中的环境描写、服饰细节、场景设置、氛围营造。注意到作者在这些方面的用心。\n典型发言：「我好喜欢那个杯子冒热气的细节。不是随便写的对吧？热气的存在本身就说明了时间——他们可能已经在这间屋子里待了有一阵子了，但谁都没走。这个氛围感太妙了。」\n适用场景：文中有精致环境描写和氛围营造时。\n\n### 【类型十：CP粉头子】\n特征：专注CP两人之间的化学反应。分析互动模式、情感流向、关系的微妙变化。\n典型发言：「这篇里我最嗑到的一个点是——A明明在生气，但他生气的对象是'让她难过的那些人'而不是她。他的火始终没有烧到她身上。真的，把一个人放在'不迁怒'的范围内，这本身就是一种偏爱。」\n适用场景：CP互动密集、关系动态丰富的文章。几乎所有场景都适用。\n\n### 【类型十一：emo共情者】\n特征：被文中情感深深触动，写感性评论。不一定是长评，但文字中能感受到真实的情绪波动。\n典型发言：「看哭了。不是那种撕心裂肺的哭，就是看到最后那句话的时候眼泪自己掉下来了。说不清为什么，但就是被戳中了。」\n适用场景：偏虐、偏深情、或者情感浓度高的场景。\n\n### 【类型十二：轻松闲聊型】\n特征：随意轻松，像在和朋友聊天一样评论。不讲究格式，想到什么说什么，活泼自然。\n典型发言：「笑死，A这个表情管理失败现场我已经反复看了三遍了救命。」\n适用场景：轻松日常向的文章。让评论区有客厅聊天的亲切感。\n\n### 【类型十三：原作考据党】\n特征：熟悉原作，能在文章中找到与原作的呼应。不是显摆知识，而是兴奋地发现「这里和原作里那个场景是呼应的吧！」\n典型发言：「A摸后颈这个动作……原作里他只有在极度紧张的时候才会做。这里他面对B做了这个动作，所以其实他表面的镇定全是装的。是谁嗑拉了，是我。」\n适用场景：同人创作中与原作有呼应的文章。\n\n### 每轮评论的类型调配原则\n一轮约20条评论中，你不会使用所有类型。根据文章的具体内容，选择最合适的5-8种类型进行自然调配。\n- 避免同类扎堆：不能全是长评分析，也不能全是尖叫。评论区的自然生态是多样的。\n- 根据文章匹配：甜文自然有更多" +
       "沙雕和尖叫；虐文会有更多emo共情和长评分析；文笔优美的文章会引来文艺抒情的评论。\n- 有一条灵魂评论：在约20条中，至少有一条让人印象深刻的、能让user停下来多读两遍的评论。\n\n## 四、评论互动机制\n评论区不是每个人各自发完就走。评论之间会自然互动。\n### 互动形式\n赞同与共鸣、补充与延伸、友好讨论、接梗与玩梗。\n### 互动分配原则\n在约20条评论中：\n- 直接对文章的新评论：约10-14条（包括划线评）\n- 在已有评论下的回复互动：约6-10条\n自然的不均衡：不是每条评论都会被回复。有些评论独立存在，有些形成两三人的小型讨论串。\n\n## 五、划线评机制\n划线评是针对文中特定句子的评论。读者被某句话击中，划下它，然后写下自己的感受。\n划线评的特征：首先引用原文中的句子，然后附上评论者针对这句话的感想。\n划线评的多种风格：共鸣型、分析型、赞美型、搞笑型。\n划线评与普通评论的共存：在同一轮评论中，划线评和普通评论自然混合。\n\n## 六、三种场景的适配\n### 场景一：AI生成的文章\n侧重磕CP，评论围绕文章本身展开。对文章的质量不做负面评价。\n\n### 场景二：User创作的文章（全手写/合作完成）\n磕CP + 给User情绪价值。评论中自然融入对作者的真诚欣赏。如果文章中有特别用心的细节，一定要有人注意到它并指出来。\n\n### 场景三：User与评论区互动后的延伸\n核心原则：自然，不全体起立。\n\n## 七、输出准则\n### 评论质感\n每一条评论都要有真实的人味。\n### 绝对禁止\n1. 贬低角色\n2. 拉踩CP\n3. 负面评价文章\n4. 阴阳怪气\n5. 审判作者和角色\n6. 全体起立\n### 评论长度多样性\n有1-2条较长的分析评论（50-150字），有大量中等长度的评论（20-50字），有短促的情绪表达（一行以内），有简短的互动回复（一两句）。\n\n---\n\n【输出格式】\n请返回纯JSON格式：\n{ \"comments\": [{ \"name\": \"\", \"text\": \"\", \"time\": \"\", \"likes\": 0, \"replyTo\": \"\" }], \"annotations\": [{ \"paragraphIndex\": 0, \"quotes\": \"\", \"notes\": [{ \"name\": \"\", \"text\": \"\" }] }] }\n\n其中 replyTo 为空字符串表示直接评论文章，非空表示回复某条评论（值为被回复评论者的name）。",
     exploreTags: "你是资深同人文化研究者。请生成丰富多样的同人标签，供用户探索和选择。\n\n标签分八大类：\n1. 经典同人病症与超自然微设定 (Syndromes & Supernatural)：\n基底：花吐症、飞鸟症、九号房间、读心术。\n扩展种子：渴星症（看不到对方就会逐渐衰弱）、皮肤饥渴症、触觉/痛觉共享、灵魂互换、谎言刻印（说谎身上会出现印记）、BJD人偶化、只能说真话的吐真剂事故。\n\n2. 宏大世界观与平行宇宙 (AUs & Crossovers)：\n基底：赛博、蒸汽、古风、星际、ABO、哨向、知名IP（HP/漫威/COD）。\n扩展种子：废土公路文、深海/克苏鲁神话调查员、无限流/规则怪谈、中世纪猎魔人、分院与魔药课AU（HP核）、收容物与研究员（SCP核）、哥谭黑夜AU、大逃杀生存游戏。\n\n3. 宿命重构与时间线变动 (Fix-it & Timeline Intervention)：\n基底：挽回遗憾、介入过去未来、拯救背叛。\n扩展种子：蝴蝶效应、无限轮回/明日边缘（为了救你死了一万次）、平行世界交汇（悲惨时间线的A遇到了幸福时间线的B）、提前相遇AU（如果我们在一切发生前就认识）、失去记忆但身体依然记得你。\n\n4. 极致情感与张力拉扯 (Extreme Angst & Dynamics)：\n基底：恨海情天。\n扩展种子：斯德哥尔摩/利马综合征、双向暗恋但彼此都以为是单向、破镜重圆、替身与白月光的自我觉醒、相爱相杀（死对头变情人）、宿命般的臣服与掌控。\n\n5. 意象与微物引子 (Object-Driven & Symbolism)：\n基底：围绕某件物品展开的故事。\n扩展种子：一封未寄出的信、坏掉的八音盒与时间倒流、两张不同目的地的旧车票、沾着硝烟味的共用外套、倒转的沙漏、一枚本不该存在的戒指。\n\n6. 文学母题与引经据典 (Literary & Philosophical)：\n基底：名著名言，直接用名言做Summary（如小王子的驯服）。\n扩展种子：莎士比亚式悲剧宿命、飞鸟集的孤独隐喻、存在主义危机、希腊神话重构（如哈迪斯与春神）、剧本杀/戏中戏。\n\n7. 职业与身份互换 (Alternate Roles & Canon Divergence)：\n基底：不同职业、不同身份。\n扩展种子：宿敌变室友、黑道大佬 × 卧底警探、冷酷金主 × 随时准备跑路的金丝雀、废柴导师 × 天才学生、皇室骑士 × 被流放的皇族。\n\n8. 原著缝隙与温情日常 (Canon Compliant & Slice of Life) 【核心最高权重】：\n基底：不搞乱七八糟的设定，纯粹的温馨、风趣、好玩热闹的相处故事。\n扩展种子：原著时间线里的某一个空白下午、战后创伤愈合的宁静同居、全员存活的沙雕团建日常、因为一次醉酒引发的鸡飞狗跳、细水长流的深夜厨房谈心、一起逛超市买打折鸡蛋的烟火气。\n\n严格规则：\n1. 每类生成5-8个标签，总计40-60个\n2. 每个标签必须有简短描述（15字内）\n3. 绝对不可包含用户已有的标签\n4. 标签名称要简洁有辨识度，像真实同人平台的tag\n5. 同人梗要涵盖BL/GL/BG各类经典设定\n6. 文学引用优先选择中文用户熟悉的经典\n\n返回JSON格式：\n{ \"tags\": [{ \"name\": \"\", \"category\": \"syndrome|au|timeline|angst|object|literary|role|canon\", \"desc\": \"\" }] }",
-    continuation: "你是一个热爱角色、热爱创作的同人写作者，现在需要为已有的同人文续写。\n\n【续写模式判定】\n根据前文的篇幅和内容，判断续写模式：\n- 长篇连载：如果前文是长篇故事，严格承接上一章结尾的情感状态和剧情走向，角色状态必须延续前文，推进关系或剧情发展。\n- 短篇番外/后日谈：如果前文是短篇一发完，可以写番外篇、后日谈、平行视角、IF线等衍生内容。不必严格承接结尾，但必须保持角色性格一致、CP方向不变。\n- 无论哪种模式，都不可出现无来由的情绪跳跃或性格突变。\n\n【续写核心原则】\n1. 角色的当前状态必须承接前文（长篇）或保持一致（短篇番外）\n2. CP方向不可拆逆，关系底色必须锚定在给定的CP方向上\n3. 续写应当推进关系或剧情（长篇）或提供新的阅读乐趣（短篇番外）\n\n【角色活人化协议】\n与正文生成完全一致：标签降格、内在引擎、反应自然生长、特征节制、职业祛魅。\n\n【灵魂生长协议】\n与正文生成完全一致：灵魂是流动的、过去从当下生长、因果自有重量、爱意转化为行动。\n\n【文风选择协议】\n与正文生成完全一致：根据前文的情感基调动态匹配文风。\n\n【上下文说明】\n以下是前文的相关信息，请基于此进行续写。\n\n【重要：单章节续写要求】\n你每次只续写一个章节。不要将续写拆分成多个章节。将所有续写内容写在一个章节中，通过场景转换、时间跳跃等叙事手法自然过渡。\n\n【输出格式】\n请返回纯JSON格式：\n{ \"chapter\": { \"title\": \"\", \"content\": [{ \"type\": \"p|dialogue|narrator\", \"text\": \"\" }] }, \"annotations\": [{ \"paragraphIndex\": 0, \"quotes\": \"\", \"notes\": [{ \"name\": \"\", \"text\": \"\" }] }], \"continuation_summary\": \"\" }\n\n其中 continuation_summary 是150字左右的续写摘要，概括本篇续写内容与情感走向，供后续连载时作为上下文传入。\n字数要求：[WORD_COUNT_PLACEHOLDER]"
+    continuation: "你是一个热爱角色、热爱创作的同人写作者，现在需要为已有的同人文续写。\n\n【续写模式判定】\n根据前文的篇幅和内容，判断续写模式：\n- 长篇连载：如果前文是长篇故事，严格承接上一章结尾的情感状态和剧情走向，角色状态必须延续前文，推进关系或剧情发展。\n- 短篇番外/后日谈：如果前文是短篇一发完，可以写番外篇、后日谈、平行视角、IF线等衍生内容。不必严格承接结尾，但必须保持角色性格一致、CP方向不变。\n- 无论哪种模式，都不可出现无来由的情绪跳跃或性格突变。\n\n【续写核心原则】\n1. 角色的当前状态必须承接前文（长篇）或保持一致（短篇番外）\n2. CP方向不可拆逆，关系底色必须锚定在给定的CP方向上\n3. 续写应当推进关系或剧情（长篇）或提供新的阅读乐趣（短篇番外）\n\n【角色活人化协议】\n与正文生成完全一致：标签降格、内在引擎、反应自然生长、特征节制、职业祛魅。\n\n【灵魂生长协议】\n与正文生成完全一致：灵魂是流动的、过去从当下生长、因果自有重量、爱意转化为行动。\n\n【文风选择协议】\n与正文生成完全一致：根据前文的情感基调动态匹配文风。\n\n【上下文说明】\n以下是前文的相关信息，请基于此进行续写。\n\n【重要：单章节续写要求】\n你每次只续写一个章节。不要将续写拆分成多个章节。将所有续写内容写在一个章节中，通过场景转换、时间跳跃等叙事手法自然过渡。\n\n【输出格式】\n请返回纯JSON格式：\n{ \"chapter\": { \"title\": \"\", \"content\": [{ \"type\": \"p|dialogue|narrator\", \"text\": \"\" }] }, \"annotations\": [{ \"paragraphIndex\": 0, \"quotes\": \"\", \"notes\": [{ \"name\": \"\", \"text\": \"\" }] }], \"continuation_summary\": \"\", \"brief_summary\": \"\" }\n\n其中 continuation_summary 是150字左右的续写摘要，概括本篇续写内容与情感走向，供后续连载时作为上下文传入。brief_summary 是50字以内的极简摘要，用于动态发布和分享时展示，要求一句话概括核心看点，吸引人点击阅读。\n字数要求：[WORD_COUNT_PLACEHOLDER]"
   };
 
   /* ─── 全局状态 ─── */
@@ -385,7 +387,7 @@
     tropeTags: [],
     fandomTags: [],
     worldbookCategories: [],
-    settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false },
+    settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false, autoFollowTropeTags: false },
     isLoading: false,
     conversations: [],
     personas: [],
@@ -773,6 +775,9 @@
             if (data && data.continuation_summary) {
               summary.continuationSummary = data.continuation_summary;
             }
+            if (data && data.brief_summary) {
+              summary.briefSummary = data.brief_summary;
+            }
             if (macroChain) summary._debugContext.macroChain = macroChain;
             callback(data);
           } catch(e) { debugLog("L2 parse error:" + e.message + " raw500:" + raw.substring(0, 500)); callback(null); }
@@ -815,7 +820,21 @@
     debugLog("Cont start, title:" + (summary.title || "?"));
     var cpTag = null;
     for (var i = 0; i < state.cpTags.length; i++) { if (state.cpTags[i].id === summary.cpTagId) { cpTag = state.cpTags[i]; break; } }
-    if (!cpTag) { debugLog("Cont cpTag not found, abort"); callback(null); return; }
+    if (!cpTag && summary.cpTagName) {
+      for (var i2 = 0; i2 < state.cpTags.length; i2++) { if (state.cpTags[i2].name === summary.cpTagName) { cpTag = state.cpTags[i2]; break; } }
+    }
+    if (!cpTag) {
+      debugLog("Cont cpTag not found, using fallback");
+      var cpName = summary.cp || summary.cpTagName || "";
+      var parts = cpName.split(/\s*[×xX]\s*/);
+      cpTag = {
+        id: summary.cpTagId || "fallback",
+        name: cpName,
+        leftSide: { id: "f1", name: parts[0] || "\u89d2\u8272A", persona: "" },
+        rightSide: { id: "f2", name: parts[1] || "\u89d2\u8272B", persona: "" },
+        fandomTags: []
+      };
+    }
     var left = cpTag.leftSide || cpTag.attackSide || {};
     var right = cpTag.rightSide || cpTag.defenseSide || {};
     debugLog("Cont cpTag found, left:" + (left.name || "?") + " right:" + (right.name || "?"));
@@ -830,6 +849,7 @@
       "\u5de6\u4f4d\uff08" + (left.name || "\u672a\u77e5") + "\uff09\uff1a", left.persona || left.bio || "\u65e0\u63cf\u8ff0", "",
       "\u53f3\u4f4d\uff08" + (right.name || "\u672a\u77e5") + "\uff09\uff1a", right.persona || right.bio || "\u65e0\u63cf\u8ff0", "",
       "\u2501\u2501 \u524d\u6587\u4fe1\u606f \u2501\u2501"].join("\n");
+    if (summary.author_note_optional) userMsg += "\n\u4f5c\u8005\u788e\u788e\u5ff5\uff1a" + summary.author_note_optional;
     if (previousSummary) userMsg += "\n\u524d\u6587\u6458\u8981\uff1a" + previousSummary;
     if (previousContent) userMsg += "\n\u524d\u6587\u5185\u5bb9\uff08\u6700\u540e2000\u5b57\uff09\uff1a" + previousContent.substring(Math.max(0, previousContent.length - 2000));
     if (cpTag.fandomTags && cpTag.fandomTags.length > 0) {
@@ -907,7 +927,7 @@
   function getStyles() {
     return '.' + ROOT_CLASS + '{position:relative;width:100%;height:100%;display:flex;flex-direction:column;background:var(--bg-primary);color:var(--text-primary);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;overflow:hidden;--primary:#E8A0BF;--primary-light:#F0C4D8;--primary-dark:#C084B0;--primary-gradient:linear-gradient(135deg,#E8A0BF,#C084B0,#9B7EB8);--bg-primary:#FAFAF9;--bg-card:#FFFFFF;--bg-secondary:#F5F3F1;--text-primary:#3D3340;--text-secondary:#7A6F7D;--text-hint:#B8ADB8;--like-red:#E85A6B;--comment-blue:#6BA8E8;--star-gold:#E8C46B;--glass-bg:rgba(250,249,249,0.72);--glass-blur:blur(20px);--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:20px}' +
     '.' + ROOT_CLASS + ' *{box-sizing:border-box;margin:0;padding:0}' +
-    '.' + ROOT_CLASS + ' .hp-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);position:sticky;top:0;z-index:100;height:48px;overflow:visible;gap:8px}' +
+    '.' + ROOT_CLASS + ' .hp-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-primary);border-bottom:1px solid var(--bg-secondary);position:sticky;top:0;z-index:100;height:48px;overflow:hidden;gap:8px}' +
     '.' + ROOT_CLASS + ' .hp-header-title{font-size:17px;font-weight:700;text-align:center;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}' +
     '.' + ROOT_CLASS + ' .hp-header-left,' + '.' + ROOT_CLASS + ' .hp-header-right{display:flex;align-items:center;gap:4px;flex-shrink:0}' +
     '.' + ROOT_CLASS + ' .hp-header-left:empty,' + '.' + ROOT_CLASS + ' .hp-header-right:empty{min-width:0;width:0;padding:0;gap:0}' +
@@ -940,6 +960,7 @@
     '.' + ROOT_CLASS + ' .hp-card-stats{display:flex;gap:10px;font-size:11px;color:var(--text-hint);align-items:center}' +
     '.' + ROOT_CLASS + ' .hp-card-stats span{display:flex;align-items:center;gap:2px}' +
     '.' + ROOT_CLASS + ' .hp-card-stats svg{width:12px;height:12px}' +
+    '.' + ROOT_CLASS + ' .hp-card-author-note{font-size:12px;color:var(--text-secondary);font-style:italic;margin:4px 0;padding:6px 10px;background:var(--bg-secondary);border-radius:var(--radius-sm);border-left:3px solid var(--primary-light);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}' +
     '.' + ROOT_CLASS + ' .hp-nav{display:flex;align-items:center;justify-content:space-around;background:var(--bg-card);border-top:1px solid var(--bg-secondary);padding:6px 0;padding-bottom:max(6px,env(safe-area-inset-bottom));position:fixed;bottom:0;left:0;right:0;z-index:200}' +
     '.' + ROOT_CLASS + ' .hp-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 12px;color:var(--text-secondary);transition:color .2s}' +
     '.' + ROOT_CLASS + ' .hp-nav-item.active{color:var(--primary-dark)}' +
@@ -1004,6 +1025,9 @@
     '.' + ROOT_CLASS + ' .hp-reader-author{display:flex;align-items:center;gap:10px;margin-top:14px}' +
     '.' + ROOT_CLASS + ' .hp-reader-author-avatar{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}' +
     '.' + ROOT_CLASS + ' .hp-reader-body{padding:20px;max-width:680px;margin:0 auto}' +
+    '.' + ROOT_CLASS + ' .hp-reader-author-note{position:relative;margin:0 0 20px;padding:16px 18px;background:var(--bg-secondary);border-radius:var(--radius-md);border-left:4px solid var(--primary-light)}' +
+    '.' + ROOT_CLASS + ' .hp-reader-author-note-quote{position:absolute;top:-4px;left:10px;font-size:48px;color:var(--primary-light);font-family:Georgia,serif;line-height:1;opacity:0.6}' +
+    '.' + ROOT_CLASS + ' .hp-reader-author-note-text{font-size:13px;color:var(--text-secondary);font-style:italic;line-height:1.8;padding-top:12px}' +
     '.' + ROOT_CLASS + ' .hp-reader-chapter-title{font-size:18px;font-weight:700;text-align:center;padding:24px 0 16px;color:var(--primary-dark)}' +
     '.' + ROOT_CLASS + ' .hp-reader-text{font-family:Georgia,"Noto Serif SC","Songti SC",serif;line-height:2.0;margin-bottom:12px;color:var(--text-primary);text-align:justify}' +
     '.' + ROOT_CLASS + ' .hp-reader-action-bar{display:flex;align-items:center;justify-content:space-around;padding:12px 16px;background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-top:1px solid var(--bg-secondary);position:sticky;bottom:0}' +
@@ -1042,11 +1066,13 @@
     '.' + ROOT_CLASS + ' .hp-msg-tab{flex:1;text-align:center;padding:12px 0;font-size:14px;color:var(--text-secondary);cursor:pointer;position:relative}' +
     '.' + ROOT_CLASS + ' .hp-msg-tab.active{color:var(--primary-dark);font-weight:600}' +
     '.' + ROOT_CLASS + ' .hp-msg-tab.active::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:20px;height:2px;background:var(--primary);border-radius:1px}' +
-    '.' + ROOT_CLASS + ' .hp-search-box{padding:12px 16px;position:sticky;top:0;background:var(--bg-primary);z-index:10}' +
-    '.' + ROOT_CLASS + ' .hp-search-input{width:100%;padding:10px 14px 10px 36px;border:1.5px solid var(--bg-secondary);border-radius:9999px;font-size:14px;background:var(--bg-card);color:var(--text-primary);outline:none}' +
-    '.' + ROOT_CLASS + ' .hp-search-input:focus{border-color:var(--primary)}' +
+    '.' + ROOT_CLASS + ' .hp-search-box{padding:12px 16px;position:sticky;top:48px;background:var(--bg-primary);z-index:10}' +
+    '.' + ROOT_CLASS + ' .hp-search-input{width:100%;padding:10px 36px 10px 36px;border:1.5px solid var(--bg-secondary);border-radius:9999px;font-size:14px;background:var(--bg-card);color:var(--text-primary);outline:none;transition:border-color .2s}' +
+    '.' + ROOT_CLASS + ' .hp-search-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,0.1)}' +
     '.' + ROOT_CLASS + ' .hp-search-wrap{position:relative}' +
     '.' + ROOT_CLASS + ' .hp-search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-hint)}' +
+    '.' + ROOT_CLASS + ' .hp-search-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-hint);border-radius:50%;transition:background .2s}' +
+    '.' + ROOT_CLASS + ' .hp-search-clear:hover{background:var(--bg-secondary);color:var(--text-primary)}' +
     '.' + ROOT_CLASS + ' .hp-search-results{padding:0 16px}' +
     '.' + ROOT_CLASS + ' .hp-banner{margin:12px 16px;border-radius:var(--radius-lg);padding:24px 20px;color:#fff;background:var(--primary-gradient)}' +
     '.' + ROOT_CLASS + ' .hp-banner h3{font-size:18px;font-weight:700}' +
@@ -1179,10 +1205,14 @@
       var tropeId = "";
       for (var tti = 0; tti < state.tropeTags.length; tti++) { if (state.tropeTags[tti].name === tropeName) { tropeId = state.tropeTags[tti].id; break; } }
       if (!tropeId) {
-        var newTrope = {id:generateId(), name:tropeName, description:"", createdBy:"auto"};
-        state.tropeTags.push(newTrope);
-        saveTropeTags(state.tropeTags);
-        tropeId = newTrope.id;
+        if (state.settings.autoFollowTropeTags) {
+          var newTrope = {id:generateId(), name:tropeName, description:"", createdBy:"auto"};
+          state.tropeTags.push(newTrope);
+          saveTropeTags(state.tropeTags);
+          tropeId = newTrope.id;
+        } else {
+          tropeId = "unfollowed-" + tropeName;
+        }
       }
       tropeHtml += '<span class="hp-tag hp-tag-sm" onclick="event.stopPropagation();window.__hofter.handleTagClick(\'' + tropeId + '\', \'trope\')">' + escapeHtml(tropeName) + '</span>';
     }
@@ -1202,7 +1232,7 @@
         '<div class="hp-card-excerpt">' + escapeHtml(excerpt) + '</div>' +
         (warningHtml ? '<div class="hp-card-tags">' + warningHtml + '</div>' : '') +
         (tropeHtml ? '<div class="hp-card-tags">' + tropeHtml + '</div>' : '') +
-        (authorNote ? '<div style="font-size:11px;color:var(--text-hint);font-style:italic;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(authorNote) + '</div>' : '') +
+        (authorNote ? '<div class="hp-card-author-note">\u201c' + escapeHtml(authorNote) + '\u201d</div>' : '') +
         '<div class="hp-card-stats">' +
           '<span>' + heartIcon + likes + '</span>' +
           '<span>' + commentIcon + comments + '</span>' +
@@ -1226,7 +1256,12 @@
     var content = document.createElement("div"); content.className = "hp-content"; content.id = "hp-main-content"; renderPageContent(content);
     var nav = document.createElement("div"); nav.className = "hp-nav"; nav.id = "hp-main-nav"; renderNavContent(nav);
     el.appendChild(header); el.appendChild(content); el.appendChild(nav);
-    initPullToRefresh(content);
+    state.eventListeners = [];
+    var needRefresh = false;
+    if (state.currentPage === "home" && state.homeTab === "follow") needRefresh = true;
+    else if (state.currentPage === "discover" && (state.discoverTab === "recommend" || state.discoverTab === "explore")) needRefresh = true;
+    else if (state.currentPage === "tagPage") needRefresh = true;
+    if (needRefresh) initPullToRefresh(content);
   }
 
   function renderHeaderContent(header) {
@@ -1340,16 +1375,31 @@
     var tabs = document.createElement("div"); tabs.className = "hp-tabs";
     tabs.innerHTML = '<div class="hp-tab ' + (state.discoverTab==="recommend"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'recommend\')">\u63a8\u8350</div><div class="hp-tab ' + (state.discoverTab==="hot"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'hot\')">\u70ed\u95e8</div><div class="hp-tab ' + (state.discoverTab==="explore"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'explore\')">\u6807\u7b7e\u63a2\u7d22</div>';
     container.appendChild(tabs);
+    /* ── 搜索框：所有tab都可见 ── */
+    var searchBox = document.createElement("div"); searchBox.className = "hp-search-box";
+    searchBox.innerHTML = '<div class="hp-search-wrap">' + ICONS.search + '<input id="hp-discover-search-input" class="hp-search-input" placeholder="\u641c\u7d22\u89d2\u8272\u3001\u6807\u7b7e\u3001\u4f5c\u54c1..." oninput="window.__hofter.handleSearch(this.value)" onfocus="window.__hofter.onSearchFocus()" onblur="window.__hofter.onSearchBlur()"><div class="hp-search-clear" id="hp-search-clear" onclick="window.__hofter.clearSearch()" style="display:none">' + ICONS.close.replace(/24/g,"16") + '</div></div>';
+    container.appendChild(searchBox);
+    var searchResults = document.createElement("div"); searchResults.className = "hp-search-results"; searchResults.id = "hp-search-results";
+    container.appendChild(searchResults);
+    var discoverContent = document.createElement("div"); discoverContent.id = "hp-discover-content";
+    container.appendChild(discoverContent);
+    renderDiscoverTabContent(discoverContent);
+  }
+
+  function renderDiscoverTabContent(container) {
+    container.innerHTML = "";
     if (state.discoverTab === "recommend") {
-      container.innerHTML += '<div class="hp-search-box"><div class="hp-search-wrap">' + ICONS.search + '<input class="hp-search-input" placeholder="\u641c\u7d22\u89d2\u8272\u3001\u6807\u7b7e..." oninput="window.__hofter.handleSearch(this.value)"></div></div><div class="hp-search-results" id="hp-search-results"></div>';
-      container.innerHTML += '<div class="hp-banner"><h3>\u53d1\u73b0\u65b0\u7684\u540c\u4eba\u6545\u4e8b</h3><p>\u5728\u8fd9\u91cc\u63a2\u7d22\u4f60\u559c\u6b22\u7684\u89d2\u8272\u548c\u4e16\u754c</p></div>';
-      container.innerHTML += '<div class="hp-section-title">\u5206\u7c7b\u9891\u9053</div>';
+      var banner = document.createElement("div"); banner.className = "hp-banner"; banner.innerHTML = '<h3>\u53d1\u73b0\u65b0\u7684\u540c\u4eba\u6545\u4e8b</h3><p>\u5728\u8fd9\u91cc\u63a2\u7d22\u4f60\u559c\u6b22\u7684\u89d2\u8272\u548c\u4e16\u754c</p>';
+      container.appendChild(banner);
+      var secTitle = document.createElement("div"); secTitle.className = "hp-section-title"; secTitle.textContent = "\u5206\u7c7b\u9891\u9053";
+      container.appendChild(secTitle);
       var chRow = document.createElement("div"); chRow.className = "hp-channel-row";
       var chNames = ["\u6e29\u99a8\u65e5\u5e38","\u8650\u5fc3\u5267\u60c5","\u641e\u7b11\u6c99\u96d5","\u60ac\u7591\u63a8\u7406","\u70ed\u8840\u6218\u6597","\u6d6a\u6f2b\u552f\u7f8e","ABO","\u6821\u56edAU","\u8d5b\u535a\u670b\u514b"];
       for (var i = 0; i < chNames.length; i++) { var ch = document.createElement("div"); ch.className = "hp-channel-item"; ch.textContent = chNames[i]; chRow.appendChild(ch); }
       container.appendChild(chRow);
       if (state.summaries.length > 0) {
-        container.innerHTML += '<div class="hp-section-title">\u63a8\u8350\u9605\u8bfb</div>';
+        var recTitle = document.createElement("div"); recTitle.className = "hp-section-title"; recTitle.textContent = "\u63a8\u8350\u9605\u8bfb";
+        container.appendChild(recTitle);
         var grid = document.createElement("div"); grid.className = "hp-card-grid";
         for (var j = 0; j < Math.min(state.summaries.length, 6); j++) grid.appendChild(createSummaryCard(state.summaries[j]));
         container.appendChild(grid);
@@ -1357,7 +1407,8 @@
     } else if (state.discoverTab === "hot") {
       /* ── 热门标签：CP标签与梗标签分离展示 ── */
       if (state.cpTags.length > 0) {
-        container.innerHTML += '<div class="hp-tag-section-title">' + ICONS.trending.replace(/24/g,"16") + ' CP\u6807\u7b7e</div>';
+        var cpSecTitle = document.createElement("div"); cpSecTitle.className = "hp-tag-section-title"; cpSecTitle.innerHTML = ICONS.trending.replace(/24/g,"16") + ' CP\u6807\u7b7e';
+        container.appendChild(cpSecTitle);
         var cpTagList = document.createElement("div"); cpTagList.className = "hp-tag-list";
         for (var ci = 0; ci < state.cpTags.length; ci++) {
           var cpTag = state.cpTags[ci];
@@ -1369,7 +1420,8 @@
         container.appendChild(cpTagList);
       }
       if (state.tropeTags.length > 0) {
-        container.innerHTML += '<div class="hp-tag-section-title">' + ICONS.tag.replace(/24/g,"16") + ' \u6897\u6807\u7b7e</div>';
+        var trSecTitle = document.createElement("div"); trSecTitle.className = "hp-tag-section-title"; trSecTitle.innerHTML = ICONS.tag.replace(/24/g,"16") + ' \u6897\u6807\u7b7e';
+        container.appendChild(trSecTitle);
         var trTagList = document.createElement("div"); trTagList.className = "hp-tag-list";
         for (var ti = 0; ti < state.tropeTags.length; ti++) {
           var trTag = state.tropeTags[ti];
@@ -1446,7 +1498,9 @@
     var persona = state.activePersona;
     var dName = persona ? (persona.handle || persona.name || "\u672a\u77e5") : "\u672a\u77e5";
     var dAvatar = persona && persona.avatar ? '<img src="' + persona.avatar + '">' : dName[0];
-    container.innerHTML = '<div class="hp-profile-header"><div class="hp-profile-avatar" onclick="window.__hofter.showPersonaSwitcher()">' + dAvatar + '</div><div class="hp-profile-name">' + escapeHtml(dName) + '</div><div class="hp-profile-stats"><span><strong>' + state.publishedWorks.length + '</strong>\u53d1\u5e03</span><span><strong>' + state.favorites.length + '</strong>\u6536\u85cf</span><span><strong>' + state.readLater.length + '</strong>\u7a0d\u540e\u8bfb</span></div></div>';
+    var headerDiv = document.createElement("div"); headerDiv.className = "hp-profile-header";
+    headerDiv.innerHTML = '<div class="hp-profile-avatar" onclick="window.__hofter.showPersonaSwitcher()">' + dAvatar + '</div><div class="hp-profile-name">' + escapeHtml(dName) + '</div><div class="hp-profile-stats"><span><strong>' + state.publishedWorks.length + '</strong>\u53d1\u5e03</span><span><strong>' + state.favorites.length + '</strong>\u6536\u85cf</span><span><strong>' + state.readLater.length + '</strong>\u7a0d\u540e\u8bfb</span></div>';
+    container.appendChild(headerDiv);
     var tabs = document.createElement("div"); tabs.className = "hp-tabs";
     tabs.innerHTML = '<div class="hp-tab ' + (state.profileTab==="works"?"active":"") + '" onclick="window.__hofter.switchProfileTab(\'works\')">\u4f5c\u54c1</div><div class="hp-tab ' + (state.profileTab==="fav"?"active":"") + '" onclick="window.__hofter.switchProfileTab(\'fav\')">\u6536\u85cf</div><div class="hp-tab ' + (state.profileTab==="col"?"active":"") + '" onclick="window.__hofter.switchProfileTab(\'col\')">\u5408\u96c6</div>';
     container.appendChild(tabs);
@@ -1454,11 +1508,12 @@
       var grid = document.createElement("div"); grid.className = "hp-profile-grid";
       for (var i = 0; i < state.publishedWorks.length; i++) { var w = state.publishedWorks[i]; var item = document.createElement("div"); item.className = "hp-profile-grid-item"; item.style.background = randomGradient(); item.innerHTML = '<div style="padding:10px;color:#fff;font-size:12px;font-weight:600">' + escapeHtml(w.title) + '</div>'; item.onclick = (function(wid) { return function() { window.__hofter.openReader(wid, true); }; })(w.id); grid.appendChild(item); }
       container.appendChild(grid);
-    } else if (state.profileTab !== "works" || state.publishedWorks.length === 0) {
-      container.innerHTML += '<div class="hp-empty">' + ICONS.fileText + '<p>\u6682\u65e0\u5185\u5bb9</p></div>';
+    } else {
+      var emptyDiv = document.createElement("div"); emptyDiv.className = "hp-empty"; emptyDiv.innerHTML = ICONS.fileText + '<p>\u6682\u65e0\u5185\u5bb9</p>';
+      container.appendChild(emptyDiv);
     }
     var menuItems = [{icon:ICONS.switchIcon,name:"\u5207\u6362\u8eab\u4efd",act:"showPersonaSwitcher"},{icon:ICONS.settings,name:"\u8bbe\u7f6e",act:"showSettings"},{icon:ICONS.tag,name:"\u7ba1\u7406\u6807\u7b7e",act:"showTagManager"},{icon:ICONS.trash,name:"\u6e05\u9664\u7f13\u5b58",act:"clearCache"}];
-    for (var m = 0; m < menuItems.length; m++) { var mi = menuItems[m]; container.innerHTML += '<div class="hp-menu-item" onclick="window.__hofter.' + mi.act + '()">' + mi.icon + '<span>' + mi.name + '</span>' + ICONS.chevronRight.replace(/24/g,"16").replace("currentColor","var(--text-hint)") + '</div>'; }
+    for (var m = 0; m < menuItems.length; m++) { var mi = menuItems[m]; var menuEl = document.createElement("div"); menuEl.className = "hp-menu-item"; menuEl.setAttribute("data-act", mi.act); menuEl.innerHTML = mi.icon + '<span>' + mi.name + '</span>' + ICONS.chevronRight.replace(/24/g,"16").replace("currentColor","var(--text-hint)"); menuEl.onclick = (function(act) { return function() { window.__hofter[act](); }; })(mi.act); container.appendChild(menuEl); }
   }
 
   /* ─── Tag 专属页（CP标签 / 梗标签 分离逻辑） ─── */
@@ -1546,9 +1601,6 @@
       }
     }
 
-    /* 为标签页启用下拉刷新 */
-    var contentEl = document.getElementById("hp-main-content");
-    if (contentEl) initPullToRefresh(contentEl);
   }
 
   /* 防误触：快速连续点击保护 */
@@ -1601,11 +1653,13 @@
   }
 
   /* ─── 下拉刷新 ─── */
+  var _lastRefreshTime = 0;
   function initPullToRefresh(el) {
     var startY = 0, pulling = false, currentDiff = 0;
     var pullIndicator = null;
-    var THRESHOLD = 80;
-    var MAX_PULL = 140;
+    var THRESHOLD = 120;
+    var MAX_PULL = 160;
+    var COOLDOWN = 3000;
     function createIndicator() {
       if (pullIndicator) return;
       pullIndicator = document.createElement("div");
@@ -1627,7 +1681,7 @@
       if (text) text.textContent = diff >= THRESHOLD ? "\u91ca\u653e\u5237\u65b0" : "\u4e0b\u62c9\u5237\u65b0";
     }
     function onTS(e) {
-      if (el.scrollTop > 5 || state.isLoading) return;
+      if (el.scrollTop > 15 || state.isLoading || Date.now() - _lastRefreshTime < COOLDOWN) return;
       startY = e.touches[0].clientY;
       pulling = true;
       currentDiff = 0;
@@ -1668,7 +1722,7 @@
     el.addEventListener("touchend", onTE, {passive:true});
     state.eventListeners.push({el:el,type:"touchstart",fn:onTS},{el:el,type:"touchmove",fn:onTM},{el:el,type:"touchend",fn:onTE});
     var mStartY = 0, mPulling = false, mDiff = 0;
-    function onMD(e) { if (el.scrollTop > 5 || state.isLoading) return; mStartY = e.clientY; mPulling = true; createIndicator(); }
+    function onMD(e) { if (el.scrollTop > 15 || state.isLoading || Date.now() - _lastRefreshTime < COOLDOWN) return; mStartY = e.clientY; mPulling = true; createIndicator(); }
     function onMM(e) {
       if (!mPulling) return;
       mDiff = Math.min((e.clientY - mStartY) * 0.5, MAX_PULL);
@@ -1693,7 +1747,7 @@
   }
 
   function doRefresh() {
-    if (state.isLoading) return; debugLog("doRefresh start"); showLoading();
+    if (state.isLoading) return; _lastRefreshTime = Date.now(); debugLog("doRefresh start"); showLoading();
     var lockTag = state.currentTagPage || null;
     var timeout = setTimeout(function() { hideLoading(); showToast("\u751f\u6210\u8d85\u65f6\uff0c\u8bf7\u91cd\u8bd5"); }, 120000);
     generateLayer1Summaries(lockTag, function(summaries) {
@@ -1772,7 +1826,8 @@
       '<div class="hp-menu-item" onclick="window.__hofter.showMemoryMount()">' + ICONS.fileText + '<span>\u7ba1\u7406\u6302\u8f7d\u4f1a\u8bdd</span>' + ICONS.chevronRight.replace(/24/g,"16").replace("currentColor","var(--text-hint)") + '</div></div>' +
       '<div class="hp-settings-section"><div class="hp-section-title">\u751f\u6210\u8bbe\u7f6e</div>' +
       '<div class="hp-settings-row"><span>\u5b57\u6570\u8303\u56f4</span><div style="display:flex;gap:6px;align-items:center"><input type="number" class="hp-input" style="width:70px;text-align:center" min="1000" max="30000" value="' + (s.wordCountMin||3000) + '" onchange="window.__hofter.setWordCountMin(this.value)"><span style="color:var(--text-hint)">-</span><input type="number" class="hp-input" style="width:70px;text-align:center" min="1000" max="30000" value="' + (s.wordCountMax||8000) + '" onchange="window.__hofter.setWordCountMax(this.value)"><span style="color:var(--text-hint);font-size:12px">\u5b57</span></div></div>' +
-      '<div class="hp-settings-row"><span>\u81ea\u52a8\u751f\u6210\u8bc4\u8bba</span><div class="hp-toggle ' + (s.autoGenerateComments?"on":"") + '" onclick="window.__hofter.toggleAutoComments()"></div></div></div>' +
+      '<div class="hp-settings-row"><span>\u81ea\u52a8\u751f\u6210\u8bc4\u8bba</span><div class="hp-toggle ' + (s.autoGenerateComments?"on":"") + '" onclick="window.__hofter.toggleAutoComments()"></div></div>' +
+      '<div class="hp-settings-row"><span>\u81ea\u52a8\u5173\u6ce8\u65b0\u6897\u6807\u7b7e</span><div class="hp-toggle ' + (s.autoFollowTropeTags?"on":"") + '" onclick="window.__hofter.toggleAutoFollowTropeTags()"></div></div></div>' +
       '<div class="hp-settings-section"><div class="hp-section-title">\u5176\u4ed6</div>' +
       '<div class="hp-menu-item" onclick="window.__hofter.clearCache()">' + ICONS.trash + '<span>\u6e05\u9664\u7f13\u5b58</span></div></div>';
     page.appendChild(body); overlay.appendChild(page); state.containerEl.appendChild(overlay);
@@ -1826,8 +1881,17 @@
   /* ─── 搜索 ─── */
   function handleSearch(query) {
     var resultsEl = document.getElementById("hp-search-results");
+    var contentEl = document.getElementById("hp-discover-content");
+    var clearBtn = document.getElementById("hp-search-clear");
     if (!resultsEl) return;
-    if (!query || query.length === 0) { resultsEl.innerHTML = ""; return; }
+    if (clearBtn) clearBtn.style.display = (query && query.length > 0) ? "flex" : "none";
+    if (!query || query.length === 0) {
+      resultsEl.innerHTML = "";
+      if (contentEl) contentEl.style.display = "";
+      return;
+    }
+    /* 搜索时隐藏正常内容，显示搜索结果 */
+    if (contentEl) contentEl.style.display = "none";
     var q = query.toLowerCase(); var results = [];
     for (var i = 0; i < state.characters.length; i++) {
       var c = state.characters[i]; var name = (c.name||c.handle||"").toLowerCase();
@@ -1843,8 +1907,19 @@
     for (var m = 0; m < state.tropeTags.length; m++) {
       var ttag = state.tropeTags[m]; if (ttag.name.toLowerCase().indexOf(q) >= 0) results.push({type:"tropeTag", data:ttag});
     }
+    /* 搜索作品 */
+    for (var s = 0; s < state.summaries.length; s++) {
+      var sm = state.summaries[s];
+      var title = (sm.title||"").toLowerCase();
+      var author = (sm.author||"").toLowerCase();
+      var cpName = (sm.cpTagName||"").toLowerCase();
+      var excerpt = (sm.excerpt||"").toLowerCase();
+      if (title.indexOf(q) >= 0 || author.indexOf(q) >= 0 || cpName.indexOf(q) >= 0 || excerpt.indexOf(q) >= 0) {
+        results.push({type:"summary", data:sm});
+      }
+    }
     if (results.length === 0) {
-      resultsEl.innerHTML = '<div style="padding:12px;color:var(--text-hint);font-size:13px">\u672a\u627e\u5230\u5339\u914d\uff0c\u70b9\u51fb\u521b\u5efa\u65b0\u6807\u7b7e</div><div class="hp-menu-item" onclick="window.__hofter.createTropeFromSearch(\'' + escapeHtml(query) + '\')">' + ICONS.addCircle + '<span>\u521b\u5efa\u6807\u7b7e: ' + escapeHtml(query) + '</span></div>';
+      resultsEl.innerHTML = '<div style="padding:16px;color:var(--text-hint);font-size:13px;text-align:center">' + ICONS.search.replace(/24/g,"32") + '<p style="margin-top:8px">\u672a\u627e\u5230\u5339\u914d\u7ed3\u679c</p></div><div class="hp-menu-item" onclick="window.__hofter.createTropeFromSearch(\'' + escapeHtml(query) + '\')">' + ICONS.addCircle + '<span>\u521b\u5efa\u6807\u7b7e: ' + escapeHtml(query) + '</span></div>';
       return;
     }
     var html = "";
@@ -1856,8 +1931,11 @@
         html += '<div class="hp-list-item"><div class="hp-list-item-avatar">' + (res.data.avatar ? '<img src="'+res.data.avatar+'">' : (res.data.name||"?")[0]) + '</div><div class="hp-list-item-info"><div class="hp-list-item-name">' + escapeHtml(res.data.name||res.data.handle) + '</div><div class="hp-list-item-desc">\u4eba\u8bbe</div></div></div>';
       } else if (res.type === "cpTag") {
         html += '<div class="hp-list-item" onclick="window.__hofter.handleTagClick(\'' + res.data.id + '\', \'cp\')"><div class="hp-list-item-avatar" style="background:var(--primary-gradient)">' + ICONS.heart.replace(/24/g,"18").replace("currentColor","#fff") + '</div><div class="hp-list-item-info"><div class="hp-list-item-name">' + escapeHtml(res.data.name) + '</div><div class="hp-list-item-desc">CP\u6807\u7b7e</div></div></div>';
-      } else {
+      } else if (res.type === "tropeTag") {
         html += '<div class="hp-list-item" onclick="window.__hofter.handleTagClick(\'' + res.data.id + '\', \'trope\')"><div class="hp-list-item-avatar" style="background:linear-gradient(135deg,#43e97b,#38f9d7)">' + ICONS.tag.replace(/24/g,"18").replace("currentColor","#fff") + '</div><div class="hp-list-item-info"><div class="hp-list-item-name">' + escapeHtml(res.data.name) + '</div><div class="hp-list-item-desc">\u8bbe\u5b9a\u6807\u7b7e</div></div></div>';
+      } else if (res.type === "summary") {
+        var sm2 = res.data;
+        html += '<div class="hp-list-item" onclick="window.__hofter.openReader(\'' + sm2.id + '\')"><div class="hp-list-item-avatar" style="background:' + (sm2.coverGradient||"var(--primary-gradient)") + ';color:#fff;font-size:14px;font-weight:700">' + escapeHtml((sm2.title||"?")[0]) + '</div><div class="hp-list-item-info"><div class="hp-list-item-name">' + escapeHtml(sm2.title) + '</div><div class="hp-list-item-desc">' + escapeHtml(sm2.author||"") + (sm2.cpTagName ? ' \u00b7 ' + escapeHtml(sm2.cpTagName) : '') + '</div></div></div>';
       }
     }
     resultsEl.innerHTML = html;
@@ -1990,6 +2068,10 @@
       html += '</div>';
     }
     html += '<div class="hp-reader-body">';
+    var authorNote = summary.author_note_optional || "";
+    if (authorNote) {
+      html += '<div class="hp-reader-author-note"><div class="hp-reader-author-note-quote">\u201c</div><div class="hp-reader-author-note-text">' + escapeHtml(authorNote) + '</div></div>';
+    }
     var chIdx = currentCh - 1;
     if (chIdx >= 0 && chIdx < chapters.length) {
       var ch = chapters[chIdx];
@@ -2026,7 +2108,7 @@
       html += '</div>';
     }
     html += renderComments(fc.comments || [], summary.isByUser);
-    html += '<div class="hp-reader-action-bar"><div class="hp-action-btn" onclick="window.__hofter.toggleLike(this)">' + ICONS.heart + '<span>\u8d5e</span></div><div class="hp-action-btn" onclick="window.__hofter.showCommentInput()">' + ICONS.comment + '<span>\u8bc4\u8bba</span></div><div class="hp-action-btn" onclick="window.__hofter.toggleCollect()">' + ICONS.bookmark + '<span>\u6536\u85cf</span></div><div class="hp-action-btn" onclick="window.__hofter.continueReading()">' + ICONS.refresh + '<span>\u8ffd\u66f4</span></div><div class="hp-action-btn" onclick="window.__hofter.showModelContext()">' + ICONS.textSize + '<span>\u4e0a\u4e0b\u6587</span></div></div>';
+    html += '<div class="hp-reader-action-bar"><div class="hp-action-btn" onclick="window.__hofter.toggleLike(this)">' + ICONS.heart + '<span>\u8d5e</span></div><div class="hp-action-btn" onclick="window.__hofter.showCommentInput()">' + ICONS.comment + '<span>\u8bc4\u8bba</span></div><div class="hp-action-btn" onclick="window.__hofter.toggleCollect()">' + ICONS.bookmark + '<span>\u6536\u85cf</span></div><div class="hp-action-btn" onclick="window.__hofter.toggleReadLater()">' + ICONS.clock + '<span>\u7a0d\u540e\u770b</span></div><div class="hp-action-btn" onclick="window.__hofter.showReaderMore()">' + ICONS.moreHorizontal + '<span>\u66f4\u591a</span></div></div>';
     contentEl.innerHTML = html;
   }
 
@@ -2137,7 +2219,27 @@
   window.__hofter = {
     switchPage: function(page) { state.currentPage = page; renderApp(); },
     switchHomeTab: function(tab) { state.homeTab = tab; renderApp(); },
-    switchDiscoverTab: function(tab) { state.discoverTab = tab; renderApp(); },
+    switchDiscoverTab: function(tab) {
+      state.discoverTab = tab;
+      var contentEl = document.getElementById("hp-discover-content");
+      if (contentEl) {
+        renderDiscoverTabContent(contentEl);
+        /* 更新tab样式 */
+        var tabs = contentEl.parentElement.querySelector(".hp-tabs");
+        if (tabs) {
+          tabs.innerHTML = '<div class="hp-tab ' + (state.discoverTab==="recommend"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'recommend\')">\u63a8\u8350</div><div class="hp-tab ' + (state.discoverTab==="hot"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'hot\')">\u70ed\u95e8</div><div class="hp-tab ' + (state.discoverTab==="explore"?"active":"") + '" onclick="window.__hofter.switchDiscoverTab(\'explore\')">\u6807\u7b7e\u63a2\u7d22</div>';
+        }
+        /* 清除搜索 */
+        var searchInput = document.getElementById("hp-discover-search-input");
+        if (searchInput) searchInput.value = "";
+        var resultsEl = document.getElementById("hp-search-results");
+        if (resultsEl) resultsEl.innerHTML = "";
+        var clearBtn = document.getElementById("hp-search-clear");
+        if (clearBtn) clearBtn.style.display = "none";
+      } else {
+        renderApp();
+      }
+    },
     switchCollectionTab: function(tab) { state.collectionTab = tab; renderApp(); },
     switchProfileTab: function(tab) { state.profileTab = tab; renderApp(); },
     switchMessageTab: function(tab) { state.messageTab = tab; var body = document.getElementById("hp-message-body"); if (body) { var tabs = document.querySelectorAll(".hp-msg-tab"); for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove("active"); if (tabs[tab==="activity"?0:tab==="comment"?1:2]) tabs[tab==="activity"?0:tab==="comment"?1:2].classList.add("active"); renderMessageTabContent(body); } },
@@ -2187,6 +2289,7 @@
       saveTropeTags(state.tropeTags); renderApp();
     },
     openTagPage: function(tagId) {
+      state.currentTagPage = null;
       for (var i = 0; i < state.cpTags.length; i++) { if (state.cpTags[i].id === tagId) { state.currentTagPage = state.cpTags[i]; break; } }
       if (!state.currentTagPage) { for (var j = 0; j < state.tropeTags.length; j++) { if (state.tropeTags[j].id === tagId) { state.currentTagPage = state.tropeTags[j]; break; } } }
       if (state.currentTagPage) { state.currentPage = "tagPage"; renderApp(); }
@@ -2195,18 +2298,21 @@
     goBackFromTag: function() { state.currentTagPage = null; state.currentPage = "home"; renderApp(); },
     openCpTagPage: function(tagId) {
       guardedTagAction(function() {
+        state.currentTagPage = null;
         for (var i = 0; i < state.cpTags.length; i++) { if (state.cpTags[i].id === tagId) { state.currentTagPage = state.cpTags[i]; break; } }
         if (state.currentTagPage) { state.currentPage = "tagPage"; renderApp(); }
       });
     },
     openTropeTagPage: function(tagId) {
       guardedTagAction(function() {
+        state.currentTagPage = null;
         for (var j = 0; j < state.tropeTags.length; j++) { if (state.tropeTags[j].id === tagId) { state.currentTagPage = state.tropeTags[j]; break; } }
         if (state.currentTagPage) { state.currentPage = "tagPage"; renderApp(); }
       });
     },
     handleTagClick: function(tagId, tagType) {
       guardedTagAction(function() {
+        state.currentTagPage = null;
         if (tagType === "cp") {
           for (var i = 0; i < state.cpTags.length; i++) { if (state.cpTags[i].id === tagId) { state.currentTagPage = state.cpTags[i]; break; } }
         } else {
@@ -2220,8 +2326,28 @@
     setWordCountMin: function(val) { state.settings.wordCountMin = parseInt(val, 10) || 3000; saveSettings(state.settings); },
     setWordCountMax: function(val) { state.settings.wordCountMax = parseInt(val, 10) || 8000; saveSettings(state.settings); },
     toggleAutoComments: function() { state.settings.autoGenerateComments = !state.settings.autoGenerateComments; saveSettings(state.settings); showSettings(); },
-    toggleTheme: function() { state.settings.theme = state.settings.theme === "dark" ? "light" : "dark"; saveSettings(state.settings); renderApp(); },
-    setFontSize: function(val) { state.fontSize = parseInt(val, 10); state.settings.fontSize = state.fontSize; saveSettings(state.settings); },
+    toggleAutoFollowTropeTags: function() { state.settings.autoFollowTropeTags = !state.settings.autoFollowTropeTags; saveSettings(state.settings); showSettings(); },
+    toggleTheme: function() {
+      state.settings.theme = state.settings.theme === "dark" ? "light" : "dark";
+      saveSettings(state.settings);
+      var el = state.containerEl;
+      if (state.settings.theme === "dark") el.classList.add("hp-dark");
+      else el.classList.remove("hp-dark");
+      var settingsOverlay = document.getElementById("settings-page");
+      if (settingsOverlay) { closeSheet("settings-page"); showSettings(); }
+      var readerSettingsOverlay = document.getElementById("reader-settings");
+      if (readerSettingsOverlay) { closeSheet("reader-settings"); showReaderSettings(); }
+    },
+    setFontSize: function(val) {
+      state.fontSize = parseInt(val, 10);
+      state.settings.fontSize = state.fontSize;
+      saveSettings(state.settings);
+      var readerBody = document.querySelector(".hp-reader-body");
+      if (readerBody) {
+        var texts = readerBody.querySelectorAll(".hp-reader-text");
+        for (var i = 0; i < texts.length; i++) texts[i].style.fontSize = state.fontSize + "px";
+      }
+    },
     clearCache: function() {
       state.summaries = []; state.publishedWorks = []; state.favorites = []; state.readHistory = []; state.readLater = [];
       saveSummariesCache([]); savePublishedWorks([]); saveFavoritesData({favorites:[],readHistory:[],readLater:[]});
@@ -2237,6 +2363,30 @@
     closeMessages: closeMessages,
     showTagManager: showTagManager,
     handleSearch: handleSearch,
+    onSearchFocus: function() {
+      var contentEl = document.getElementById("hp-discover-content");
+      var searchInput = document.getElementById("hp-discover-search-input");
+      if (contentEl && searchInput && searchInput.value && searchInput.value.length > 0) {
+        contentEl.style.display = "none";
+      }
+    },
+    onSearchBlur: function() {
+      var contentEl = document.getElementById("hp-discover-content");
+      var searchInput = document.getElementById("hp-discover-search-input");
+      if (contentEl && searchInput && (!searchInput.value || searchInput.value.length === 0)) {
+        contentEl.style.display = "";
+      }
+    },
+    clearSearch: function() {
+      var searchInput = document.getElementById("hp-discover-search-input");
+      if (searchInput) { searchInput.value = ""; searchInput.focus(); }
+      var resultsEl = document.getElementById("hp-search-results");
+      if (resultsEl) resultsEl.innerHTML = "";
+      var clearBtn = document.getElementById("hp-search-clear");
+      if (clearBtn) clearBtn.style.display = "none";
+      var contentEl = document.getElementById("hp-discover-content");
+      if (contentEl) contentEl.style.display = "";
+    },
     createCpWithChar: createCpWithChar,
     createTropeFromSearch: createTropeFromSearch,
     openReader: openReader,
@@ -2251,7 +2401,19 @@
         if (!dynInput || !dynInput.value.trim()) { showToast("\u8bf7\u8f93\u5165\u5185\u5bb9"); return; }
         var work = {id:generateId(), title: "\u52a8\u6001", author: state.activePersona ? (state.activePersona.handle||state.activePersona.name) : "\u6211", cpTagId:"", cpTagName:"", excerpt: dynInput.value.trim(), isByUser: true, timeAgo: "\u521a\u521a"};
         state.publishedWorks.push(work); savePublishedWorks(state.publishedWorks);
-        closeSheet("create-page"); showToast("\u53d1\u5e03\u6210\u529f"); renderApp(); return;
+        closeSheet("create-page"); showToast("\u53d1\u5e03\u6210\u529f"); renderApp();
+        /* 自动生成评论 */
+        if (state.settings.autoGenerateComments && dynInput.value.trim().length > 20) {
+          generateLayer3Comments(dynInput.value.trim(), function(comments, annotations) {
+            if (comments && comments.length > 0) {
+              if (!work.fullContent) work.fullContent = {chapters:[],comments:[],annotations:[]};
+              work.fullContent.comments = comments;
+              if (annotations && annotations.length > 0) work.fullContent.annotations = annotations;
+              savePublishedWorks(state.publishedWorks);
+            }
+          });
+        }
+        return;
       }
       if (mode === "inspire") {
         var promptInput = document.getElementById("hp-create-prompt");
@@ -2269,6 +2431,21 @@
             var work = {id:generateId(), title:promptText||"\u7075\u611f\u521b\u4f5c", author:state.activePersona?(state.activePersona.handle||state.activePersona.name):"\u6211", cpTagId:selectedCps[0], cpTagName:lockTag?lockTag.name:"", excerpt:promptText, fullContent:result, isByUser:true, coverGradient:randomGradient(), timeAgo:"\u521a\u521a"};
             state.publishedWorks.push(work); savePublishedWorks(state.publishedWorks);
             closeSheet("create-page"); showToast("\u521b\u4f5c\u5b8c\u6210\uff01"); renderApp();
+            /* 自动生成评论 */
+            if (state.settings.autoGenerateComments) {
+              var fullText = "";
+              if (result.chapters) { for (var ci = 0; ci < result.chapters.length; ci++) { for (var cj = 0; cj < result.chapters[ci].content.length; cj++) fullText += result.chapters[ci].content[cj].text + "\n"; } }
+              if (fullText.length > 50) {
+                generateLayer3Comments(fullText, function(comments, annotations) {
+                  if (comments && comments.length > 0) {
+                    if (!work.fullContent) work.fullContent = {chapters:[],comments:[],annotations:[]};
+                    work.fullContent.comments = comments;
+                    if (annotations && annotations.length > 0) work.fullContent.annotations = annotations;
+                    savePublishedWorks(state.publishedWorks);
+                  }
+                });
+              }
+            }
           } else { showToast("\u521b\u4f5c\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
         });
         return;
@@ -2287,6 +2464,16 @@
         var work = {id:generateId(), title:writeTitle, author:state.activePersona?(state.activePersona.handle||state.activePersona.name):"\u6211", cpTagId:writeCpId, cpTagName:writeCpName, excerpt:writeContent.substring(0,150), fullContent:{chapters:[{title:"",content:[{type:"p",text:writeContent}]}],comments:[],annotations:[]}, isByUser:true, coverGradient:randomGradient(), timeAgo:"\u521a\u521a"};
         state.publishedWorks.push(work); savePublishedWorks(state.publishedWorks);
         closeSheet("create-page"); showToast("\u53d1\u5e03\u6210\u529f"); renderApp();
+        /* 自动生成评论 */
+        if (state.settings.autoGenerateComments && writeContent.length > 50) {
+          generateLayer3Comments(writeContent, function(comments, annotations) {
+            if (comments && comments.length > 0) {
+              work.fullContent.comments = comments;
+              if (annotations && annotations.length > 0) work.fullContent.annotations = annotations;
+              savePublishedWorks(state.publishedWorks);
+            }
+          });
+        }
       }
     },
     aiComplete: function() {
@@ -2322,19 +2509,51 @@
       }
       saveFavoritesData({favorites:state.favorites, readHistory:state.readHistory, readLater:state.readLater});
     },
-    toggleReaderBookmark: function() {
+    toggleReadLater: function() {
       var summary = state.currentReadingSummary;
       if (!summary) { showToast("\u65e0\u6cd5\u64cd\u4f5c"); return; }
       var idx = -1;
       for (var i = 0; i < state.readLater.length; i++) { if (state.readLater[i].id === summary.id) { idx = i; break; } }
       if (idx >= 0) {
         state.readLater.splice(idx, 1);
-        showToast("\u5df2\u53d6\u6d88\u7a0d\u540e\u8bfb");
+        showToast("\u5df2\u53d6\u6d88\u7a0d\u540e\u770b");
       } else {
         state.readLater.unshift({id:summary.id, title:summary.title, author:summary.author, cpTagName:summary.cpTagName, excerpt:summary.excerpt, coverGradient:summary.coverGradient, likes:summary.likes, comments:summary.comments, words:summary.words, timeAgo:summary.timeAgo});
-        showToast("\u5df2\u52a0\u5165\u7a0d\u540e\u8bfb");
+        showToast("\u5df2\u52a0\u5165\u7a0d\u540e\u770b");
       }
       saveFavoritesData({favorites:state.favorites, readHistory:state.readHistory, readLater:state.readLater});
+    },
+    showReaderMore: function() {
+      var existing = document.getElementById("hp-reader-more");
+      if (existing) { existing.remove(); return; }
+      var overlay = document.createElement("div"); overlay.id = "hp-reader-more";
+      overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99997;display:flex;align-items:flex-end;justify-content:center";
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+      var sheet = document.createElement("div"); sheet.className = "hp-sheet";
+      sheet.innerHTML = '<div class="hp-sheet-handle"></div>' +
+        '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.continueReading()">' + ICONS.refresh + '<span>\u8ffd\u66f4\u7eed\u7ae0</span></div>' +
+        '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showModelContext()">' + ICONS.textSize + '<span>\u67e5\u770b\u6a21\u578b\u4e0a\u4e0b\u6587</span></div>' +
+        '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.shareWork()">' + ICONS.share + '<span>\u5206\u4eab</span></div>';
+      overlay.appendChild(sheet); state.containerEl.appendChild(overlay);
+    },
+    shareWork: function() {
+      var summary = state.currentReadingSummary;
+      if (!summary) { showToast("\u65e0\u6cd5\u5206\u4eab"); return; }
+      var text = "";
+      if (summary.briefSummary) {
+        text = "\u3010" + summary.title + "\u3011" + summary.briefSummary;
+      } else {
+        text = "\u3010" + summary.title + "\u3011" + (summary.excerpt || summary.summary || "");
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() { showToast("\u5df2\u590d\u5236\u5206\u4eab\u6587\u672c"); }).catch(function() { fallbackCopy(text); });
+      } else { fallbackCopy(text); }
+      function fallbackCopy(t) {
+        var ta = document.createElement("textarea"); ta.value = t; ta.style.cssText = "position:fixed;left:-9999px";
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); showToast("\u5df2\u590d\u5236\u5206\u4eab\u6587\u672c"); } catch(e) { showToast("\u590d\u5236\u5931\u8d25"); }
+        document.body.removeChild(ta);
+      }
     },
     continueReading: function() {
       var summary = state.currentReadingSummary;
@@ -2363,6 +2582,7 @@
               summary.fullContent.annotations = summary.fullContent.annotations.concat(result.annotations);
             }
             if (result.continuation_summary) summary.continuationSummary = result.continuation_summary;
+            if (result.brief_summary) summary.briefSummary = result.brief_summary;
             summary._currentChapter = summary.fullContent.chapters.length;
             saveSummariesCache(state.summaries);
             renderReaderContent(summary);

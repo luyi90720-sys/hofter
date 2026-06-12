@@ -521,38 +521,38 @@
 
   /* ─── AI 流式调用 ─── */
   function aiChatStream(messages, temperature, onProgress, onDone, onError) {
-    var timeoutId = setTimeout(function() {
-      debugLog("stream: timeout after 300s, calling onDone with empty");
-      onDone("");
-    }, 300000);
-    var wrappedOnDone = function(raw) {
-      clearTimeout(timeoutId);
+    var _done = false;
+    var _stallTimer = null;
+    var _lastContentLen = 0;
+    var _debugChunkCount = 0;
+    var _fallbackUsed = false;
+    var readerRef = null;
+
+    function finish(raw) {
+      if (_done) return;
+      _done = true;
       clearTimeout(_stallTimer);
       onDone(raw);
-    };
-    var wrappedOnError = function(e) {
-      clearTimeout(timeoutId);
+    }
+    function fail(e) {
+      if (_done) return;
+      _done = true;
       clearTimeout(_stallTimer);
       if (onError) onError(e); else onDone("");
-    };
-    var _debugChunkCount = 0;
-    var _lastContentLen = 0;
-    var _stallTimer = null;
-    var _fallbackUsed = false;
+    }
 
     function resetStallTimer() {
       clearTimeout(_stallTimer);
-      /* 如果60秒内fullContent没有增长，视为停滞，fallback到非流式 */
+      /* 如果90秒内fullContent没有增长，视为停滞，fallback到非流式 */
       _stallTimer = setTimeout(function() {
-        if (_fallbackUsed) return;
-        debugLog("stream: stall detected (no new content for 60s), falling back to non-stream");
+        if (_fallbackUsed || _done) return;
+        debugLog("stream: stall detected (no new content for 90s), falling back to non-stream");
         _fallbackUsed = true;
-        try { readerRef.cancel(); } catch(e) {}
+        try { if (readerRef) readerRef.cancel(); } catch(e) {}
         doNonStreamFallback();
-      }, 60000);
+      }, 90000);
     }
 
-    /* 从 SSE data 行提取文本内容，兼容 OpenAI 和 Claude 格式 */
     function extractDeltaText(dataStr) {
       try {
         var parsed = JSON.parse(dataStr);
@@ -566,19 +566,22 @@
         if (parsed.text) return parsed.text;
         if (parsed.content && typeof parsed.content === "string") return parsed.content;
       } catch(e) {
-        debugLog("SSE parse err: " + dataStr.substring(0, 120));
+        /* JSON不完整，尝试直接提取content字段 */
+        var contentMatch = dataStr.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if (contentMatch) {
+          try { return JSON.parse('"' + contentMatch[1] + '"'); } catch(e2) {}
+        }
       }
       return null;
     }
 
-    var readerRef = null;
     function doNonStreamFallback() {
       debugLog("falling back to non-stream");
       state.roche.ai.chat({ messages: messages, temperature: temperature }).then(function(r) {
         var raw = (r && typeof r === "string") ? r : (r && r.text) ? r.text : String(r || "");
         debugLog("non-stream fallback got len:" + raw.length);
-        wrappedOnDone(raw);
-      }).catch(function(e2) { debugLog("non-stream fallback err:" + (e2&&e2.message?e2.message:String(e2))); wrappedOnError(e2); });
+        finish(raw);
+      }).catch(function(e2) { debugLog("non-stream fallback err:" + (e2&&e2.message?e2.message:String(e2))); fail(e2); });
     }
 
     try {
@@ -596,21 +599,13 @@
         readerRef = reader;
         var decoder = new TextDecoder();
         var fullContent = "";
-        var sseBuffer = "";
+        var rawBuffer = "";
         resetStallTimer();
         function pump() {
           reader.read().then(function(result) {
             if (result.done) {
               debugLog("stream done, content len:" + fullContent.length);
-              /* 处理sseBuffer中残留的不完整行 */
-              if (sseBuffer.trim().length > 0) {
-                var remaining = sseBuffer.trim();
-                if (remaining.indexOf("data: ") === 0) {
-                  var text = extractDeltaText(remaining.substring(6));
-                  if (text !== null) { fullContent += text; if (onProgress) onProgress(fullContent); }
-                }
-              }
-              wrappedOnDone(fullContent);
+              finish(fullContent);
               return;
             }
             var chunk = decoder.decode(result.value, { stream: true });
@@ -618,21 +613,35 @@
             if (_debugChunkCount <= 5) {
               debugLog("stream chunk #" + _debugChunkCount + " len:" + chunk.length + " preview:" + chunk.substring(0, 200));
             }
-            sseBuffer += chunk;
-            var lines = sseBuffer.split("\n");
-            sseBuffer = lines.pop() || "";
-            for (var li = 0; li < lines.length; li++) {
-              var line = lines[li].trim();
-              if (line.indexOf("data: ") !== 0) continue;
-              var dataStr = line.substring(6);
-              if (dataStr === "[DONE]") continue;
+            rawBuffer += chunk;
+            /* 从rawBuffer中提取所有完整的data:行 */
+            var searchFrom = 0;
+            while (true) {
+              var dataStart = rawBuffer.indexOf("data: ", searchFrom);
+              if (dataStart < 0) break;
+              var nextData = rawBuffer.indexOf("\ndata: ", dataStart + 6);
+              var lineEnd = rawBuffer.indexOf("\n", dataStart + 6);
+              if (nextData < 0 && lineEnd < 0) {
+                /* data行不完整，保留到buffer等更多数据 */
+                searchFrom = dataStart;
+                break;
+              }
+              var endPos = nextData >= 0 ? nextData : (lineEnd >= 0 ? lineEnd : rawBuffer.length);
+              var dataStr = rawBuffer.substring(dataStart + 6, endPos).trim();
+              if (dataStr === "[DONE]") {
+                searchFrom = endPos + 1;
+                continue;
+              }
               var text = extractDeltaText(dataStr);
               if (text !== null) {
                 fullContent += text;
                 if (onProgress) onProgress(fullContent);
               }
+              searchFrom = endPos + 1;
             }
-            /* 如果fullContent增长了，重置停滞计时器 */
+            /* 保留未处理的部分 */
+            if (searchFrom > 0) rawBuffer = rawBuffer.substring(searchFrom);
+            /* 停滞检测 */
             if (fullContent.length > _lastContentLen) {
               _lastContentLen = fullContent.length;
               resetStallTimer();
@@ -640,7 +649,7 @@
             pump();
           }).catch(function(e) {
             debugLog("stream read err:" + e.message + ", content len:" + fullContent.length);
-            wrappedOnDone(fullContent);
+            finish(fullContent);
           });
         }
         pump();
@@ -650,14 +659,14 @@
         if (typeof response === "string") raw = response;
         else if (response && response.text && typeof response.text === "string") raw = response.text;
         else if (response && typeof response.text === "function") {
-          response.text().then(function(t) { debugLog("resp.text() len:" + t.length); wrappedOnDone(t); }).catch(function(e) { wrappedOnError(e); });
+          response.text().then(function(t) { debugLog("resp.text() len:" + t.length); finish(t); }).catch(function(e) { fail(e); });
           return;
         } else {
           debugLog("stream: unknown resp format, keys:" + Object.keys(response || {}).join(","));
           raw = JSON.stringify(response);
         }
         debugLog("direct extract len:" + raw.length);
-        wrappedOnDone(raw);
+        finish(raw);
       }
     }).catch(function(e) {
       debugLog("stream chat err:" + (e && e.message ? e.message : String(e)) + ", fallback non-stream");

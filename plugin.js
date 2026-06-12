@@ -217,6 +217,28 @@
       "",
       "宣告：本场景将调用的特征：[列举]。本场景不使用的特征：[列举]。所有特征的呈现方式：行为承载，旁白闭嘴。(Pass/Fail)",
       "",
+      "第三刀——【角色行为的真实性锚定】：",
+      "- 右方角色在本场景中的每一个动作、每一句话，必须在角色设定中找得到根源或合理延伸。",
+      "- 绝对禁止为了给左方制造「包容」「宠溺」的机会而凭空虚构右方的以下行为：",
+      "  · 笨拙/冒失（打翻东西、走路不稳、逞强——除非设定中确有）",
+      "  · 无理取闹（独自生闷气、阴阳怪气、吃醋但不说——除非设定中确有）",
+      "  · 幼稚/需要被照顾（冻着不说、饿了硬撑、累了嘴硬——除非设定中确有）",
+      "  · 任何让右方「不占理」以便左方展现宽容的行为",
+      "- 同样，禁止将右方的合理行为（表达需求、坚持己见、有自己的判断）降格解读为「撒娇」「嘴硬」「可爱的小毛病」——这是俯视，不是平等。",
+      "- 包容和甜蜜不需要某一方先犯错。左方的爱意可以在任何日常情境中自然流露——递一杯水、说一句真话、在沉默中站在一起，比「包容错误」更真实。",
+      "",
+      "宣告：右方在本场景的所有行为均可在角色设定中找到根源。无凭空矮化行为。(Pass/Fail)",
+      "",
+      "第四刀——【特征的完整性与叙事平等】：",
+      "- 角色卡上的特征（ADHD、肌肤接触渴求、或其他任何特质）是一个完整的人的一部分，不是一个「需要被管理的问题」。特征有自己的灰度——轻微、可克制、仅仅是一种倾向。",
+      "- 绝对禁止对特征做以下处理：",
+      "  · 夸大：把「轻微」「可克制」写成高频的、每段都出现的、无法自控的行为",
+      "  · 降格：把「喜欢」「倾向」翻译成「渴求」「依赖」「饥渴」",
+      "  · 作为左方的陪衬：借着写右方的特征来突出左方的温柔/包容/耐心。右方的特征不是左方的舞台灯光。",
+      "- 叙事视角倾斜的修正：如果场景的情感重心在右方的内心体验上，叙述注意力应该在右方——她怎么感知、怎么处理、怎么和自己的大脑或身体相处。左方的存在是空间里另一个独立的人，不是她的管理者，不是她的翻译官，不是一个站在高处观看她「是否又走神了」「是否又需要触碰了」的观察者。",
+      "",
+      "宣告：特征保持完整灰度，无夸大/降格/陪衬化。叙事视角与情感重心对齐。(Pass/Fail)",
+      "",
       "**━━━ Step 3: 文风规划 ━━━**",
       "",
       "基于情感氛围标签，从以下五个维度做本章的文风规划：",
@@ -309,6 +331,7 @@
       "3. 比喻唯一性：如果把本场规划的核心比喻贴到另一个角色身上，还成立吗？「暴风雪中的猛兽找到火炉」→ 任何被救赎的男角色都适用 → 不合格。比喻必须从角色独有的生命经验中生长。",
       "4. 情感密度与留白：全章是否保有足够的留白——有没有至少一两处，什么都没发生、谁都没说话、只有空间本身存在？如果每一段都在推进情感 → 太密了，读者不能呼吸。拆一段，放一段安静。",
       "5. 特征边界确认：我已经明确哪些特征本场不使用了吗？那些特征已被搁置，不在本场出现。",
+      "6. 角色行为真实性核查：右方在本场景中的每一个行为，是否都能在其角色设定中找到根源？是否有任何行为是为了「让左方有机会包容」而虚构的？如果有 → 删除，回到Step 2第三刀。",
       "",
       "宣告：所有角色反应携带独特的生命指纹。特征筛选边界清晰。文风一致。可以动笔。(Pass/Fail)",
       "",
@@ -342,7 +365,26 @@
       "- 是否出现「因为[特征]所以他/她……」「由于[特征]……」「[特征]在此刻显现」「带着轻微[特征]的[动作]」等句式？",
       "- 如果有 → 元旁白泄露。删掉因果解说，只保留行为本身。角色做了什么、怎么做的——读者自己会感知到特征。",
       "",
-      "③ 意象域一致性扫描",
+      "③ 角色行为真实性扫描",
+      "- 本段中右方角色所做的每一个动作/说出的每一句话，是否都能在其角色设定中找到根源或合理延伸？",
+      "- 以下类型的行为出现即触发：",
+      "  · 凭空虚构的拙劣/幼稚行为（打翻东西、逞强嘴硬但设定无此特质）",
+      "  · 将右方的合理行为降格为「可爱的小毛病」「撒娇」「闹脾气」",
+      "  · 让右方无理取闹、独自生闷气，以便左方来哄",
+      "  · 让右方做错事、理亏，以便左方展现包容与纵容",
+      "  · 设定中写「轻微」「可克制」的特征，本段是否被写成了高频、失控、无法自抑？",
+      "  · 设定中写「喜欢」「倾向」的特征，本段是否被翻译成了「渴求」「依赖」「饥渴」「索取」？",
+      "  · 右方的特征是否被用来当左方温柔/包容/耐心的展示工具？",
+      "  · 叙事的注意力是否全部倾斜在左方——他在看、他在做、他在包容——而右方只是一个被他观看和处理的客体？",
+      "- 为什么：包容不是靠矮化一方制造的。真正的甜是两个平等成年人之间的碰撞——不需要某一方犯错来给另一方制造包容的机会。特征不是陪衬，叙事视角必须与情感重心对齐。",
+      "- 转化：",
+      "  · 如果行为在设定中无根 → 删除。从角色卡重新推演其此时此刻的真实反应。",
+      "  · 如果行为在设定中有根但描写角度降格 → 将俯视转为平视。",
+      "  · 如果特征被夸大/降格 → 恢复角色卡上的原始灰度。轻微就是轻微，倾向就是倾向。",
+      "  · 如果叙事视角倾斜 → 将注意力拉回右方自身的感知与处理，左方退为空间中独立的存在。",
+      "  · 不需要右方犯错。左方的爱意可以在任何日常情境中自然流露。",
+      "",
+      "④ 意象域一致性扫描",
       "- 对照主CoT Step 3确定的允许/禁用比喻域。",
       "- 本段所有比喻和意象，是否使用了禁用域？本场禁用自然景观 → 出现「暴风雪中的猛兽」→ 拦截。本场禁用精密机械 → 出现「钥匙转动锁簧」→ 拦截。",
       "- 转化：从允许域中重新生长画面。",
@@ -428,9 +470,9 @@
       "",
       "【输出格式】",
       "请返回纯JSON格式：",
-      '{ "inline_checks": [{ "intent": "", "vibe_match": "", "scan_result": "", "paragraph_text": "" }], "chapter": { "title": "", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "continuation_summary": "", "brief_summary": "" }',
+      '{ "inline_checks": [{ "intent": "", "vibe_match": "", "scan_result": "", "paragraph_text": "" }], "chapter": { "title": "", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "continuation_summary": "", "brief_summary": "", "content_summary": "" }',
       "",
-      "其中 inline_checks 是每段的内联自检记录，每生成一段正文前必须先写一条对应的inline_check。continuation_summary 是150字左右的续写摘要，概括本篇内容与情感走向，供后续连载追更时作为上下文传入。brief_summary 是50字以内的极简摘要，用于动态发布和分享时展示，要求一句话概括核心看点，吸引人点击阅读。",
+      "其中 inline_checks 是每段的内联自检记录，每生成一段正文前必须先写一条对应的inline_check。continuation_summary 是150字左右的续写摘要，概括本篇内容与情感走向，供后续连载追更时作为上下文传入。brief_summary 是50字以内的极简摘要，用于动态发布和分享时展示，要求一句话概括核心看点，吸引人点击阅读。content_summary 是200字以内的内容摘要，细致记述正文讲了什么、角色做了什么、情感如何流动，供追更时作为上下文参考。",
       "字数要求：[WORD_COUNT_PLACEHOLDER]",
       "",
       "<system_execution_directive>",
@@ -573,6 +615,28 @@
       "- The narrator records physical reality only. The narrator refrains from decoding psychological states into abstract metaphors. Unease shows through body posture, interrupted actions, breathing changes—the narrator simply observes.",
       "Declaration: Traits to invoke: [list]. Traits shelved: [list]. Presentation: carried by behavior, narrator silent. (Pass/Fail)",
       "",
+      "Third Cut — [Behavioral Authenticity Anchoring for the Right-Side Character]:",
+      "- Every action and every line of dialogue from the right-side character in this scene must trace back to a root or reasonable extension in their character setting.",
+      "- Absolutely forbidden: fabricating the following right-side behaviors to create opportunities for the left-side to show tolerance/indulgence:",
+      "  · Clumsiness/clumsiness (spilling things, unsteady walking, stubbornly pushing through—unless the setting explicitly contains this)",
+      "  · Unreasonable behavior (sulking alone, passive-aggression, jealousy without communication—unless the setting explicitly contains this)",
+      "  · Childishness/need for care (not saying they're cold, hungry but enduring, tired but insisting—unless the setting explicitly contains this)",
+      "  · Any behavior that makes the right-side 'in the wrong' so the left-side can display magnanimity",
+      "- Likewise, forbidden: downgrading the right-side's reasonable behaviors (expressing needs, standing their ground, having their own judgment) as 'pouting,' 'being stubborn,' 'cute little quirks'—that is looking down, not equality.",
+      "- Tenderness and sweetness do not require one party to make mistakes first. The left-side's affection can flow naturally in any everyday situation—handing over a glass of water, saying one true thing, standing together in silence. This is more real than 'tolerating a mistake.'",
+      "",
+      "Declaration: All right-side behaviors in this scene trace to roots in character settings. No fabricated diminishing behaviors. (Pass/Fail)",
+      "",
+      "Fourth Cut — [Trait Integrity & Narrative Equality]:",
+      "- Character card traits (ADHD, touch-seeking, or any other trait) are part of a complete person, not a 'problem to be managed.' Traits have their own grayscale—mild, controllable, merely a tendency.",
+      "- Absolutely forbidden: the following treatments of traits:",
+      "  · Exaggeration: writing 'mild'/'controllable' traits as high-frequency, every-paragraph, uncontrollable behaviors",
+      "  · Downgrading: translating 'likes'/'tendency' into 'craving'/'dependence'/'hunger'",
+      "  · Using as the left-side's foil: writing the right-side's traits to highlight the left-side's gentleness/tolerance/patience. The right-side's traits are not the left-side's stage lighting.",
+      "- Narrative perspective tilt correction: If the scene's emotional center of gravity is the right-side's inner experience, narrative attention should be on the right-side—how they perceive, how they cope, how they live with their own brain or body. The left-side is another independent person in the space—not their manager, not their translator, not an observer standing above watching 'whether they zoned out again' or 'whether they need touch again.'",
+      "",
+      "Declaration: Traits maintain full grayscale. No exaggeration/downgrading/foil usage. Narrative perspective aligned with emotional center. (Pass/Fail)",
+      "",
       "**━━━ Step 3: Writing Style Planning ━━━**",
       "Plan across five dimensions based on emotional atmosphere tags:",
       "1. Text Temperature: warm (soft rhetoric, bright senses) / neutral (calm, economical) / cold (restrained, white space as weapon)",
@@ -612,6 +676,7 @@
       "3. Metaphor Uniqueness: Paste this scene's core metaphor onto another character—still works? → Unqualified. Metaphors must grow from unique life experience.",
       "4. Emotional Density & White Space: Is there at least one place where nothing happens, no one speaks, only space exists? Every paragraph pushing emotion → too dense. Insert a quiet one.",
       "5. Trait Boundary: Shelved traits confirmed absent from this scene.",
+      "6. Behavioral Authenticity Check: Can every right-side behavior in this scene trace back to a root in their character setting? Is any behavior fabricated to 'give the left-side a chance to be tolerant'? If yes → delete, return to Step 2 Third Cut.",
       "Declaration: All reactions carry unique fingerprints. Trait boundaries clear. Style consistent. Ready to write. (Pass/Fail)",
       "",
       "All steps Pass. Begin generating main text.",
@@ -636,40 +701,59 @@
       "② Trait Presentation Scan",
       "Trait presented through behavior, or through narrator naming? Patterns like 「因为[特征]所以……」「由于[特征]……」「[特征]在此刻显现」→ narrator leak. Keep only the behavior; the reader perceives the trait on their own.",
       "",
-      "③ Imagery Domain Scan",
+      "③ Behavioral Authenticity Scan",
+      "- Can every action/line of dialogue from the right-side character in this paragraph trace back to a root or reasonable extension in their character setting?",
+      "- The following behavior types trigger immediately if they appear:",
+      "  · Fabricated clumsy/childish behavior (spilling things, stubborn insistence when the setting has no such trait)",
+      "  · Downgrading the right-side's reasonable behavior as 'cute little quirks,' 'pouting,' 'throwing a tantrum'",
+      "  · Making the right-side unreasonable or sulky so the left-side can comfort them",
+      "  · Making the right-side make mistakes or be in the wrong so the left-side can show tolerance and indulgence",
+      "  · A trait described as 'mild'/'controllable' in the setting is written as high-frequency, uncontrollable, or involuntary in this paragraph",
+      "  · A trait described as 'likes'/'tendency' in the setting is translated as 'craving'/'dependence'/'hunger'/'demanding'",
+      "  · The right-side's trait is used as a showcase tool for the left-side's gentleness/tolerance/patience",
+      "  · Narrative attention is entirely tilted toward the left-side—he is watching, he is doing, he is tolerating—while the right-side is merely an object being observed and managed by him",
+      "- Why: Tolerance is not manufactured by diminishing one party. Real sweetness is the collision between two equal adults—no one needs to make mistakes to give the other a chance to be tolerant. Traits are not foils; narrative perspective must align with the emotional center of gravity.",
+      "- Redirect:",
+      "  · If the behavior has no root in the setting → delete. Re-derive their authentic reaction from the character card.",
+      "  · If the behavior has a root but the description angle is condescending → shift from looking down to eye-level.",
+      "  · If a trait is exaggerated/downgraded → restore the original grayscale from the character card. Mild is mild; tendency is tendency.",
+      "  · If narrative perspective is tilted → pull attention back to the right-side's own perception and coping; the left-side recedes into an independent presence in the space.",
+      "  · The right-side doesn't need to make mistakes. The left-side's affection can flow naturally in any everyday situation.",
+      "",
+      "④ Imagery Domain Scan",
       "Cross-reference Step 3's allowed/forbidden domains. Forbidden domain metaphor appears → regenerate from allowed domain.",
       "",
-      "④ Narrator Restraint Scan",
+      "⑤ Narrator Restraint Scan",
       "The narrator only records observable reality. The narrator refrains from defining what this moment 'is' or 'is not,' refrains from translating psychology, refrains from aesthetic self-justification.",
       "Patterns to redirect: 「不是……而是……」「没有……只有……」「没有……也没有……」「不像……」「不同于……」「那是一种……」「仿佛在说……」「[动作]透着……意味」",
       "Abstract psychological translations to redirect: 「被剥夺了皮肤」「防线被击中」「眼睛里的阴霾」「深不见底的专注」→ Replace with concrete physical actions and observable details. The meaning lives in the action itself.",
       "",
-      "⑤ Iceberg Scan (possessiveness/dark scenes only)",
+      "⑥ Iceberg Scan (possessiveness/dark scenes only)",
       "Depicting possessiveness or dark impulses → pull perspective outward. Convert to restrained objective plain description. Only visible actions and speech—adjusting a cuff, pouring water, averting gaze, an unrelated everyday line. Surface calm contrasts the undercurrent.",
       "",
-      "⑥ Internal Drive Scan",
+      "⑦ Internal Drive Scan",
       "Touch / closing distance / protective action: driving force is inner desire, or external excuse (passerby bump, tripping, sudden noise)? External excuse → remove. The action's sole reason is irrepressible instinct to draw closer.",
       "",
-      "⑦ Emotional Script Scan",
+      "⑧ Emotional Script Scan",
       "Predictable emotional script (A comforts→B moved→B relaxes; A vulnerable→B aches→B holds) → redirect. Embrace misalignment: one gives, other doesn't receive; reaction surfaces later; two independent tracks, each walking their own path.",
       "",
-      "⑧ Body Wholeness Scan",
+      "⑨ Body Wholeness Scan",
       "Write whole-body posture language—where weight falls, what hands are doing or have stopped doing, quality of stillness. Write external physical reality—fabric creases, temperature breaks.",
       "Redirect isolated body-part descriptions: 喉结/胸腔/下颌线/眸/瞳孔/骨节 as subjects → reframe as whole-body or external reality. 「肌肉紧绷/放松」「骨节泛白」「喉结滚动」「胸腔闷响」→ replace with posture language or environmental detail.",
       "",
-      "⑨ Quiet Emotion Scan",
+      "⑩ Quiet Emotion Scan",
       "Redirect extreme reactions (「心脏漏跳」「猛地僵住」「不可置信地睁大眼」「双眼猩红」「如遭雷击」) → half-second pause, one shallow breath, a suppressed sigh, a deflecting quip. Deepest emotions are the quietest.",
       "",
-      "⑩ Unmarked Care Scan",
+      "⑪ Unmarked Care Scan",
       "Redirect narrator commentary on care (「特意避开了」「他没告诉她其实」「不动声色地护住了」) → dissolve preference into traceless action. The water was simply handed over; the temperature adjustment speaks for itself.",
       "",
-      "⑪ Equal Footing Scan",
+      "⑫ Equal Footing Scan",
       "Redirect patronizing (「慢点吃」「快去睡」「娇气包」) → relaxed teasing. Redirect permission-seeking (「可以吗」「好吗」) → confident declarative. Redirect brute force (「狠狠地」「粗暴撬开」) → slowed, light, nearly reverent touch.",
       "",
-      "⑫ Honest Emotion Scan",
+      "⑬ Honest Emotion Scan",
       "Redirect cheap labels (「小骗子」「我的光」「嘴角勾起抹笑」「涌起一股暖流」) → adult-level address and objective expression. Redirect deflection (「你大惊小怪」「还不都是因为你」) → silent companionship, a glass of water, honestly bowing one's head—physical acts of bearing weight.",
       "",
-      "⑬ Lived Environment Scan",
+      "⑭ Lived Environment Scan",
       "Environment floating independently outside characters (光柱/浮尘/月光如水/空调嗡鸣) → let characters touch the environment: fingertips on rough sofa edge, gaze on coffee no longer steaming, rain sound cut off by closing the window. Environment must connect with a person.",
       "-->",
       "[Main Text]",
@@ -690,9 +774,9 @@
       "",
       "[Output Format]",
       "请返回纯JSON格式：",
-      "{ \"inline_checks\": [{ \"intent\": \"\", \"vibe_match\": \"\", \"scan_result\": \"\", \"paragraph_text\": \"\" }], \"chapter\": { \"title\": \"\", \"content\": [{ \"type\": \"p|dialogue|narrator\", \"text\": \"\" }] }, \"continuation_summary\": \"\", \"brief_summary\": \"\" }",
+      "{ \"inline_checks\": [{ \"intent\": \"\", \"vibe_match\": \"\", \"scan_result\": \"\", \"paragraph_text\": \"\" }], \"chapter\": { \"title\": \"\", \"content\": [{ \"type\": \"p|dialogue|narrator\", \"text\": \"\" }] }, \"continuation_summary\": \"\", \"brief_summary\": \"\", \"content_summary\": \"\" }",
       "",
-      "其中 inline_checks 是每段的内联自检记录，每生成一段正文前必须先写一条对应的inline_check。continuation_summary 是150字左右的续写摘要，概括本篇内容与情感走向，供后续连载追更时作为上下文传入。brief_summary 是50字以内的极简摘要，用于动态发布和分享时展示，要求一句话概括核心看点，吸引人点击阅读。",
+      "其中 inline_checks 是每段的内联自检记录，每生成一段正文前必须先写一条对应的inline_check。continuation_summary 是150字左右的续写摘要，概括本篇内容与情感走向，供后续连载追更时作为上下文传入。brief_summary 是50字以内的极简摘要，用于动态发布和分享时展示，要求一句话概括核心看点，吸引人点击阅读。content_summary 是200字以内的内容摘要，细致记述正文讲了什么、角色做了什么、情感如何流动，供追更时作为上下文参考。",
       "字数要求：[WORD_COUNT_PLACEHOLDER]",
       "",
       "<system_execution_directive>",
@@ -1478,6 +1562,9 @@
             if (data && data.brief_summary) {
               summary.briefSummary = data.brief_summary;
             }
+            if (data && data.content_summary) {
+              summary.contentSummary = data.content_summary;
+            }
             if (macroChain) summary._debugContext.macroChain = macroChain;
             callback(data);
           } catch(e) {
@@ -1531,7 +1618,7 @@
     } catch(e) { debugLog("L3 FATAL:" + e.message); callback([], []); }
   }
 
-  function generateContinuation(summary, previousContent, previousSummary, callback) {
+  function generateContinuation(summary, previousContent, previousSummary, feedback, callback) {
     try {
     debugLog("Cont start, title:" + (summary.title || "?"));
     var cpTag = null;
@@ -1571,10 +1658,22 @@
     if (cpTag.fandomTags && cpTag.fandomTags.length > 0) {
       userMsg += "\n\n\u2501\u2501 \u5708\u5b50/\u4e16\u754c\u4e66\u8bbe\u5b9a \u2501\u2501\n" + cpTag.fandomTags.join("\u3001");
     }
+    if (feedback && feedback.trim()) {
+      userMsg += "\n\n\u2501\u2501 \u8bfb\u8005\u53cd\u9988 \u2501\u2501\n" + feedback.trim();
+    }
     debugLog("Cont sysPrompt len:" + systemPrompt.length + " userMsg len:" + userMsg.length);
 
     var doChat = function(memText) {
       debugLog("Cont calling aiChatStream, memLen:" + (memText ? memText.length : 0));
+      if (!summary._continuationContexts) summary._continuationContexts = [];
+      var contCtx = {
+        systemPrompt: systemPrompt,
+        userMsg: userMsg + (memText ? "\n\n\u3010\u8fd1\u671f\u4e92\u52a8\u8bb0\u5fc6\uff08\u4ec5\u4f9b\u53c2\u8003\u7d20\u6750\uff09\u3011\n" + memText : ""),
+        memory: memText || "(none)",
+        chapterIndex: (summary.fullContent ? summary.fullContent.chapters.length : 0) + 1,
+        feedback: feedback || ""
+      };
+      summary._continuationContexts.push(contCtx);
       var _contParagraphs = [];
       aiChatStream([
         { role: "system", content: systemPrompt },
@@ -2975,7 +3074,7 @@
     function renderCommentNode(comment, depth) {
       var indent = depth > 0 ? 'margin-left:' + (depth * 28) + 'px;padding-left:8px;border-left:2px solid var(--primary-light)' : '';
       var replyLabel = comment.replyTo ? '<span style="font-size:11px;color:var(--primary);margin-right:4px">\u56de\u590d ' + escapeHtml(comment.replyTo) + '</span>' : '';
-      var h = '<div class="hp-comment-item" style="' + indent + '"><div class="hp-comment-avatar">' + (comment.name||"?")[0] + '</div><div class="hp-comment-body"><div class="hp-comment-name">' + replyLabel + escapeHtml(comment.name||"\u533f\u540d") + '</div><div class="hp-comment-text">' + escapeHtml(comment.text||"") + '</div><div class="hp-comment-time">' + escapeHtml(comment.time||"") + '<span class="hp-comment-report" onclick="window.__hofter.reportComment(this)">\u4e3e\u62a5</span></div></div></div>';
+      var h = '<div class="hp-comment-item" style="' + indent + '" onclick="window.__hofter.replyToComment(\'' + escapeHtml(comment.name||"").replace(/'/g,"\\'") + '\')"><div class="hp-comment-avatar">' + (comment.name||"?")[0] + '</div><div class="hp-comment-body"><div class="hp-comment-name">' + replyLabel + escapeHtml(comment.name||"\u533f\u540d") + '</div><div class="hp-comment-text">' + escapeHtml(comment.text||"") + '</div><div class="hp-comment-time">' + escapeHtml(comment.time||"") + '<span class="hp-comment-report" onclick="event.stopPropagation();window.__hofter.reportComment(this)">\u4e3e\u62a5</span></div></div></div>';
       var replies = repliesMap[comment.name] || [];
       for (var r = 0; r < replies.length; r++) {
         h += renderCommentNode(replies[r], depth + 1);
@@ -2985,7 +3084,7 @@
     for (var t = 0; t < topLevel.length; t++) {
       html += renderCommentNode(topLevel[t], 0);
     }
-    html += '<div style="padding:12px 0"><div style="display:flex;gap:8px"><input class="hp-input" id="hp-comment-input" placeholder="\u5199\u8bc4\u8bba..." style="flex:1"><button class="hp-btn hp-btn-primary hp-btn-sm" onclick="window.__hofter.submitComment()">\u53d1\u9001</button></div></div></div>';
+    html += '<div style="padding:12px 0"><div id="hp-reply-indicator" style="display:none;font-size:12px;color:var(--primary);margin-bottom:6px;padding:4px 8px;background:var(--primary-light);border-radius:4px"></div><div style="display:flex;gap:8px"><input class="hp-input" id="hp-comment-input" placeholder="\u5199\u8bc4\u8bba..." style="flex:1"><button class="hp-btn hp-btn-primary hp-btn-sm" onclick="window.__hofter.submitComment()">\u53d1\u9001</button></div></div></div>';
     return html;
   }
 
@@ -3026,11 +3125,7 @@
   }
 
   function refreshReader() {
-    var currentSummary = null;
-    for (var i = 0; i < state.summaries.length; i++) {
-      if (state.summaries[i].fullContent && document.getElementById("hp-reader")) { currentSummary = state.summaries[i]; break; }
-    }
-    if (currentSummary) renderReaderContent(currentSummary);
+    if (state.currentReadingSummary) renderReaderContent(state.currentReadingSummary);
   }
 
   /* ─── 标签管理 ─── */
@@ -3703,15 +3798,45 @@
     continueReading: function() {
       var summary = state.currentReadingSummary;
       if (!summary) { showToast("\u65e0\u6cd5\u8ffd\u66f4"); return; }
+      /* 弹出追更选项面板 */
+      var existing = document.getElementById("hp-continue-panel");
+      if (existing) { existing.remove(); return; }
+      var panel = document.createElement("div");
+      panel.id = "hp-continue-panel";
+      panel.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99997;display:flex;align-items:center;justify-content:center;";
+      var hasContentSummary = !!(summary.contentSummary || summary.continuationSummary);
+      var html = '<div style="background:var(--bg-primary);border-radius:16px;padding:24px;width:85%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.2)">';
+      html += '<div style="font-size:16px;font-weight:700;margin-bottom:16px">\u8ffd\u66f4\u8bbe\u7f6e</div>';
+      html += '<div style="margin-bottom:16px"><div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">\u53d1\u9001\u7ed9\u6a21\u578b\u7684\u524d\u6587\u4fe1\u606f</div>';
+      html += '<div style="display:flex;gap:8px"><button class="hp-btn hp-btn-sm hp-btn-primary" id="hp-ctx-full" onclick="document.getElementById(\'hp-ctx-full\').className=\'hp-btn hp-btn-sm hp-btn-primary\';document.getElementById(\'hp-ctx-summary\').className=\'hp-btn hp-btn-sm hp-btn-outline\'">\u5b8c\u6574\u6b63\u6587</button>';
+      html += '<button class="hp-btn hp-btn-sm ' + (hasContentSummary ? 'hp-btn-outline' : 'hp-btn-primary') + '" id="hp-ctx-summary" onclick="document.getElementById(\'hp-ctx-summary\').className=\'hp-btn hp-btn-sm hp-btn-primary\';document.getElementById(\'hp-ctx-full\').className=\'hp-btn hp-btn-sm hp-btn-outline\'">\u6458\u8981</button></div></div>';
+      html += '<div style="margin-bottom:16px"><div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">\u662f\u5426\u7ed9\u4f5c\u8005\u63d0\u610f\u89c1</div>';
+      html += '<textarea class="hp-input" id="hp-continue-feedback" placeholder="\u53ef\u9009\uff1a\u5199\u4e0b\u4f60\u5bf9\u524d\u6587\u7684\u770b\u6cd5\u6216\u5efa\u8bae..." style="width:100%;height:60px;resize:none"></textarea></div>';
+      html += '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="hp-btn hp-btn-outline" onclick="document.getElementById(\'hp-continue-panel\').remove()">\u53d6\u6d88</button>';
+      html += '<button class="hp-btn hp-btn-primary" onclick="window.__hofter.doContinueReading()">\u5f00\u59cb\u8ffd\u66f4</button></div></div>';
+      panel.innerHTML = html;
+      document.body.appendChild(panel);
+    },
+    doContinueReading: function() {
+      var panel = document.getElementById("hp-continue-panel");
+      var useSummary = panel && document.getElementById("hp-ctx-summary") && document.getElementById("hp-ctx-summary").className.indexOf("hp-btn-primary") >= 0;
+      var feedback = panel ? (document.getElementById("hp-continue-feedback") || {}).value || "" : "";
+      if (panel) panel.remove();
+      var summary = state.currentReadingSummary;
+      if (!summary) { showToast("\u65e0\u6cd5\u8ffd\u66f4"); return; }
       showLoading();
       var prevContent = "";
-      if (summary.fullContent && summary.fullContent.chapters) {
-        for (var i = 0; i < summary.fullContent.chapters.length; i++) {
-          var ch = summary.fullContent.chapters[i];
-          for (var j = 0; j < ch.content.length; j++) prevContent += ch.content[j].text + "\n";
+      if (useSummary) {
+        prevContent = summary.contentSummary || summary.continuationSummary || "";
+      } else {
+        if (summary.fullContent && summary.fullContent.chapters) {
+          for (var i = 0; i < summary.fullContent.chapters.length; i++) {
+            var ch = summary.fullContent.chapters[i];
+            for (var j = 0; j < ch.content.length; j++) prevContent += ch.content[j].text + "\n";
+          }
         }
       }
-      generateContinuation(summary, prevContent, summary.continuationSummary || "", function(result) {
+      generateContinuation(summary, prevContent, summary.continuationSummary || "", feedback, function(result) {
         hideLoading();
         if (result) {
           if (result.chapter && !result.chapters) result.chapters = [result.chapter];
@@ -3738,10 +3863,10 @@
     },
     showModelContext: function() {
       var summary = state.currentReadingSummary;
-      if (!summary || !summary._debugContext) { showToast("\u65e0\u4e0a\u4e0b\u6587\u4fe1\u606f"); return; }
+      if (!summary || (!summary._debugContext && (!summary._continuationContexts || summary._continuationContexts.length === 0))) { showToast("\u65e0\u4e0a\u4e0b\u6587\u4fe1\u606f"); return; }
       var existing = document.getElementById("hp-context-panel");
       if (existing) { existing.remove(); return; }
-      var ctx = summary._debugContext;
+      var ctx = summary._debugContext || {};
       var panel = document.createElement("div");
       panel.id = "hp-context-panel";
       panel.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.92);z-index:99998;display:flex;flex-direction:column;";
@@ -3749,7 +3874,7 @@
       header.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:10px 16px;color:#fff;font-size:14px;font-weight:600;border-bottom:1px solid rgba(255,255,255,0.1);flex-shrink:0;";
       header.innerHTML = '<span>\u6a21\u578b\u4e0a\u4e0b\u6587</span><span style="cursor:pointer;color:#f66;font-size:18px" onclick="document.getElementById(\'hp-context-panel\').remove()">X</span>';
       var tabs = document.createElement("div");
-      tabs.style.cssText = "display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.1);flex-shrink:0;";
+      tabs.style.cssText = "display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.1);flex-shrink:0;overflow-x:auto;";
       var tabData = [
         { key: "sys", label: "\u7cfb\u7edf\u63d0\u793a\u8bcd" },
         { key: "usr", label: "\u7528\u6237\u6d88\u606f" },
@@ -3758,9 +3883,9 @@
         { key: "inline", label: "\u5185\u8054\u6821\u9a8c" }
       ];
       var tabContents = {};
-      tabContents["sys"] = ctx.systemPrompt || "(none)";
-      tabContents["usr"] = ctx.userMsg || "(none)";
-      tabContents["mem"] = (ctx.memory && ctx.memory !== "(none)") ? ctx.memory : "(none)";
+      tabContents["sys"] = ctx.systemPrompt || "(\u672a\u751f\u6210)";
+      tabContents["usr"] = ctx.userMsg || "(\u672a\u751f\u6210)";
+      tabContents["mem"] = (ctx.memory && ctx.memory !== "(none)") ? ctx.memory : "(\u65e0)";
       tabContents["macro"] = ctx.macroChain || "(\u672a\u8fd4\u56de\u4e3b\u601d\u7ef4\u94fe)";
       var inlineChecks = "";
       if (summary.fullContent && summary.fullContent.inline_checks) {
@@ -3773,10 +3898,21 @@
         }
       }
       tabContents["inline"] = inlineChecks || "(\u672a\u8fd4\u56de\u5185\u8054\u6821\u9a8c)";
+      /* 追更上下文 */
+      var contCtxs = summary._continuationContexts || [];
+      for (var ci = 0; ci < contCtxs.length; ci++) {
+        var cCtx = contCtxs[ci];
+        var cKey = "cont_" + ci;
+        tabData.push({ key: cKey, label: "\u8ffd\u66f4\u7b2c" + (cCtx.chapterIndex || (ci+2)) + "\u7ae0" });
+        var contText = "\u2501\u2501 \u7cfb\u7edf\u63d0\u793a\u8bcd \u2501\u2501\n" + (cCtx.systemPrompt || "(none)") + "\n\n\u2501\u2501 \u7528\u6237\u6d88\u606f \u2501\u2501\n" + (cCtx.userMsg || "(none)");
+        if (cCtx.memory && cCtx.memory !== "(none)") contText += "\n\n\u2501\u2501 \u8bb0\u5fc6 \u2501\u2501\n" + cCtx.memory;
+        if (cCtx.feedback) contText += "\n\n\u2501\u2501 \u8bfb\u8005\u53cd\u9988 \u2501\u2501\n" + cCtx.feedback;
+        tabContents[cKey] = contText;
+      }
       for (var ti = 0; ti < tabData.length; ti++) {
         (function(idx) {
           var tab = document.createElement("div");
-          tab.style.cssText = "padding:8px 14px;color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;";
+          tab.style.cssText = "padding:8px 14px;color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;flex-shrink:0;";
           tab.textContent = tabData[idx].label + " (" + tabContents[tabData[idx].key].length + ")";
           tab.onclick = function() {
             var allTabs = tabs.querySelectorAll("div");
@@ -3822,9 +3958,27 @@
           if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
           summary.fullContent.annotations = summary.fullContent.annotations.concat(annotations);
         }
+        if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
         renderReaderContent(summary);
         showToast("\u8bc4\u8bba\u751f\u6210\u6210\u529f\uff01");
       });
+    },
+    replyToComment: function(name) {
+      var indicator = document.getElementById("hp-reply-indicator");
+      var input = document.getElementById("hp-comment-input");
+      if (!indicator || !input) return;
+      state._replyToName = name;
+      indicator.style.display = "block";
+      indicator.innerHTML = '\u56de\u590d <b>' + escapeHtml(name) + '</b> <span style="cursor:pointer;color:var(--text-hint);margin-left:8px" onclick="window.__hofter.cancelReply()">\u53d6\u6d88</span>';
+      input.placeholder = "\u56de\u590d " + name + "...";
+      input.focus();
+    },
+    cancelReply: function() {
+      state._replyToName = "";
+      var indicator = document.getElementById("hp-reply-indicator");
+      var input = document.getElementById("hp-comment-input");
+      if (indicator) indicator.style.display = "none";
+      if (input) input.placeholder = "\u5199\u8bc4\u8bba...";
     },
     submitComment: function() {
       var input = document.getElementById("hp-comment-input");
@@ -3832,10 +3986,16 @@
       var summary = state.currentReadingSummary;
       if (!summary || !summary.fullContent) { showToast("\u65e0\u6cd5\u53d1\u8bc4\u8bba"); return; }
       var userName = state.activePersona ? (state.activePersona.handle || state.activePersona.name || "\u6211") : "\u6211";
-      var userComment = { name: userName, text: input.value.trim(), time: "\u521a\u521a", likes: 0, replyTo: "" };
+      var replyTo = state._replyToName || "";
+      var userComment = { name: userName, text: input.value.trim(), time: "\u521a\u521a", likes: 0, replyTo: replyTo };
       if (!summary.fullContent.comments) summary.fullContent.comments = [];
       summary.fullContent.comments.push(userComment);
       input.value = "";
+      state._replyToName = "";
+      var indicator = document.getElementById("hp-reply-indicator");
+      if (indicator) indicator.style.display = "none";
+      if (input) input.placeholder = "\u5199\u8bc4\u8bba...";
+      if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
       renderReaderContent(summary);
       showToast("\u8bc4\u8bba\u53d1\u5e03\u6210\u529f");
       /* 用户评论后触发新一轮评论生成（NPC可能回复用户，也可能自己互动） */
@@ -3853,6 +4013,7 @@
           if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
           summary.fullContent.annotations = summary.fullContent.annotations.concat(annotations);
         }
+        if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
         renderReaderContent(summary);
       }, summary.fullContent.comments);
     },

@@ -477,7 +477,7 @@
     tropeTags: [],
     fandomTags: [],
     worldbookCategories: [],
-    settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false, autoFollowTropeTags: false },
+    settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false, autoFollowTropeTags: false, modelPresets: [], activeModelPresetId: "" },
     isLoading: false,
     conversations: [],
     personas: [],
@@ -808,6 +808,99 @@
     return { json: partial, macroChain: macroChain };
   }
 
+  /* ─── 自定义模型 API 调用 ─── */
+  function getActiveModelPreset() {
+    var s = state.settings;
+    if (!s.modelPresets || s.modelPresets.length === 0 || !s.activeModelPresetId) return null;
+    for (var i = 0; i < s.modelPresets.length; i++) {
+      if (s.modelPresets[i].id === s.activeModelPresetId) return s.modelPresets[i];
+    }
+    return null;
+  }
+
+  function customAiChat(messages, temperature, onProgress, onDone, onError) {
+    var preset = getActiveModelPreset();
+    if (!preset || !preset.apiUrl || !preset.apiKey || !preset.model) {
+      if (onError) onError(new Error("未配置轻型模型预设"));
+      return;
+    }
+    var url = preset.apiUrl.replace(/\/+$/, "") + "/v1/chat/completions";
+    var body = JSON.stringify({ model: preset.model, messages: messages, temperature: temperature, stream: true });
+    var controller = new AbortController();
+    var _done = false;
+    var fullContent = "";
+
+    function finish(raw) { if (_done) return; _done = true; onDone(raw); }
+    function fail(e) { if (_done) return; _done = true; if (onError) onError(e); else onDone(""); }
+
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + preset.apiKey },
+      body: body,
+      signal: controller.signal
+    }).then(function(resp) {
+      if (!resp.ok) {
+        resp.text().then(function(t) { fail(new Error("API " + resp.status + ": " + t.substring(0, 200))); }).catch(function() { fail(new Error("API " + resp.status)); });
+        return;
+      }
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder();
+      var rawBuffer = "";
+
+      function pump() {
+        reader.read().then(function(result) {
+          if (result.done) { finish(fullContent); return; }
+          var chunk = decoder.decode(result.value, { stream: true });
+          rawBuffer += chunk;
+          var lines = rawBuffer.split("\n");
+          rawBuffer = lines.pop();
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (line.indexOf("data: ") !== 0) continue;
+            var dataStr = line.substring(6);
+            if (dataStr === "[DONE]") { finish(fullContent); return; }
+            var delta = extractDeltaText(dataStr);
+            if (delta) { fullContent += delta; if (onProgress) onProgress(fullContent); }
+          }
+          pump();
+        }).catch(function(e) { fail(e); });
+      }
+      pump();
+    }).catch(function(e) { fail(e); });
+  }
+
+  function fetchModelList(apiUrl, apiKey, callback) {
+    var url = apiUrl.replace(/\/+$/, "") + "/v1/models";
+    fetch(url, {
+      method: "GET",
+      headers: { "Authorization": "Bearer " + apiKey }
+    }).then(function(resp) {
+      if (!resp.ok) { callback(null, "API " + resp.status); return; }
+      return resp.json();
+    }).then(function(data) {
+      if (!data || !data.data) { callback(null, "返回格式异常"); return; }
+      var models = [];
+      for (var i = 0; i < data.data.length; i++) {
+        if (data.data[i].id) models.push(data.data[i].id);
+      }
+      models.sort();
+      callback(models, null);
+    }).catch(function(e) { callback(null, e.message || "请求失败"); });
+  }
+
+  function testModelPreset(apiUrl, apiKey, model, callback) {
+    var url = apiUrl.replace(/\/+$/, "") + "/v1/chat/completions";
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
+      body: JSON.stringify({ model: model, messages: [{ role: "user", content: "Hi" }], max_tokens: 5 }),
+      signal: AbortSignal.timeout(15000)
+    }).then(function(resp) {
+      if (!resp.ok) { resp.text().then(function(t) { callback(false, "API " + resp.status + ": " + t.substring(0, 100)); }).catch(function() { callback(false, "API " + resp.status); }); return; }
+      callback(true, "连接成功");
+    }).catch(function(e) { callback(false, e.message || "连接失败"); });
+  }
+
   /* ─── AI 调用层 ─── */
   function generateLayer1Summaries(lockTag, callback) {
     try {
@@ -1076,7 +1169,8 @@
   function generateLayer3Comments(fullText, callback) {
     try {
     debugLog("L3 start, fullText len:" + fullText.length);
-    aiChatStream([
+    var chatFn = getActiveModelPreset() ? customAiChat : aiChatStream;
+    chatFn([
       { role: "system", content: PROMPTS.layer3Comments },
       { role: "user", content: "\u4ee5\u4e0b\u662f\u540c\u4eba\u6587\u5185\u5bb9\uff0c\u8bf7\u751f\u6210\u8bc4\u8bba\uff1a\n\n" + fullText.substring(0, 3000) }
     ], 0.75,
@@ -1213,7 +1307,8 @@
     }
     var excludeList = existingNames.length > 0 ? "\n\n\u7528\u6237\u5df2\u6709\u6807\u7b7e\uff08\u7edd\u5bf9\u4e0d\u53ef\u91cd\u590d\uff09\uff1a" + existingNames.join("\u3001") : "";
     debugLog("Explore calling aiChatStream, excludeCount:" + existingNames.length);
-    aiChatStream([
+    var chatFn = getActiveModelPreset() ? customAiChat : aiChatStream;
+    chatFn([
       { role: "system", content: PROMPTS.exploreTags },
       { role: "user", content: "\u8bf7\u751f\u6210\u540c\u4eba\u6807\u7b7e\u4f9b\u7528\u6237\u63a2\u7d22\u3002" + excludeList + cpInspiration }
     ], 0.9,
@@ -2138,8 +2233,60 @@
       '<div class="hp-settings-row"><span>\u5b57\u6570\u8303\u56f4</span><div style="display:flex;gap:6px;align-items:center"><input type="number" class="hp-input" style="width:70px;text-align:center" min="1000" max="30000" value="' + (s.wordCountMin||3000) + '" onchange="window.__hofter.setWordCountMin(this.value)"><span style="color:var(--text-hint)">-</span><input type="number" class="hp-input" style="width:70px;text-align:center" min="1000" max="30000" value="' + (s.wordCountMax||8000) + '" onchange="window.__hofter.setWordCountMax(this.value)"><span style="color:var(--text-hint);font-size:12px">\u5b57</span></div></div>' +
       '<div class="hp-settings-row"><span>\u81ea\u52a8\u751f\u6210\u8bc4\u8bba</span><div class="hp-toggle ' + (s.autoGenerateComments?"on":"") + '" onclick="window.__hofter.toggleAutoComments()"></div></div>' +
       '<div class="hp-settings-row"><span>\u81ea\u52a8\u5173\u6ce8\u65b0\u6897\u6807\u7b7e</span><div class="hp-toggle ' + (s.autoFollowTropeTags?"on":"") + '" onclick="window.__hofter.toggleAutoFollowTropeTags()"></div></div></div>' +
+      '<div class="hp-settings-section"><div class="hp-section-title">\u8f7b\u578b\u6a21\u578b</div>' +
+      '<div style="font-size:12px;color:var(--text-hint);padding:0 0 8px">\u7528\u4e8e\u6807\u7b7e\u63a2\u7d22\u548c\u8bc4\u8bba\u751f\u6210\uff0c\u53ef\u5207\u6362\u81f3\u4f4e\u6210\u672c\u6a21\u578b</div>' +
+      (s.modelPresets && s.modelPresets.length > 0 ?
+        (function() {
+          var h = "";
+          for (var pi = 0; pi < s.modelPresets.length; pi++) {
+            var p = s.modelPresets[pi];
+            var isActive = p.id === s.activeModelPresetId;
+            h += '<div class="hp-settings-row" style="gap:8px">' +
+              '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(p.name) + (isActive ? ' <span style="color:var(--primary);font-size:12px">\u2713 \u4f7f\u7528\u4e2d</span>' : '') + '</div>' +
+              '<div style="font-size:12px;color:var(--text-hint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(p.model) + '</div>' +
+              '</div>' +
+              (isActive ? '<button class="hp-btn hp-btn-outline hp-btn-sm" style="font-size:12px;padding:4px 8px" onclick="window.__hofter.deactivateModelPreset()">\u505c\u7528</button>' : '<button class="hp-btn hp-btn-outline hp-btn-sm" style="font-size:12px;padding:4px 8px" onclick="window.__hofter.activateModelPreset(\'' + p.id + '\')">\u542f\u7528</button>') +
+              '<div class="hp-icon-btn" style="width:28px;height:28px" onclick="window.__hofter.editModelPreset(\'' + p.id + '\')">' + ICONS.edit.replace(/24/g,"14") + '</div>' +
+              '<div class="hp-icon-btn" style="width:28px;height:28px" onclick="window.__hofter.deleteModelPreset(\'' + p.id + '\')">' + ICONS.trash.replace(/24/g,"14") + '</div>' +
+              '</div>';
+          }
+          return h;
+        })()
+      : '<div style="font-size:13px;color:var(--text-hint);padding:8px 0">\u5c1a\u672a\u914d\u7f6e\u8f7b\u578b\u6a21\u578b</div>') +
+      '<div class="hp-menu-item" onclick="window.__hofter.showAddModelPreset()">' + ICONS.plus.replace(/24/g,"16") + '<span>\u6dfb\u52a0\u6a21\u578b\u9884\u8bbe</span></div></div>' +
       '<div class="hp-settings-section"><div class="hp-section-title">\u5176\u4ed6</div>' +
       '<div class="hp-menu-item" onclick="window.__hofter.confirmClearCache()">' + ICONS.trash + '<span>\u6e05\u9664\u7f13\u5b58</span></div></div>';
+    page.appendChild(body); overlay.appendChild(page); state.containerEl.appendChild(overlay);
+  }
+
+  /* ─── 模型预设管理 ─── */
+  function showModelPresetPage(editId) {
+    var existing = null;
+    if (editId) {
+      var presets = state.settings.modelPresets || [];
+      for (var i = 0; i < presets.length; i++) { if (presets[i].id === editId) { existing = presets[i]; break; } }
+    }
+    var overlay = document.createElement("div"); overlay.className = "hp-sheet-overlay"; overlay.id = "model-preset-page"; overlay.style.alignItems = "stretch";
+    var page = document.createElement("div"); page.style.cssText = "background:var(--bg-primary);width:100%;height:100%;display:flex;flex-direction:column";
+    var header = document.createElement("div"); header.className = "hp-header";
+    header.innerHTML = '<div class="hp-header-left"><div class="hp-icon-btn" onclick="window.__hofter.closeSheet(\'model-preset-page\');window.__hofter.showSettings()">' + ICONS.back + '</div></div><div class="hp-header-title">' + (existing ? '\u7f16\u8f91\u6a21\u578b\u9884\u8bbe' : '\u6dfb\u52a0\u6a21\u578b\u9884\u8bbe') + '</div><div class="hp-header-right"></div>';
+    page.appendChild(header);
+    var body = document.createElement("div"); body.style.cssText = "flex:1;overflow-y:auto";
+    body.innerHTML = '<div class="hp-create-form">' +
+      '<label>\u9884\u8bbe\u540d\u79f0</label><input class="hp-input" id="hp-preset-name" placeholder="\u5982\uff1aGPT-4o-mini" value="' + (existing ? escapeHtml(existing.name) : '') + '">' +
+      '<label>API URL</label><input class="hp-input" id="hp-preset-url" placeholder="\u5982\uff1ahttps://api.openai.com" value="' + (existing ? escapeHtml(existing.apiUrl) : '') + '">' +
+      '<label>API Key</label><input class="hp-input" id="hp-preset-key" type="password" placeholder="sk-..." value="' + (existing ? escapeHtml(existing.apiKey) : '') + '">' +
+      '<label>\u6a21\u578b</label>' +
+      '<div style="display:flex;gap:8px;align-items:center"><input class="hp-input" id="hp-preset-model" placeholder="\u6a21\u578b\u540d\u79f0" style="flex:1" value="' + (existing ? escapeHtml(existing.model) : '') + '">' +
+      '<button class="hp-btn hp-btn-outline hp-btn-sm" id="hp-preset-fetch-btn" onclick="window.__hofter.fetchPresetModels()">\u5237\u65b0</button></div>' +
+      '<div id="hp-preset-model-list" style="max-height:200px;overflow-y:auto;margin-top:4px"></div>' +
+      '<div style="margin-top:16px;display:flex;gap:8px">' +
+      '<button class="hp-btn hp-btn-outline" style="flex:1" onclick="window.__hofter.testPresetConnection()">\u6d4b\u8bd5\u8fde\u63a5</button>' +
+      '<button class="hp-btn hp-btn-primary" style="flex:1" onclick="window.__hofter.saveModelPreset(\'' + (editId || '') + '\')">\u4fdd\u5b58</button>' +
+      '</div>' +
+      '<div id="hp-preset-status" style="font-size:12px;margin-top:8px;min-height:18px"></div>' +
+      '</div>';
     page.appendChild(body); overlay.appendChild(page); state.containerEl.appendChild(overlay);
   }
 
@@ -2773,6 +2920,115 @@
       saveSummariesCache([]); savePublishedWorks([]); saveFavoritesData({favorites:[],readHistory:[],readLater:[]});
       if (state.roche && state.roche.storage) { state.roche.storage.delete("summaries_cache"); state.roche.storage.delete("published_works"); }
       showToast("\u7f13\u5b58\u5df2\u6e05\u9664"); renderApp();
+    },
+    showAddModelPreset: function() {
+      closeSheet("settings-page");
+      showModelPresetPage(null);
+    },
+    editModelPreset: function(id) {
+      closeSheet("settings-page");
+      showModelPresetPage(id);
+    },
+    deleteModelPreset: function(id) {
+      var presets = state.settings.modelPresets || [];
+      for (var i = 0; i < presets.length; i++) { if (presets[i].id === id) { presets.splice(i, 1); break; } }
+      if (state.settings.activeModelPresetId === id) state.settings.activeModelPresetId = "";
+      saveSettings(state.settings);
+      showSettings();
+      showToast("\u5df2\u5220\u9664\u9884\u8bbe");
+    },
+    activateModelPreset: function(id) {
+      state.settings.activeModelPresetId = id;
+      saveSettings(state.settings);
+      var preset = getActiveModelPreset();
+      showToast("\u5df2\u542f\u7528\u8f7b\u578b\u6a21\u578b\uff1a" + (preset ? preset.name : ""));
+      showSettings();
+    },
+    deactivateModelPreset: function() {
+      var oldName = "";
+      var preset = getActiveModelPreset();
+      if (preset) oldName = preset.name;
+      state.settings.activeModelPresetId = "";
+      saveSettings(state.settings);
+      showToast("\u5df2\u505c\u7528\u8f7b\u578b\u6a21\u578b" + (oldName ? "\uff1a" + oldName : ""));
+      showSettings();
+    },
+    saveModelPreset: function(editId) {
+      var nameEl = document.getElementById("hp-preset-name");
+      var urlEl = document.getElementById("hp-preset-url");
+      var keyEl = document.getElementById("hp-preset-key");
+      var modelEl = document.getElementById("hp-preset-model");
+      var statusEl = document.getElementById("hp-preset-status");
+      if (!nameEl || !urlEl || !keyEl || !modelEl) return;
+      var name = nameEl.value.trim();
+      var apiUrl = urlEl.value.trim();
+      var apiKey = keyEl.value.trim();
+      var model = modelEl.value.trim();
+      if (!name) { if (statusEl) statusEl.textContent = "\u8bf7\u8f93\u5165\u9884\u8bbe\u540d\u79f0"; return; }
+      if (!apiUrl) { if (statusEl) statusEl.textContent = "\u8bf7\u8f93\u5165API URL"; return; }
+      if (!apiKey) { if (statusEl) statusEl.textContent = "\u8bf7\u8f93\u5165API Key"; return; }
+      if (!model) { if (statusEl) statusEl.textContent = "\u8bf7\u8f93\u5165\u6216\u9009\u62e9\u6a21\u578b"; return; }
+      if (!state.settings.modelPresets) state.settings.modelPresets = [];
+      if (editId) {
+        for (var i = 0; i < state.settings.modelPresets.length; i++) {
+          if (state.settings.modelPresets[i].id === editId) {
+            state.settings.modelPresets[i].name = name;
+            state.settings.modelPresets[i].apiUrl = apiUrl;
+            state.settings.modelPresets[i].apiKey = apiKey;
+            state.settings.modelPresets[i].model = model;
+            break;
+          }
+        }
+      } else {
+        state.settings.modelPresets.push({ id: generateId(), name: name, apiUrl: apiUrl, apiKey: apiKey, model: model });
+      }
+      saveSettings(state.settings);
+      closeSheet("model-preset-page");
+      showSettings();
+      showToast("\u9884\u8bbe\u5df2\u4fdd\u5b58");
+    },
+    fetchPresetModels: function() {
+      var urlEl = document.getElementById("hp-preset-url");
+      var keyEl = document.getElementById("hp-preset-key");
+      var listEl = document.getElementById("hp-preset-model-list");
+      var statusEl = document.getElementById("hp-preset-status");
+      var btnEl = document.getElementById("hp-preset-fetch-btn");
+      if (!urlEl || !keyEl) return;
+      var apiUrl = urlEl.value.trim();
+      var apiKey = keyEl.value.trim();
+      if (!apiUrl || !apiKey) { if (statusEl) statusEl.textContent = "\u8bf7\u5148\u586b\u5199API URL\u548cKey"; return; }
+      if (btnEl) btnEl.textContent = "\u52a0\u8f7d\u4e2d...";
+      if (statusEl) statusEl.textContent = "\u6b63\u5728\u83b7\u53d6\u6a21\u578b\u5217\u8868...";
+      fetchModelList(apiUrl, apiKey, function(models, err) {
+        if (btnEl) btnEl.textContent = "\u5237\u65b0";
+        if (err) { if (statusEl) statusEl.textContent = "\u83b7\u53d6\u5931\u8d25\uff1a" + err; return; }
+        if (statusEl) statusEl.textContent = "\u627e\u5230 " + models.length + " \u4e2a\u6a21\u578b";
+        if (listEl) {
+          var html = "";
+          for (var i = 0; i < models.length; i++) {
+            html += '<div style="padding:8px 12px;border-bottom:1px solid var(--bg-secondary);cursor:pointer;font-size:13px" onclick="document.getElementById(\'hp-preset-model\').value=\'' + escapeHtml(models[i]).replace(/'/g, "\\'") + '\';this.parentElement.innerHTML=\'\'">' + escapeHtml(models[i]) + '</div>';
+          }
+          listEl.innerHTML = html;
+        }
+      });
+    },
+    testPresetConnection: function() {
+      var urlEl = document.getElementById("hp-preset-url");
+      var keyEl = document.getElementById("hp-preset-key");
+      var modelEl = document.getElementById("hp-preset-model");
+      var statusEl = document.getElementById("hp-preset-status");
+      if (!urlEl || !keyEl || !modelEl) return;
+      var apiUrl = urlEl.value.trim();
+      var apiKey = keyEl.value.trim();
+      var model = modelEl.value.trim();
+      if (!apiUrl || !apiKey || !model) { if (statusEl) statusEl.textContent = "\u8bf7\u586b\u5198\u5b8c\u6240\u6709\u5b57\u6bb5\u540e\u518d\u6d4b\u8bd5"; return; }
+      if (statusEl) { statusEl.textContent = "\u6d4b\u8bd5\u4e2d..."; statusEl.style.color = "var(--text-hint)"; }
+      testModelPreset(apiUrl, apiKey, model, function(ok, msg) {
+        if (statusEl) {
+          statusEl.textContent = msg;
+          statusEl.style.color = ok ? "var(--primary)" : "var(--like-red)";
+        }
+      });
     },
     showPublishSheet: showPublishSheet,
     showCreatePage: showCreatePage,

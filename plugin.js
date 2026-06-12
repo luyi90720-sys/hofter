@@ -3711,7 +3711,7 @@
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showRegenerateSheet()">' + ICONS.sparkle + '<span>\u91cd\u65b0\u751f\u6210\u6b63\u6587</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.continueReading()">' + ICONS.refresh + '<span>\u8ffd\u66f4\u7eed\u7ae0</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showModelContext()">' + ICONS.textSize + '<span>\u67e5\u770b\u6a21\u578b\u4e0a\u4e0b\u6587</span></div>' +
-        '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showContentSummary()">' + ICONS.fileText + '<span>\u67e5\u770b\u6458\u8981</span></div>' +
+        '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showContentSummary()">' + ICONS.fileText + '<span>\u67e5\u770b\u603b\u7ed3</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.shareWork()">' + ICONS.share + '<span>\u5206\u4eab</span></div>';
       overlay.appendChild(sheet); state.containerEl.appendChild(overlay);
     },
@@ -3724,22 +3724,13 @@
       overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99997;display:flex;align-items:flex-end;justify-content:center";
       overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
       var sheet = document.createElement("div"); sheet.className = "hp-sheet";
-      var contSummary = summary.contentSummary || "";
-      var contSummaryLabel = contSummary ? "\u5185\u5bb9\u6458\u8981" : "";
-      var briefSummary = summary.briefSummary || summary.continuationSummary || "";
-      var briefSummaryLabel = briefSummary ? (contSummary ? "\u8ffd\u66f4\u6458\u8981" : "\u6458\u8981") : "";
+      var contentSummary = summary.contentSummary || "";
       var html = '<div class="hp-sheet-handle"></div>';
-      html += '<div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u6458\u8981</div></div>';
-      if (contSummary) {
-        html += '<div style="padding:8px 16px"><div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:6px">' + contSummaryLabel + '</div>';
-        html += '<div style="font-size:14px;line-height:1.7;color:var(--text-primary)">' + escapeHtml(contSummary) + '</div></div>';
-      }
-      if (briefSummary) {
-        html += '<div style="padding:8px 16px"><div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:6px">' + briefSummaryLabel + '</div>';
-        html += '<div style="font-size:14px;line-height:1.7;color:var(--text-primary)">' + escapeHtml(briefSummary) + '</div></div>';
-      }
-      if (!contSummary && !briefSummary) {
-        html += '<div style="padding:16px;font-size:14px;color:var(--text-hint)">\u6682\u65e0\u6458\u8981</div>';
+      html += '<div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u5185\u5bb9\u603b\u7ed3</div></div>';
+      if (contentSummary) {
+        html += '<div style="padding:8px 16px"><div style="font-size:14px;line-height:1.8;color:var(--text-primary)">' + escapeHtml(contentSummary) + '</div></div>';
+      } else {
+        html += '<div style="padding:16px;font-size:14px;color:var(--text-hint)">\u6682\u65e0\u5185\u5bb9\u603b\u7ed3\uff0c\u751f\u6210\u6b63\u6587\u540e\u81ea\u52a8\u4ea7\u751f</div>';
       }
       sheet.innerHTML = html;
       overlay.appendChild(sheet); state.containerEl.appendChild(overlay);
@@ -3834,12 +3825,14 @@
       var panel = document.createElement("div");
       panel.id = "hp-continue-panel";
       panel.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99997;display:flex;align-items:center;justify-content:center;";
-      var hasContentSummary = !!(summary.contentSummary || summary.continuationSummary);
+      var hasContentSummary = !!summary.contentSummary;
       var html = '<div style="background:var(--bg-primary);border-radius:16px;padding:24px;width:85%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.2)">';
       html += '<div style="font-size:16px;font-weight:700;margin-bottom:16px">\u8ffd\u66f4\u8bbe\u7f6e</div>';
       html += '<div style="margin-bottom:16px"><div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">\u53d1\u9001\u7ed9\u6a21\u578b\u7684\u524d\u6587\u4fe1\u606f</div>';
       html += '<div style="display:flex;gap:8px"><button class="hp-btn hp-btn-sm hp-btn-primary" id="hp-ctx-full" onclick="document.getElementById(\'hp-ctx-full\').className=\'hp-btn hp-btn-sm hp-btn-primary\';document.getElementById(\'hp-ctx-summary\').className=\'hp-btn hp-btn-sm hp-btn-outline\'">\u5b8c\u6574\u6b63\u6587</button>';
-      html += '<button class="hp-btn hp-btn-sm ' + (hasContentSummary ? 'hp-btn-outline' : 'hp-btn-primary') + '" id="hp-ctx-summary" onclick="document.getElementById(\'hp-ctx-summary\').className=\'hp-btn hp-btn-sm hp-btn-primary\';document.getElementById(\'hp-ctx-full\').className=\'hp-btn hp-btn-sm hp-btn-outline\'">\u6458\u8981</button></div></div>';
+      html += '<button class="hp-btn hp-btn-sm ' + (hasContentSummary ? 'hp-btn-outline' : 'hp-btn-primary') + '" id="hp-ctx-summary" onclick="document.getElementById(\'hp-ctx-summary\').className=\'hp-btn hp-btn-sm hp-btn-primary\';document.getElementById(\'hp-ctx-full\').className=\'hp-btn hp-btn-sm hp-btn-outline\'"' + (hasContentSummary ? '' : ' disabled style="opacity:0.5"') + '>\u5185\u5bb9\u603b\u7ed3</button></div>';
+      if (!hasContentSummary) html += '<div style="font-size:11px;color:var(--text-hint);margin-top:4px">\u5c1a\u672a\u751f\u6210\u5185\u5bb9\u603b\u7ed3\uff0c\u5c06\u53d1\u9001\u5b8c\u6574\u6b63\u6587</div>';
+      html += '</div>';
       html += '<div style="margin-bottom:16px"><div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">\u662f\u5426\u7ed9\u4f5c\u8005\u63d0\u610f\u89c1</div>';
       html += '<textarea class="hp-input" id="hp-continue-feedback" placeholder="\u53ef\u9009\uff1a\u5199\u4e0b\u4f60\u5bf9\u524d\u6587\u7684\u770b\u6cd5\u6216\u5efa\u8bae..." style="width:100%;height:60px;resize:none"></textarea></div>';
       html += '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="hp-btn hp-btn-outline" onclick="document.getElementById(\'hp-continue-panel\').remove()">\u53d6\u6d88</button>';
@@ -3856,8 +3849,8 @@
       if (!summary) { showToast("\u65e0\u6cd5\u8ffd\u66f4"); return; }
       showLoading();
       var prevContent = "";
-      if (useSummary) {
-        prevContent = summary.contentSummary || summary.continuationSummary || "";
+      if (useSummary && summary.contentSummary) {
+        prevContent = summary.contentSummary;
       } else {
         if (summary.fullContent && summary.fullContent.chapters) {
           for (var i = 0; i < summary.fullContent.chapters.length; i++) {

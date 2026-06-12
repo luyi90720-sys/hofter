@@ -323,7 +323,7 @@
       "",
       "【输出格式】",
       "请返回纯JSON格式：",
-      '{ "chapter": { "title": "", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "comments": [{ "name": "", "text": "", "time": "", "likes": 0, "replyTo": "" }], "annotations": [{ "paragraphIndex": 0, "quotes": "", "notes": [{ "name": "", "text": "" }] }], "continuation_summary": "" }',
+      '{ "chapter": { "title": "", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "annotations": [{ "paragraphIndex": 0, "quotes": "", "notes": [{ "name": "", "text": "" }] }], "continuation_summary": "" }',
       "",
       "其中 continuation_summary 是150字左右的续写摘要，概括本篇内容与情感走向，供后续连载追更时作为上下文传入。",
       "字数要求：[WORD_COUNT_PLACEHOLDER]"
@@ -421,7 +421,7 @@
     wrapper.style.cssText = "position:fixed;bottom:60px;left:4px;right:4px;max-height:45vh;background:rgba(0,0,0,0.92);color:#0f0;font-size:11px;font-family:monospace;padding:0;overflow:hidden;z-index:99999;border-radius:10px;display:flex;flex-direction:column;";
     var toolbar = document.createElement("div");
     toolbar.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(0,0,0,0.5);color:#0f0;font-size:11px;flex-shrink:0;";
-    toolbar.innerHTML = '<span>hofter debug (v1.5.1)</span><div><span style="cursor:pointer;margin-left:10px;color:#ff0;" onclick="window.__hofter.clearDebug()">CLEAR</span><span style="cursor:pointer;margin-left:10px;color:#0ff;" onclick="window.__hofter.copyDebug()">COPY</span><span style="cursor:pointer;margin-left:10px;color:#f66;" onclick="window.__hofter.toggleDebug()">X</span></div>';
+    toolbar.innerHTML = '<span>hofter debug (v1.5.2)</span><div><span style="cursor:pointer;margin-left:10px;color:#ff0;" onclick="window.__hofter.clearDebug()">CLEAR</span><span style="cursor:pointer;margin-left:10px;color:#0ff;" onclick="window.__hofter.copyDebug()">COPY</span><span style="cursor:pointer;margin-left:10px;color:#f66;" onclick="window.__hofter.toggleDebug()">X</span></div>';
     var content = document.createElement("pre");
     content.id = "hp-debug-content";
     content.style.cssText = "flex:1;overflow-y:auto;padding:8px;white-space:pre-wrap;word-break:break-all;margin:0;color:#0f0;";
@@ -672,8 +672,11 @@
       ], 0.8,
         function(progress) {
           debugLog("L2 streaming... len:" + progress.length);
+          var spinner = document.getElementById("hp-reader-spinner");
           var streamEl = document.getElementById("hp-reader-stream");
           if (streamEl) {
+            if (spinner) spinner.style.display = "none";
+            streamEl.style.display = "block";
             var cleaned = progress;
             cleaned = cleaned.replace(/<macro_chain>[\s\S]*?<\/macro_chain>/gi, "");
             cleaned = cleaned.replace(/<inline_chain>[\s\S]*?<\/inline_chain>/gi, "");
@@ -681,25 +684,20 @@
             cleaned = cleaned.replace(/<macro_cot>[\s\S]*?<\/macro_cot>/gi, "");
             cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, "");
             cleaned = cleaned.replace(/<[^>]+>/g, "");
-            cleaned = cleaned.replace(/^\s*\{/, "").replace(/\}\s*$/, "");
-            cleaned = cleaned.replace(/"content"\s*:\s*\[/g, "|||SPLIT|||");
-            cleaned = cleaned.replace(/"text"\s*:\s*"/g, "|||TEXT|||");
-            var parts = cleaned.split("|||TEXT|||");
+            var textParts = cleaned.split(/"text"\s*:\s*"/);
             var displayHtml = "";
-            for (var pi = 1; pi < parts.length; pi++) {
-              var textPart = parts[pi].replace(/"\s*[,}]/, "").replace(/\\"/g, '"').replace(/\\n/g, "\n");
+            for (var pi = 1; pi < textParts.length; pi++) {
+              var textPart = textParts[pi].replace(/"\s*[,}].*/, "").replace(/\\"/g, '"').replace(/\\n/g, "<br>");
               if (textPart.trim()) {
-                var isDialogue = textPart.indexOf("\u300c") === 0 || textPart.indexOf("\u300c") >= 0;
                 displayHtml += '<div style="font-size:' + (state.settings.fontSize || 16) + 'px;line-height:1.8;margin:8px 0;color:var(--text-primary)">' + escapeHtml(textPart.trim()) + '</div>';
               }
             }
-            if (!displayHtml && cleaned.trim()) {
-              displayHtml = '<div style="font-size:' + (state.settings.fontSize || 16) + 'px;line-height:1.8;margin:8px 0;color:var(--text-primary);white-space:pre-wrap">' + escapeHtml(cleaned.substring(0, 2000)) + '</div>';
+            if (!displayHtml && cleaned.trim().length > 10) {
+              displayHtml = '<div style="font-size:' + (state.settings.fontSize || 16) + 'px;line-height:1.8;margin:8px 0;color:var(--text-primary);white-space:pre-wrap;opacity:0.6">' + escapeHtml(cleaned.substring(0, 500)) + '</div>';
             }
-            var spinner = document.querySelector("#hp-reader-content .hp-spinner");
-            if (spinner) spinner.parentElement.style.display = "none";
             streamEl.innerHTML = displayHtml;
-            streamEl.scrollTop = streamEl.scrollHeight;
+            var contentEl = document.getElementById("hp-reader-content");
+            if (contentEl) contentEl.scrollTop = contentEl.scrollHeight;
           }
         },
         function(raw) {
@@ -1744,14 +1742,12 @@
     if (!summary) { showToast("\u672a\u627e\u5230\u4f5c\u54c1"); return; }
     state.currentReadingSummary = summary;
     var readerEl = document.createElement("div"); readerEl.className = "hp-reader-page"; readerEl.id = "hp-reader";
-    readerEl.innerHTML = '<div class="hp-reader-header"><div class="hp-icon-btn" onclick="window.__hofter.closeReader()">' + ICONS.back + '</div><div style="flex:1;text-align:center;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(summary.title) + '</div><div class="hp-icon-btn" onclick="window.__hofter.showReaderSettings()">' + ICONS.textSize + '</div></div><div id="hp-reader-content" style="padding-bottom:60px"><div style="text-align:center;padding:40px 20px;color:var(--text-hint)"><div class="hp-spinner" style="margin:0 auto"></div><p style="margin-top:12px">\u7075\u611f\u521b\u4f5c\u4e2d...</p></div><div id="hp-reader-stream" style="padding:16px;max-height:60vh;overflow-y:auto"></div></div>';
+    readerEl.innerHTML = '<div class="hp-reader-header"><div class="hp-icon-btn" onclick="window.__hofter.closeReader()">' + ICONS.back + '</div><div style="flex:1;text-align:center;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(summary.title) + '</div><div class="hp-icon-btn" onclick="window.__hofter.showReaderSettings()">' + ICONS.textSize + '</div></div><div id="hp-reader-content" style="padding-bottom:60px"><div id="hp-reader-spinner" style="text-align:center;padding:40px 20px;color:var(--text-hint)"><div class="hp-spinner" style="margin:0 auto"></div><p style="margin-top:12px">\u7075\u611f\u521b\u4f5c\u4e2d...</p></div><div id="hp-reader-stream" style="padding:16px;display:none"></div></div>';
     state.containerEl.appendChild(readerEl);
     if (summary.fullContent) {
       renderReaderContent(summary);
     } else {
-      showLoading();
       generateLayer2Full(summary, function(result) {
-        hideLoading();
         if (result) {
           summary.fullContent = result;
           summary.isByUser = isUserWork;
@@ -1869,16 +1865,21 @@
     if (!annotation) return;
     var existing = document.getElementById("annotation-panel");
     if (existing) { existing.remove(); return; }
-    var overlay = document.createElement("div"); overlay.className = "hp-sheet-overlay"; overlay.id = "annotation-panel";
+    var overlay = document.createElement("div");
+    overlay.id = "annotation-panel";
+    overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:99997;display:flex;align-items:center;justify-content:center;";
     overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
-    var popup = document.createElement("div"); popup.className = "hp-annotation-popup";
-    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:14px;font-weight:700">\u6bb5\u8bc4</span><span style="cursor:pointer;color:var(--text-hint)" onclick="document.getElementById(\'annotation-panel\').remove()">X</span></div>';
-    html += '<div class="hp-annotation-quotes">\u300c' + escapeHtml(annotation.quotes || "") + '\u300d</div>';
+    var popup = document.createElement("div");
+    popup.style.cssText = "background:var(--bg-card,#fff);border-radius:16px;padding:16px;width:280px;max-height:60vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.15);";
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:14px;font-weight:700">\u6bb5\u8bc4</span><span style="cursor:pointer;color:#999;font-size:18px" onclick="document.getElementById(\'annotation-panel\').remove()">X</span></div>';
+    html += '<div style="font-size:12px;color:var(--primary,#E8A0BF);margin-bottom:8px;padding:6px 10px;background:var(--primary-light,rgba(232,160,191,0.15));border-radius:8px;line-height:1.5">\u300c' + escapeHtml(annotation.quotes || "") + '\u300d</div>';
     var notes = annotation.notes || [];
     for (var k = 0; k < notes.length; k++) {
-      html += '<div class="hp-annotation-note"><span class="hp-annotation-note-name">' + escapeHtml(notes[k].name||"") + '</span><span class="hp-annotation-note-text">' + escapeHtml(notes[k].text||"") + '</span></div>';
+      html += '<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06)"><span style="font-size:12px;font-weight:600;color:var(--text-secondary,#888);white-space:nowrap">' + escapeHtml(notes[k].name||"") + '</span><span style="font-size:12px;color:var(--text-primary,#333)">' + escapeHtml(notes[k].text||"") + '</span></div>';
     }
-    popup.innerHTML = html; overlay.appendChild(popup); document.body.appendChild(overlay);
+    popup.innerHTML = html;
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
   }
 
   function closeReader() { var el = document.getElementById("hp-reader"); if (el) el.remove(); }
@@ -2281,7 +2282,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "1.5.1",
+    version: "1.5.2",
     apps: [
       {
         id: "hofter-home",

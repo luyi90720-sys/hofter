@@ -523,9 +523,9 @@
   function aiChatStream(messages, temperature, onProgress, onDone, onError) {
     var chatPromise;
     var timeoutId = setTimeout(function() {
-      debugLog("stream: timeout after 120s, calling onDone with empty");
+      debugLog("stream: timeout after 300s, calling onDone with empty");
       onDone("");
-    }, 120000);
+    }, 300000);
     var wrappedOnDone = function(raw) {
       clearTimeout(timeoutId);
       onDone(raw);
@@ -719,6 +719,27 @@
     } catch(e) { debugLog("L1 FATAL:" + e.message + " stack:" + (e.stack||"").substring(0,300)); callback(null); }
   }
 
+  /* ─── 流式中断时的 fallback：用已接收的段落构建 fullContent ─── */
+  function _useStreamedFallback(summary, paragraphs, callback) {
+    if (!paragraphs || paragraphs.length === 0) {
+      debugLog("streamed fallback: no paragraphs, callback null");
+      callback(null);
+      return;
+    }
+    debugLog("streamed fallback: building fullContent from " + paragraphs.length + " paragraphs");
+    var contentArr = [];
+    for (var i = 0; i < paragraphs.length; i++) {
+      contentArr.push({ type: "p", text: paragraphs[i].replace(/<br>/g, "\n") });
+    }
+    var fallbackData = {
+      chapter: { title: "", content: contentArr },
+      annotations: [],
+      continuation_summary: "",
+      brief_summary: ""
+    };
+    callback(fallbackData);
+  }
+
   function generateLayer2Full(summary, callback) {
     try {
     debugLog("L2 start, title:" + (summary.title || "?") + " cpTagId:" + (summary.cpTagId || "?"));
@@ -766,6 +787,7 @@
     var doChat = function(memText) {
       debugLog("L2 calling aiChatStream, memLen:" + (memText ? memText.length : 0));
       summary._debugContext.memory = memText || "(none)";
+      var _streamedParagraphs = []; /* 缓存流式段落，防止中断丢失 */
       aiChatStream([
         { role: "system", content: systemPrompt },
         { role: "user", content: userMsg + (memText ? "\n\n\u3010\u8fd1\u671f\u4e92\u52a8\u8bb0\u5fc6\uff08\u4ec5\u4f9b\u53c2\u8003\u7d20\u6750\uff09\u3011\n" + memText : "") }
@@ -803,6 +825,8 @@
                 if (st.trim().length > 10) allTexts.push(st.trim());
               }
             }
+            /* 缓存已提取的段落 */
+            _streamedParagraphs = allTexts.slice();
             /* 增量渲染：只追加新段落，避免全量替换导致闪烁 */
             var currentCount = streamEl.children.length;
             var fs = state.settings.fontSize || 16;
@@ -822,7 +846,7 @@
           debugLog("L2 stream done, raw len:" + raw.length + " first200:" + raw.substring(0, 200));
           try {
             var extractResult = stripXmlAndExtractJson(raw); var jsonStr = extractResult.json; var macroChain = extractResult.macroChain;
-            if (!jsonStr) { debugLog("L2 no JSON found"); callback(null); return; }
+            if (!jsonStr) { debugLog("L2 no JSON found, using streamed paragraphs fallback"); _useStreamedFallback(summary, _streamedParagraphs, callback); return; }
             var data = JSON.parse(jsonStr);
             debugLog("L2 parsed OK, chapters:" + (data.chapters ? data.chapters.length : 0) + " hasContSummary:" + !!data.continuation_summary);
             if (data && data.continuation_summary) {
@@ -833,9 +857,12 @@
             }
             if (macroChain) summary._debugContext.macroChain = macroChain;
             callback(data);
-          } catch(e) { debugLog("L2 parse error:" + e.message + " raw500:" + raw.substring(0, 500)); callback(null); }
+          } catch(e) {
+            debugLog("L2 parse error:" + e.message + ", using streamed paragraphs fallback");
+            _useStreamedFallback(summary, _streamedParagraphs, callback);
+          }
         },
-        function(e) { debugLog("L2 stream error:" + (e && e.message ? e.message : String(e))); callback(null); }
+        function(e) { debugLog("L2 stream error:" + (e && e.message ? e.message : String(e)) + ", using streamed paragraphs fallback"); _useStreamedFallback(summary, _streamedParagraphs, callback); }
       );
     };
     var attachMem = shouldAttachMemory();
@@ -912,22 +939,51 @@
 
     var doChat = function(memText) {
       debugLog("Cont calling aiChatStream, memLen:" + (memText ? memText.length : 0));
+      var _contParagraphs = [];
       aiChatStream([
         { role: "system", content: systemPrompt },
         { role: "user", content: userMsg + (memText ? "\n\n\u3010\u8fd1\u671f\u4e92\u52a8\u8bb0\u5fc6\uff08\u4ec5\u4f9b\u53c2\u8003\u7d20\u6750\uff09\u3011\n" + memText : "") }
       ], 0.8,
-        function(progress) { debugLog("Cont streaming... len:" + progress.length); },
+        function(progress) {
+          debugLog("Cont streaming... len:" + progress.length);
+          /* 提取段落缓存 */
+          var cleaned = progress;
+          cleaned = cleaned.replace(/<macro_chain>[\s\S]*?<\/macro_chain>/gi, "");
+          cleaned = cleaned.replace(/<inline_chain>[\s\S]*?<\/inline_chain>/gi, "");
+          cleaned = cleaned.replace(/<inline_check>[\s\S]*?<\/inline_check>/gi, "");
+          cleaned = cleaned.replace(/<macro_cot>[\s\S]*?<\/macro_cot>/gi, "");
+          cleaned = cleaned.replace(/<system_execution_directive>[\s\S]*?<\/system_execution_directive>/gi, "");
+          cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, "");
+          cleaned = cleaned.replace(/<[^>]+>/g, "");
+          var allTexts = [];
+          var chapterMatch = cleaned.match(/"chapter"\s*:\s*\{[\s\S]*?"content"\s*:\s*\[([\s\S]*)/);
+          if (chapterMatch) {
+            var textParts = chapterMatch[1].split(/"text"\s*:\s*"/);
+            for (var pi = 1; pi < textParts.length; pi++) {
+              var tp = textParts[pi].replace(/"\s*[,}].*/, "").replace(/\\"/g, '"').replace(/\\n/g, "\n");
+              if (tp.trim()) allTexts.push(tp.trim());
+            }
+          }
+          if (allTexts.length === 0 && cleaned.trim().length > 20) {
+            var simpleTexts = cleaned.replace(/^\s*\{/, "").split(/"text"\s*:\s*"/);
+            for (var si = 1; si < simpleTexts.length; si++) {
+              var st = simpleTexts[si].replace(/"\s*[,}].*/, "").replace(/\\"/g, '"').replace(/\\n/g, "\n");
+              if (st.trim().length > 10) allTexts.push(st.trim());
+            }
+          }
+          _contParagraphs = allTexts.slice();
+        },
         function(raw) {
           debugLog("Cont stream done, raw len:" + raw.length + " first200:" + raw.substring(0, 200));
           try {
             var extractResult = stripXmlAndExtractJson(raw); var jsonStr = extractResult.json;
-            if (!jsonStr) { debugLog("Cont no JSON found"); callback(null); return; }
+            if (!jsonStr) { debugLog("Cont no JSON found, using fallback"); _useStreamedFallback(summary, _contParagraphs, callback); return; }
             var data = JSON.parse(jsonStr);
             debugLog("Cont parsed OK, hasContent:" + !!(data.content || data.text));
             callback(data);
-          } catch(e) { debugLog("Cont parse error:" + e.message + " raw500:" + raw.substring(0, 500)); callback(null); }
+          } catch(e) { debugLog("Cont parse error:" + e.message + ", using fallback"); _useStreamedFallback(summary, _contParagraphs, callback); }
         },
-        function(e) { debugLog("Cont stream error:" + (e && e.message ? e.message : String(e))); callback(null); }
+        function(e) { debugLog("Cont stream error:" + (e && e.message ? e.message : String(e)) + ", using fallback"); _useStreamedFallback(summary, _contParagraphs, callback); }
       );
     };
     var attachMem = shouldAttachMemory();

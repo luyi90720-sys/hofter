@@ -36,33 +36,70 @@
     };
     _state.logs.push(entry);
     if (_state.logs.length > _state.maxLogs) _state.logs.shift();
-    if (_state.panelVisible) appendLogEntry(entry);
+    appendLogEntry(entry);
   }
 
   function appendLogEntry(entry) {
+    /* 更新悬浮球面板 */
     var container = document.getElementById("hm-log-container");
-    if (!container) return;
-    if (_state.filterLevel !== "all" && entry.level !== _state.filterLevel) return;
-    var div = document.createElement("div");
-    div.className = "hm-log-entry hm-log-" + entry.level;
-    div.innerHTML = '<span class="hm-log-time">' + entry.time + '</span>' +
-      '<span class="hm-log-level">' + entry.level.toUpperCase() + '</span>' +
-      '<span class="hm-log-source">[' + escapeHtml(entry.source) + ']</span>' +
-      '<span class="hm-log-msg">' + escapeHtml(entry.message) + '</span>';
-    container.appendChild(div);
-    if (_state.autoScroll) container.scrollTop = container.scrollHeight;
-    /* 限制DOM中的日志数量 */
-    while (container.children.length > 200) container.removeChild(container.firstChild);
+    if (container) {
+      if (_state.filterLevel !== "all" && entry.level !== _state.filterLevel) return;
+      var div = document.createElement("div");
+      div.className = "hm-log-entry hm-log-" + entry.level;
+      div.innerHTML = '<span class="hm-log-time">' + entry.time + '</span>' +
+        '<span class="hm-log-level">' + entry.level.toUpperCase() + '</span>' +
+        '<span class="hm-log-source">[' + escapeHtml(entry.source) + ']</span>' +
+        '<span class="hm-log-msg">' + escapeHtml(entry.message) + '</span>';
+      container.appendChild(div);
+      if (_state.autoScroll) container.scrollTop = container.scrollHeight;
+      while (container.children.length > 200) container.removeChild(container.firstChild);
+    }
+    /* 更新主界面 */
+    var mainContainer = _state.mainLogContainer || document.getElementById("hm-log-container-main");
+    if (mainContainer) {
+      if (_state.filterLevel !== "all" && entry.level !== _state.filterLevel) return;
+      var div2 = document.createElement("div");
+      div2.className = "hm-log-entry hm-log-" + entry.level;
+      div2.innerHTML = '<span class="hm-log-time">' + entry.time + '</span>' +
+        '<span class="hm-log-level">' + entry.level.toUpperCase() + '</span>' +
+        '<span class="hm-log-source">[' + escapeHtml(entry.source) + ']</span>' +
+        '<span class="hm-log-msg">' + escapeHtml(entry.message) + '</span>';
+      mainContainer.appendChild(div2);
+      if (_state.autoScroll) mainContainer.scrollTop = mainContainer.scrollHeight;
+      while (mainContainer.children.length > 200) mainContainer.removeChild(mainContainer.firstChild);
+    }
+    /* 更新计数 */
+    var countEl = document.getElementById("hm-log-count-main");
+    if (countEl) countEl.textContent = "Logs: " + _state.logs.length;
   }
 
   function escapeHtml(s) { if (!s) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
   function refreshLogPanel() {
     var container = document.getElementById("hm-log-container");
-    if (!container) return;
-    container.innerHTML = "";
-    for (var i = 0; i < _state.logs.length; i++) {
-      appendLogEntry(_state.logs[i]);
+    if (container) {
+      container.innerHTML = "";
+      for (var i = 0; i < _state.logs.length; i++) {
+        appendLogEntry(_state.logs[i]);
+      }
+    }
+  }
+
+  function refreshMainLog() {
+    var mainContainer = _state.mainLogContainer || document.getElementById("hm-log-container-main");
+    if (mainContainer) {
+      mainContainer.innerHTML = "";
+      for (var i = 0; i < _state.logs.length; i++) {
+        if (_state.filterLevel !== "all" && _state.logs[i].level !== _state.filterLevel) continue;
+        var div = document.createElement("div");
+        div.className = "hm-log-entry hm-log-" + _state.logs[i].level;
+        div.innerHTML = '<span class="hm-log-time">' + _state.logs[i].time + '</span>' +
+          '<span class="hm-log-level">' + _state.logs[i].level.toUpperCase() + '</span>' +
+          '<span class="hm-log-source">[' + escapeHtml(_state.logs[i].source) + ']</span>' +
+          '<span class="hm-log-msg">' + escapeHtml(_state.logs[i].message) + '</span>';
+        mainContainer.appendChild(div);
+      }
+      mainContainer.scrollTop = mainContainer.scrollHeight;
     }
   }
 
@@ -274,6 +311,9 @@
   }
 
   function renderBall() {
+    /* 避免重复创建悬浮球 */
+    var existingBall = document.getElementById("hm-ball");
+    if (existingBall) return;
     var ball = document.createElement("div");
     ball.className = "hm-ball";
     ball.id = "hm-ball";
@@ -281,23 +321,28 @@
     ball.style.left = _state.position.x + "px";
     ball.style.top = _state.position.y + "px";
     /* 拖拽 */
+    var dragMoved = false;
     ball.addEventListener("mousedown", function(e) {
       _state.dragging = true;
+      dragMoved = false;
       _state.dragStart = { x: e.clientX, y: e.clientY };
       _state.posStart = { x: _state.position.x, y: _state.position.y };
       e.preventDefault();
     });
     document.addEventListener("mousemove", function(e) {
       if (!_state.dragging) return;
-      _state.position.x = _state.posStart.x + (e.clientX - _state.dragStart.x);
-      _state.position.y = _state.posStart.y + (e.clientY - _state.dragStart.y);
+      var dx = e.clientX - _state.dragStart.x;
+      var dy = e.clientY - _state.dragStart.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+      _state.position.x = _state.posStart.x + dx;
+      _state.position.y = _state.posStart.y + dy;
       ball.style.left = _state.position.x + "px";
       ball.style.top = _state.position.y + "px";
     });
     document.addEventListener("mouseup", function() { _state.dragging = false; });
     /* 点击切换面板 */
     ball.addEventListener("click", function() {
-      if (_state.dragging) return;
+      if (dragMoved) { dragMoved = false; return; }
       togglePanel();
     });
     document.body.appendChild(ball);
@@ -412,7 +457,15 @@
         addLog("warn", "conv-watch", "roche.conversation API not available");
       }
     },
-    log: function(level, source, message) { addLog(level, source, message); }
+    log: function(level, source, message) { addLog(level, source, message); },
+    closeApp: function() {
+      if (_state.roche && _state.roche.ui && _state.roche.ui.closeApp) {
+        _state.roche.ui.closeApp();
+      }
+      /* 关闭App后确保悬浮球仍可点击 */
+      _state.panelVisible = false;
+      addLog("info", "system", "App closed via exit button, floating ball still active");
+    }
   };
 
   /* ─── 插件注册 ─── */
@@ -435,7 +488,39 @@
           styleEl.setAttribute("data-hofter-monitor-style", "1");
           document.head.appendChild(styleEl);
           _state.styleEl = styleEl;
-          /* 渲染悬浮球 */
+          /* 确保容器可见且有高度 */
+          if (container) {
+            container.style.height = "100%";
+            container.style.minHeight = "100%";
+            container.style.overflow = "hidden";
+          }
+          /* 渲染主界面到container */
+          container.innerHTML = '<div class="' + ROOT_CLASS + '" style="height:100%;min-height:100%;display:flex;flex-direction:column;background:#1a1a2e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;overflow:hidden">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#16213e;border-bottom:1px solid #0f3460;flex-shrink:0">' +
+              '<span style="font-size:16px;font-weight:700;color:#e94560">Hofter Monitor</span>' +
+              '<div style="display:flex;gap:8px">' +
+                '<button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.scanDOM()">Scan DOM</button>' +
+                '<button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.listConvs()">Convs</button>' +
+                '<button class="hm-btn hm-btn-primary" onclick="window.__hofterMonitor.closeApp()" style="padding:6px 16px;font-size:13px">\u9000\u51FA</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="hm-filter-bar" style="flex-shrink:0">' +
+              '<button class="hm-filter-btn active" onclick="window.__hofterMonitor.setFilter(\'all\')">All</button>' +
+              '<button class="hm-filter-btn" onclick="window.__hofterMonitor.setFilter(\'info\')">Info</button>' +
+              '<button class="hm-filter-btn" onclick="window.__hofterMonitor.setFilter(\'warn\')">Warn</button>' +
+              '<button class="hm-filter-btn" onclick="window.__hofterMonitor.setFilter(\'error\')">Error</button>' +
+              '<button class="hm-btn hm-btn-secondary" style="margin-left:auto" onclick="window.__hofterMonitor.clearLogs()">Clear</button>' +
+            '</div>' +
+            '<div class="hm-log-container" id="hm-log-container-main" style="flex:1;overflow-y:auto;padding:8px;min-height:0"></div>' +
+            '<div style="display:flex;justify-content:space-between;padding:6px 16px;background:#16213e;border-top:1px solid #0f3460;font-size:10px;color:#555;flex-shrink:0">' +
+              '<span id="hm-log-count-main">Logs: ' + _state.logs.length + '</span>' +
+              '<span>\u60AC\u6D6E\u7403\u5728\u5173\u95EDApp\u540E\u4ECD\u53EF\u4F7F\u7528</span>' +
+            '</div>' +
+          '</div>';
+          /* 同步日志到主界面的容器 */
+          _state.mainLogContainer = document.getElementById("hm-log-container-main");
+          refreshMainLog();
+          /* 渲染悬浮球到body（不受app生命周期影响） */
           renderBall();
           /* 启动监控 */
           hookConsole();
@@ -449,17 +534,14 @@
           }
         },
         unmount: function(container) {
-          /* 清理 */
-          for (var i = 0; i < _state.observers.length; i++) {
-            try { _state.observers[i].disconnect(); } catch(e) {}
-          }
-          _state.observers = [];
-          var ball = document.getElementById("hm-ball");
-          if (ball) ball.remove();
-          var panel = document.getElementById("hm-panel");
-          if (panel) panel.remove();
-          if (_state.styleEl && _state.styleEl.parentNode) _state.styleEl.parentNode.removeChild(_state.styleEl);
+          /* 清理container内容，但保留悬浮球和监控 */
+          _state.mainLogContainer = null;
           if (container) container.replaceChildren();
+          /* 不清理悬浮球、不停止监控 — 悬浮球在app关闭后继续运行 */
+          _state.panelVisible = false;
+          /* 确保悬浮球仍然存在 */
+          renderBall();
+          addLog("info", "system", "App view closed, floating ball still active");
         }
       }
     ]

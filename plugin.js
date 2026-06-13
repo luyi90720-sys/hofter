@@ -909,6 +909,10 @@
     worldbookCategories: [],
     settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false, autoFollowTropeTags: false, modelPresets: [], activeModelPresetId: "", promptLanguage: "zh" },
     isLoading: false,
+    batchSelectMode: false,
+    batchSelectedIds: [],
+    batchGenerating: false,
+    batchProgress: { current: 0, total: 0 },
     conversations: [],
     personas: [],
     characters: [],
@@ -1339,33 +1343,95 @@
       signal: controller.signal
     }).then(function(resp) {
       if (!resp.ok) {
+        debugLog("customAiChat: API error " + resp.status);
         resp.text().then(function(t) { fail(new Error("API " + resp.status + ": " + t.substring(0, 200))); }).catch(function() { fail(new Error("API " + resp.status)); });
         return;
       }
-      var reader = resp.body.getReader();
-      var decoder = new TextDecoder();
-      var rawBuffer = "";
+      /* 检查是否为流式响应 */
+      var contentType = resp.headers.get("content-type") || "";
+      debugLog("customAiChat: response content-type=" + contentType);
+      var isStreamResponse = contentType.indexOf("text/event-stream") >= 0 || contentType.indexOf("stream") >= 0;
+      if (isStreamResponse) {
+        /* 流式响应 */
+        var reader;
+        try {
+          reader = resp.body.getReader();
+        } catch(readerErr) {
+          debugLog("customAiChat: getReader() failed, falling back to non-stream: " + readerErr.message);
+          /* 无法获取reader，回退到非流式读取 */
+          resp.text().then(function(t) {
+            debugLog("customAiChat: fallback text read, len=" + t.length);
+            fullContent = t;
+            if (onProgress) onProgress(fullContent);
+            finish(fullContent);
+          }).catch(function(e2) { fail(e2); });
+          return;
+        }
+        var decoder = new TextDecoder();
+        var rawBuffer = "";
 
-      function pump() {
-        reader.read().then(function(result) {
-          if (result.done) { finish(fullContent); return; }
-          var chunk = decoder.decode(result.value, { stream: true });
-          rawBuffer += chunk;
-          var lines = rawBuffer.split("\n");
-          rawBuffer = lines.pop();
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i].trim();
-            if (line.indexOf("data: ") !== 0) continue;
-            var dataStr = line.substring(6);
-            if (dataStr === "[DONE]") { finish(fullContent); return; }
-            var delta = extractDeltaText(dataStr);
-            if (delta) { fullContent += delta; if (onProgress) onProgress(fullContent); }
+        function pump() {
+          try {
+            reader.read().then(function(result) {
+              if (result.done) { finish(fullContent); return; }
+              var chunk = decoder.decode(result.value, { stream: true });
+              rawBuffer += chunk;
+              var lines = rawBuffer.split("\n");
+              rawBuffer = lines.pop();
+              for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (line.indexOf("data: ") !== 0) continue;
+                var dataStr = line.substring(6);
+                if (dataStr === "[DONE]") { finish(fullContent); return; }
+                var delta = extractDeltaText(dataStr);
+                if (delta) { fullContent += delta; if (onProgress) onProgress(fullContent); }
+              }
+              pump();
+            }).catch(function(e) {
+              debugLog("customAiChat: stream read error: " + (e && e.message ? e.message : String(e)));
+              /* 流读取失败，如果有部分内容则返回 */
+              if (fullContent.length > 0) { finish(fullContent); }
+              else { fail(e); }
+            });
+          } catch(pumpErr) {
+            debugLog("customAiChat: pump() exception: " + pumpErr.message);
+            if (fullContent.length > 0) { finish(fullContent); }
+            else { fail(pumpErr); }
           }
-          pump();
-        }).catch(function(e) { fail(e); });
+        }
+        pump();
+      } else {
+        /* 非流式响应（某些轻型模型API不支持stream） */
+        debugLog("customAiChat: non-stream response detected, content-type=" + contentType + ", reading as JSON");
+        resp.json().then(function(data) {
+          var text = "";
+          if (data.choices && data.choices[0] && data.choices[0].message) {
+            text = data.choices[0].message.content || "";
+          } else if (data.content && typeof data.content === "string") {
+            text = data.content;
+          } else if (data.text) {
+            text = data.text;
+          } else if (typeof data === "string") {
+            text = data;
+          }
+          debugLog("customAiChat: non-stream parsed OK, text len=" + text.length);
+          fullContent = text;
+          if (onProgress) onProgress(fullContent);
+          finish(fullContent);
+        }).catch(function(e) {
+          debugLog("customAiChat: JSON parse failed, trying plain text: " + e.message);
+          /* JSON解析失败，尝试纯文本 */
+          resp.text().then(function(t) {
+            fullContent = t;
+            if (onProgress) onProgress(fullContent);
+            finish(fullContent);
+          }).catch(function(e2) { fail(e2); });
+        });
       }
-      pump();
-    }).catch(function(e) { fail(e); });
+    }).catch(function(e) {
+      debugLog("customAiChat: fetch error: " + (e && e.message ? e.message : String(e)));
+      fail(e);
+    });
   }
 
   function fetchModelList(apiUrl, apiKey, callback) {
@@ -1853,6 +1919,7 @@
     var excludeList = existingNames.length > 0 ? "\n\n\u7528\u6237\u5df2\u6709\u6807\u7b7e\uff08\u7edd\u5bf9\u4e0d\u53ef\u91cd\u590d\uff09\uff1a" + existingNames.join("\u3001") : "";
     debugLog("Explore calling aiChatStream, excludeCount:" + existingNames.length);
     var chatFn = getActiveModelPreset() ? customAiChat : aiChatStream;
+    debugLog("Explore using chatFn: " + (getActiveModelPreset() ? "customAiChat (preset model: " + getActiveModelPreset().model + ")" : "aiChatStream (roche built-in)"));
     chatFn([
       { role: "system", content: PROMPTS.exploreTags },
       { role: "user", content: "\u8bf7\u751f\u6210\u540c\u4eba\u6807\u7b7e\u4f9b\u7528\u6237\u63a2\u7d22\u3002" + excludeList + cpInspiration }
@@ -1862,13 +1929,17 @@
         debugLog("Explore stream done, raw len:" + raw.length + " first200:" + raw.substring(0, 200));
         try {
           var extractResult = stripXmlAndExtractJson(raw); var jsonStr = extractResult.json;
-            if (!jsonStr) { debugLog("Explore no JSON found"); callback([]); return; }
+            if (!jsonStr) { debugLog("Explore no JSON found in raw response, raw100:" + raw.substring(0, 100)); callback([]); return; }
           var data = JSON.parse(jsonStr);
           debugLog("Explore parsed OK, tags:" + (data.tags || []).length);
           callback(data.tags || []);
         } catch(e) { debugLog("Explore parse error:" + e.message + " raw500:" + raw.substring(0, 500)); callback([]); }
       },
-      function(e) { debugLog("Explore stream error:" + (e && e.message ? e.message : String(e))); callback([]); }
+      function(e) {
+        debugLog("Explore stream error: " + (e && e.message ? e.message : String(e)));
+        debugLog("Explore error details: name=" + (e ? e.name : "null") + " stack=" + (e && e.stack ? e.stack.substring(0, 300) : "n/a"));
+        callback([]);
+      }
     );
     } catch(e) { debugLog("Explore FATAL:" + e.message); callback([]); }
   }
@@ -2088,6 +2159,12 @@
     '.' + ROOT_CLASS + ' .hp-stream-para{animation:hpStreamFadeIn .25s ease forwards;opacity:0}' +
     /* ── 防误触保护 ── */
     '.' + ROOT_CLASS + ' .hp-touch-guard{pointer-events:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:50}' +
+    /* ── 批量选择模式 ── */
+    '.' + ROOT_CLASS + ' .hp-card-batch-select{position:relative}' +
+    '.' + ROOT_CLASS + ' .hp-card-batch-checkbox{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:rgba(0,0,0,0.3);z-index:5;display:flex;align-items:center;justify-content:center;transition:all .2s}' +
+    '.' + ROOT_CLASS + ' .hp-card-batch-checkbox.checked{background:var(--primary);border-color:var(--primary)}' +
+    '.' + ROOT_CLASS + ' .hp-card.selected-for-batch{outline:2px solid var(--primary);outline-offset:-2px}' +
+    '.' + ROOT_CLASS + ' .hp-batch-bar{position:fixed;bottom:70px;left:16px;right:16px;background:var(--bg-card);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;z-index:250}' +
     '@keyframes hpSpin{to{transform:rotate(360deg)}}' +
     '@keyframes hpFadeIn{from{opacity:0}to{opacity:1}}' +
     '@keyframes hpSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}' +
@@ -2197,7 +2274,58 @@
           '<span>' + escapeHtml(timeAgo) + '</span>' +
         '</div>' +
       '</div>';
-    card.onclick = function() { window.__hofter.openReader(summary.id); };
+    card.onclick = function() {
+      if (state.batchSelectMode) {
+        window.__hofter.toggleBatchSelect(summary.id);
+        return;
+      }
+      window.__hofter.openReader(summary.id);
+    };
+    /* 长按检测进入批量选择模式 */
+    var longPressTimer = null;
+    card.addEventListener("touchstart", function(e) {
+      longPressTimer = setTimeout(function() {
+        longPressTimer = null;
+        if (!state.batchSelectMode) {
+          window.__hofter.enterBatchSelect();
+          window.__hofter.toggleBatchSelect(summary.id);
+        }
+      }, 500);
+    }, { passive: true });
+    card.addEventListener("touchend", function() {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    });
+    card.addEventListener("touchmove", function() {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    });
+    /* 鼠标长按（桌面端） */
+    card.addEventListener("mousedown", function(e) {
+      longPressTimer = setTimeout(function() {
+        longPressTimer = null;
+        if (!state.batchSelectMode) {
+          window.__hofter.enterBatchSelect();
+          window.__hofter.toggleBatchSelect(summary.id);
+        }
+      }, 500);
+    });
+    card.addEventListener("mouseup", function() {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    });
+    card.addEventListener("mouseleave", function() {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    });
+    /* 批量选择模式下的复选框和高亮 */
+    if (state.batchSelectMode) {
+      card.classList.add("hp-card-batch-select");
+      var isSelected = state.batchSelectedIds.indexOf(summary.id) >= 0;
+      if (isSelected) card.classList.add("selected-for-batch");
+      var checkbox = document.createElement("div");
+      checkbox.className = "hp-card-batch-checkbox" + (isSelected ? " checked" : "");
+      checkbox.innerHTML = isSelected ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>' : "";
+      checkbox.onclick = function(e) { e.stopPropagation(); window.__hofter.toggleBatchSelect(summary.id); };
+      card.style.position = "relative";
+      card.insertBefore(checkbox, card.firstChild);
+    }
     return card;
   }
 
@@ -2339,6 +2467,23 @@
       }
       sec.appendChild(trList);
       container.appendChild(sec);
+    }
+    /* 批量选择模式浮动操作栏 */
+    if (state.batchSelectMode) {
+      var batchBar = document.createElement("div");
+      batchBar.className = "hp-batch-bar";
+      var progressText = "";
+      if (state.batchGenerating) {
+        progressText = '<span id="hp-batch-progress" style="font-size:13px;color:var(--primary-dark)">\u6b63\u5728\u751f\u6210 ' + state.batchProgress.current + '/' + state.batchProgress.total + '</span>';
+      } else {
+        progressText = '<span style="font-size:13px;color:var(--text-secondary)">\u5df2\u9009 ' + state.batchSelectedIds.length + ' \u7bc7</span>';
+      }
+      batchBar.innerHTML = progressText +
+        '<div style="display:flex;gap:8px">' +
+          '<button class="hp-btn" style="font-size:13px;padding:8px 16px" onclick="window.__hofter.startBatchGenerate()"' + (state.batchGenerating ? ' disabled' : '') + '>\u4e00\u952e\u751f\u6210\u6b63\u6587</button>' +
+          '<button class="hp-btn hp-btn-outline" style="font-size:13px;padding:8px 16px" onclick="window.__hofter.exitBatchSelect()"' + (state.batchGenerating ? ' disabled' : '') + '>\u53d6\u6d88</button>' +
+        '</div>';
+      container.appendChild(batchBar);
     }
   }
 
@@ -2761,13 +2906,13 @@
       if (text) text.textContent = diff >= THRESHOLD ? "\u91ca\u653e\u5237\u65b0" : "\u4e0b\u62c9\u5237\u65b0";
     }
     function isTabOrClickable(e) {
-      /* 检查事件目标是否在tabs、按钮、链接等可点击元素内，避免拦截点击 */
+      /* 检查事件目标是否在tabs、按钮、链接、卡片等可点击元素内，避免拦截点击 */
       var target = e.target || e.srcElement;
       if (!target) return false;
-      if (target.closest && (target.closest('.hp-tabs') || target.closest('.hp-tab') || target.closest('button') || target.closest('a') || target.closest('[onclick]') || target.closest('.hp-channel-item') || target.closest('.hp-icon-btn'))) return true;
+      if (target.closest && (target.closest('.hp-tabs') || target.closest('.hp-tab') || target.closest('button') || target.closest('a') || target.closest('[onclick]') || target.closest('.hp-channel-item') || target.closest('.hp-icon-btn') || target.closest('.hp-card') || target.closest('.hp-card-batch-checkbox') || target.closest('.hp-tag') || target.closest('.hp-tag-item') || target.closest('.hp-btn'))) return true;
       /* fallback: 检查className */
       var cn = target.className || "";
-      if (typeof cn === "string" && (cn.indexOf("hp-tab") >= 0 || cn.indexOf("hp-tabs") >= 0 || cn.indexOf("hp-channel") >= 0)) return true;
+      if (typeof cn === "string" && (cn.indexOf("hp-tab") >= 0 || cn.indexOf("hp-tabs") >= 0 || cn.indexOf("hp-channel") >= 0 || cn.indexOf("hp-card") >= 0 || cn.indexOf("hp-tag") >= 0 || cn.indexOf("hp-btn") >= 0)) return true;
       return false;
     }
     function onTS(e) {
@@ -5170,6 +5315,96 @@
       saveCpTags(state.cpTags); showToast("CP\u6807\u7b7e\u5df2\u521b\u5efa"); showTagManager();
     },
     closeApp: function() { if (state.roche && state.roche.ui) state.roche.ui.closeApp(); },
+    enterBatchSelect: function() {
+      state.batchSelectMode = true;
+      state.batchSelectedIds = [];
+      renderApp();
+    },
+    exitBatchSelect: function() {
+      state.batchSelectMode = false;
+      state.batchSelectedIds = [];
+      state.batchGenerating = false;
+      state.batchProgress = { current: 0, total: 0 };
+      renderApp();
+    },
+    toggleBatchSelect: function(summaryId) {
+      var idx = state.batchSelectedIds.indexOf(summaryId);
+      if (idx >= 0) { state.batchSelectedIds.splice(idx, 1); }
+      else { state.batchSelectedIds.push(summaryId); }
+      renderApp();
+    },
+    startBatchGenerate: function() {
+      if (state.batchSelectedIds.length === 0) { showToast("\u8bf7\u5148\u9009\u62e9\u6458\u8981"); return; }
+      state.batchGenerating = true;
+      state.batchProgress = { current: 0, total: state.batchSelectedIds.length };
+      renderApp();
+
+      var ids = state.batchSelectedIds.slice();
+      var idx = 0;
+
+      function generateNext() {
+        if (idx >= ids.length) {
+          state.batchGenerating = false;
+          state.batchSelectMode = false;
+          state.batchSelectedIds = [];
+          saveSummariesCache(state.summaries);
+          renderApp();
+          showToast("\u5168\u90e8\u751f\u6210\u5b8c\u6210\uff01");
+          return;
+        }
+        var summaryId = ids[idx];
+        var summary = null;
+        for (var i = 0; i < state.summaries.length; i++) {
+          if (state.summaries[i].id === summaryId) { summary = state.summaries[i]; break; }
+        }
+        if (!summary || summary.fullContent) {
+          idx++;
+          state.batchProgress.current = idx;
+          generateNext();
+          return;
+        }
+        state.batchProgress.current = idx + 1;
+        showToast("\u6b63\u5728\u751f\u6210 " + (idx + 1) + "/" + ids.length);
+        var progressEl = document.getElementById("hp-batch-progress");
+        if (progressEl) progressEl.textContent = "\u6b63\u5728\u751f\u6210 " + (idx + 1) + "/" + ids.length;
+
+        generateLayer2Full(summary, function(result) {
+          if (result) {
+            summary.fullContent = result;
+            if (result.chapter && !result.chapters) result.chapters = [result.chapter];
+            if (!summary.fullContent.comments) summary.fullContent.comments = [];
+            saveSummariesCache(state.summaries);
+
+            if (state.settings.autoGenerateComments) {
+              var fullText = "";
+              if (result.chapters) {
+                for (var ci = 0; ci < result.chapters.length; ci++) {
+                  var contents = result.chapters[ci].content || [];
+                  for (var cj = 0; cj < contents.length; cj++) fullText += (contents[cj].text || "") + "\n";
+                }
+              }
+              if (fullText.length > 50) {
+                generateLayer3Comments(fullText, function(comments, annotations) {
+                  if (comments && comments.length > 0) summary.fullContent.comments = comments;
+                  if (annotations && annotations.length > 0) {
+                    if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
+                    summary.fullContent.annotations = summary.fullContent.annotations.concat(annotations);
+                  }
+                  saveSummariesCache(state.summaries);
+                  idx++;
+                  generateNext();
+                });
+                return;
+              }
+            }
+          }
+          idx++;
+          generateNext();
+        });
+      }
+
+      generateNext();
+    },
     toggleDebug: function() { toggleDebugPanel(); },
     clearDebug: function() { debugLogs = []; var p = document.getElementById("hp-debug-content"); if (p) p.textContent = ""; debugLog("debug cleared"); },
     copyDebug: function() { var text = debugLogs.join("\n"); if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function() { debugLog("debug copied to clipboard"); }); } else { debugLog("clipboard API not available"); } },

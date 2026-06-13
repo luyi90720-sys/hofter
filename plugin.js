@@ -3691,61 +3691,128 @@
 
   function navigateToChat(conversationId, convName) {
     debugLog("navigateToChat: id=" + conversationId + " name=" + convName);
-    /* 返回 Promise，支持异步等待 */
     return new Promise(function(resolve) {
-      /* 方案0：尝试 Roche API 直接打开会话 */
-      if (state.roche && state.roche.conversation) {
-        var tried = false;
-        var apiNames = ['open', 'navigate', 'show'];
-        for (var ai = 0; ai < apiNames.length; ai++) {
-          if (state.roche.conversation[apiNames[ai]]) {
-            debugLog("Trying roche.conversation." + apiNames[ai] + "(" + conversationId + ")");
-            try {
-              var result = state.roche.conversation[apiNames[ai]](conversationId);
-              debugLog("conversation." + apiNames[ai] + " returned: " + JSON.stringify(result).substring(0, 100));
-              if (result) { resolve(true); return; }
-            } catch(e) { debugLog("conversation." + apiNames[ai] + " error: " + e.message); }
-            tried = true;
-          }
-        }
-        if (state.roche.ui) {
-          var uiMethods = ['openConversation', 'navigateTo'];
-          for (var ui = 0; ui < uiMethods.length; ui++) {
-            if (state.roche.ui[uiMethods[ui]]) {
-              debugLog("Trying roche.ui." + uiMethods[ui]);
-              try {
-                state.roche.ui[uiMethods[ui]](conversationId);
-                resolve(true); return;
-              } catch(e) { debugLog(uiMethods[ui] + " error: " + e.message); }
-            }
+      /* 方案0：Vue Router 劫持（最优雅） */
+      var vueRouter = probeVueRouter();
+      if (vueRouter) {
+        debugLog("navigateToChat: Found Vue Router v" + vueRouter.version);
+        /* 尝试多种可能的路径格式 */
+        var paths = [
+          "/chat/" + conversationId,
+          "/conversation/" + conversationId,
+          "/c/" + conversationId
+        ];
+        for (var pi = 0; pi < paths.length; pi++) {
+          try {
+            debugLog("navigateToChat: trying router.push(" + paths[pi] + ")");
+            vueRouter.router.push(paths[pi]);
+            debugLog("navigateToChat: router.push succeeded with " + paths[pi]);
+            /* 等待聊天页面加载 */
+            waitForElement('.chat-input-textarea', 5000).then(function(inputEl) {
+              if (inputEl) {
+                debugLog("navigateToChat: Vue Router jump successful, chat page loaded");
+                resolve(true);
+              } else {
+                debugLog("navigateToChat: Vue Router jump done but no chat input found, trying next method");
+                resolve(false);
+              }
+            });
+            return;
+          } catch(e) {
+            debugLog("navigateToChat: router.push(" + paths[pi] + ") error: " + e.message);
           }
         }
       }
 
-      /* 方案1：两阶段 DOM 导航 */
-      debugLog("navigateToChat: starting two-phase DOM navigation");
-      phase1_ensureInboxPage().then(function(inInbox) {
-        if (!inInbox) {
-          debugLog("navigateToChat: failed to reach inbox page");
-          resolve(false); return;
-        }
-        debugLog("navigateToChat: phase 1 done, now finding target conversation");
-        phase2_clickConversation(conversationId, convName).then(function(clicked) {
-          if (!clicked) {
-            debugLog("navigateToChat: failed to find/click target conversation");
-            resolve(false); return;
-          }
-          debugLog("navigateToChat: phase 2 done, waiting for chat page to load");
-          /* 等待聊天页面加载完成 */
-          waitForElement('.chat-input-textarea', 8000).then(function(inputEl) {
+      /* 方案1：history.pushState + popstate */
+      debugLog("navigateToChat: trying history.pushState + popstate");
+      var pushPaths = ["/chat/" + conversationId, "/conversation/" + conversationId];
+      for (var pp = 0; pp < pushPaths.length; pp++) {
+        try {
+          history.pushState(null, '', pushPaths[pp]);
+          window.dispatchEvent(new Event('popstate'));
+          debugLog("navigateToChat: pushState + popstate dispatched for " + pushPaths[pp]);
+          /* 检查是否成功跳转 */
+          waitForElement('.chat-input-textarea', 3000).then(function(inputEl) {
             if (inputEl) {
-              debugLog("navigateToChat: chat page loaded successfully");
+              debugLog("navigateToChat: pushState jump successful");
               resolve(true);
             } else {
-              debugLog("navigateToChat: chat page did not load (no .chat-input-textarea)");
-              resolve(false);
+              debugLog("navigateToChat: pushState didn't work, falling back to DOM click");
+              domClickFallback(conversationId, convName, resolve);
             }
           });
+          return;
+        } catch(e) {
+          debugLog("navigateToChat: pushState error: " + e.message);
+        }
+      }
+
+      /* 方案2：DOM 点击兜底 */
+      domClickFallback(conversationId, convName, resolve);
+    });
+  }
+
+  /* 探测 Vue Router 实例 */
+  function probeVueRouter() {
+    try {
+      var appNode = document.querySelector('#app') || document.querySelector('[data-v-app]') || document.body.firstElementChild;
+      if (!appNode) return null;
+
+      /* Vue 3 */
+      var vueApp = appNode.__vue_app__;
+      if (vueApp) {
+        var router = vueApp.config && vueApp.config.globalProperties && vueApp.config.globalProperties.$router;
+        if (router) {
+          return { version: 3, router: router };
+        }
+      }
+
+      /* Vue 2 */
+      var vue2 = appNode.__vue__;
+      if (vue2 && vue2.$router) {
+        return { version: 2, router: vue2.$router };
+      }
+
+      /* 遍历 DOM 寻找 Vue 实例 */
+      var allEls = document.querySelectorAll('*');
+      for (var i = 0; i < Math.min(allEls.length, 200); i++) {
+        var el = allEls[i];
+        if (el.__vue_app__) {
+          var r3 = el.__vue_app__.config && el.__vue_app__.config.globalProperties && el.__vue_app__.config.globalProperties.$router;
+          if (r3) return { version: 3, router: r3 };
+        }
+        if (el.__vue__ && el.__vue__.$router) {
+          return { version: 2, router: el.__vue__.$router };
+        }
+      }
+    } catch(e) {
+      debugLog("probeVueRouter error: " + e.message);
+    }
+    return null;
+  }
+
+  /* DOM 点击兜底方案 */
+  function domClickFallback(conversationId, convName, resolve) {
+    debugLog("navigateToChat: falling back to DOM click navigation");
+    phase1_ensureInboxPage().then(function(inInbox) {
+      if (!inInbox) {
+        debugLog("navigateToChat: failed to reach inbox page");
+        resolve(false); return;
+      }
+      phase2_clickConversation(conversationId, convName).then(function(clicked) {
+        if (!clicked) {
+          debugLog("navigateToChat: failed to find/click target conversation");
+          resolve(false); return;
+        }
+        waitForElement('.chat-input-textarea', 8000).then(function(inputEl) {
+          if (inputEl) {
+            debugLog("navigateToChat: DOM click navigation successful");
+            resolve(true);
+          } else {
+            debugLog("navigateToChat: chat page did not load");
+            resolve(false);
+          }
         });
       });
     });

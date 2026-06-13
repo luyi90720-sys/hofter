@@ -198,6 +198,172 @@
     }
   }
 
+  /* ─── 路由嗅探器 ─── */
+  var _routeSnifferInstalled = false;
+  var _capturedRoutes = [];
+
+  function startRouteSniffer() {
+    if (_routeSnifferInstalled) return;
+    _routeSnifferInstalled = true;
+    addLog("info", "route-sniffer", "Route sniffer started - navigate in Roche to capture routes");
+
+    /* 拦截 history.pushState */
+    var origPushState = history.pushState;
+    history.pushState = function(state, title, url) {
+      addLog("info", "route-sniffer", "pushState: " + url);
+      _capturedRoutes.push({ type: "pushState", url: url, time: Date.now() });
+      return origPushState.apply(this, arguments);
+    };
+
+    /* 拦截 history.replaceState */
+    var origReplaceState = history.replaceState;
+    history.replaceState = function(state, title, url) {
+      addLog("info", "route-sniffer", "replaceState: " + url);
+      _capturedRoutes.push({ type: "replaceState", url: url, time: Date.now() });
+      return origReplaceState.apply(this, arguments);
+    };
+
+    /* 监听 hash 变化 */
+    window.addEventListener("hashchange", function(e) {
+      addLog("info", "route-sniffer", "hashchange: " + window.location.hash + " oldURL=" + (e.oldURL || ""));
+      _capturedRoutes.push({ type: "hashchange", hash: window.location.hash, time: Date.now() });
+    });
+
+    /* 监听 popstate */
+    window.addEventListener("popstate", function(e) {
+      addLog("info", "route-sniffer", "popstate: " + window.location.pathname + window.location.hash);
+      _capturedRoutes.push({ type: "popstate", path: window.location.pathname + window.location.hash, time: Date.now() });
+    });
+
+    /* 记录初始 URL */
+    addLog("info", "route-sniffer", "Initial URL: " + window.location.href);
+    addLog("info", "route-sniffer", "Initial pathname: " + window.location.pathname);
+    addLog("info", "route-sniffer", "Initial hash: " + window.location.hash);
+    _capturedRoutes.push({ type: "init", url: window.location.href, time: Date.now() });
+
+    /* 探测 Vue 实例 */
+    setTimeout(function() {
+      var vueInfo = probeVueRouter();
+      if (vueInfo) {
+        addLog("info", "route-sniffer", "Vue Router detected! version=" + vueInfo.version + " currentRoute=" + vueInfo.currentRoute);
+        addLog("info", "route-sniffer", "Vue Router routes: " + vueInfo.routes);
+      } else {
+        addLog("warn", "route-sniffer", "Vue Router not found via DOM probe");
+      }
+    }, 2000);
+  }
+
+  /* 探测 Vue Router 实例 */
+  function probeVueRouter() {
+    try {
+      /* Vue 3: __vue_app__ */
+      var appNode = document.querySelector('#app') || document.body.firstElementChild;
+      if (!appNode) return null;
+
+      /* Vue 3 */
+      var vueApp = appNode.__vue_app__;
+      if (vueApp) {
+        var router = vueApp.config && vueApp.config.globalProperties && vueApp.config.globalProperties.$router;
+        if (router) {
+          var routes = "";
+          if (router.getRoutes) {
+            var routeList = router.getRoutes();
+            routes = routeList.map(function(r) { return r.path; }).join(", ");
+          } else if (router.options && router.options.routes) {
+            routes = router.options.routes.map(function(r) { return r.path; }).join(", ");
+          }
+          var currentRoute = router.currentRoute && router.currentRoute.value ? router.currentRoute.value.path : "";
+          return { version: 3, currentRoute: currentRoute, routes: routes, router: router };
+        }
+      }
+
+      /* Vue 2: __vue__ */
+      var vue2 = appNode.__vue__;
+      if (vue2 && vue2.$router) {
+        var router2 = vue2.$router;
+        var routes2 = "";
+        if (router2.options && router2.options.routes) {
+          routes2 = router2.options.routes.map(function(r) { return r.path; }).join(", ");
+        }
+        var currentRoute2 = router2.currentRoute ? router2.currentRoute.path : "";
+        return { version: 2, currentRoute: currentRoute2, routes: routes2, router: router2 };
+      }
+
+      /* 遍历所有 DOM 元素寻找 Vue 实例 */
+      var allEls = document.querySelectorAll('*');
+      for (var i = 0; i < Math.min(allEls.length, 200); i++) {
+        var el = allEls[i];
+        if (el.__vue_app__) {
+          var r3 = el.__vue_app__.config && el.__vue_app__.config.globalProperties && el.__vue_app__.config.globalProperties.$router;
+          if (r3) {
+            var cr3 = r3.currentRoute && r3.currentRoute.value ? r3.currentRoute.value.path : "";
+            var rt3 = r3.getRoutes ? r3.getRoutes().map(function(x) { return x.path; }).join(", ") : "";
+            return { version: 3, currentRoute: cr3, routes: rt3, router: r3 };
+          }
+        }
+        if (el.__vue__ && el.__vue__.$router) {
+          var r2 = el.__vue__.$router;
+          var cr2 = r2.currentRoute ? r2.currentRoute.path : "";
+          var rt2 = r2.options && r2.options.routes ? r2.options.routes.map(function(x) { return x.path; }).join(", ") : "";
+          return { version: 2, currentRoute: cr2, routes: rt2, router: r2 };
+        }
+      }
+    } catch(e) {
+      addLog("error", "route-sniffer", "probeVueRouter error: " + e.message);
+    }
+    return null;
+  }
+
+  function doVueJump(targetPath, convId) {
+    addLog("info", "vue-jump", "Attempting to jump to: " + targetPath);
+
+    /* 方案1：Vue Router 劫持 */
+    var vueInfo = probeVueRouter();
+    if (vueInfo && vueInfo.router) {
+      addLog("info", "vue-jump", "Found Vue Router v" + vueInfo.version + ", trying router.push...");
+      try {
+        vueInfo.router.push(targetPath);
+        addLog("info", "vue-jump", "router.push called successfully!");
+        /* 关闭插件面板 */
+        if (window.roche && roche.ui && roche.ui.closeApp) {
+          setTimeout(function() { roche.ui.closeApp(); }, 500);
+        }
+        return;
+      } catch(e) {
+        addLog("error", "vue-jump", "router.push error: " + e.message);
+      }
+    }
+
+    /* 方案2：history.pushState + popstate */
+    addLog("info", "vue-jump", "Trying history.pushState + popstate...");
+    try {
+      history.pushState(null, '', targetPath);
+      window.dispatchEvent(new Event('popstate'));
+      addLog("info", "vue-jump", "pushState + popstate dispatched");
+      if (window.roche && roche.ui && roche.ui.closeApp) {
+        setTimeout(function() { roche.ui.closeApp(); }, 500);
+      }
+      return;
+    } catch(e) {
+      addLog("error", "vue-jump", "pushState error: " + e.message);
+    }
+
+    /* 方案3：hash 路由 */
+    addLog("info", "vue-jump", "Trying hash route...");
+    try {
+      window.location.hash = targetPath;
+      addLog("info", "vue-jump", "Hash set to " + targetPath);
+      if (window.roche && roche.ui && roche.ui.closeApp) {
+        setTimeout(function() { roche.ui.closeApp(); }, 500);
+      }
+      return;
+    } catch(e) {
+      addLog("error", "vue-jump", "hash route error: " + e.message);
+    }
+
+    addLog("error", "vue-jump", "All jump methods failed!");
+  }
+
   /* ─── 拦截 console ─── */
   function hookConsole() {
     var origLog = console.log;
@@ -370,6 +536,8 @@
           <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.scanDOM()">Scan DOM</button>
           <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.listConvs()">Convs</button>
           <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.tryNavChat()">Nav Chat</button>
+          <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.sniffRoutes()">Routes</button>
+          <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.vueJump()">Vue Jump</button>
           <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.clearLogs()">Clear</button>
           <button class="hm-btn hm-btn-primary" onclick="window.__hofterMonitor.togglePanel()">X</button>
         </div>
@@ -645,6 +813,53 @@
       }
     },
     log: function(level, source, message) { addLog(level, source, message); },
+    sniffRoutes: function() {
+      addLog("info", "route-sniffer", "=== Captured Routes ===");
+      if (_capturedRoutes.length === 0) {
+        addLog("warn", "route-sniffer", "No routes captured yet. Navigate in Roche to capture routes.");
+      }
+      for (var i = 0; i < _capturedRoutes.length; i++) {
+        var r = _capturedRoutes[i];
+        addLog("info", "route-sniffer", "[" + i + "] " + r.type + ": " + (r.url || r.hash || r.path || ""));
+      }
+      addLog("info", "route-sniffer", "Current URL: " + window.location.href);
+      addLog("info", "route-sniffer", "Current pathname: " + window.location.pathname);
+      addLog("info", "route-sniffer", "Current hash: " + window.location.hash);
+      /* 再次探测 Vue Router */
+      var vueInfo = probeVueRouter();
+      if (vueInfo) {
+        addLog("info", "route-sniffer", "Vue Router v" + vueInfo.version + " currentRoute=" + vueInfo.currentRoute);
+        addLog("info", "route-sniffer", "Routes: " + vueInfo.routes);
+      } else {
+        addLog("warn", "route-sniffer", "Vue Router not found");
+      }
+      addLog("info", "route-sniffer", "=== End Routes ===");
+    },
+    vueJump: function(path) {
+      if (!path) {
+        /* 尝试跳转到第一个会话 */
+        addLog("info", "vue-jump", "No path specified, trying to find a conversation to jump to...");
+        if (window.roche && roche.conversation && roche.conversation.list) {
+          roche.conversation.list().then(function(list) {
+            if (list && list.length > 0) {
+              var convId = list[0].id || list[0].conversationId || "";
+              var convName = list[0].name || list[0].title || "";
+              addLog("info", "vue-jump", "Using first conv: id=" + convId + " name=" + convName);
+              doVueJump("/chat/" + convId, convId);
+            } else {
+              addLog("warn", "vue-jump", "No conversations found");
+            }
+          }).catch(function(e) {
+            addLog("error", "vue-jump", "Failed to list convs: " + (e && e.message ? e.message : String(e)));
+          });
+        } else {
+          addLog("warn", "vue-jump", "roche.conversation API not available, trying /chat as path");
+          doVueJump("/chat", null);
+        }
+        return;
+      }
+      doVueJump(path, null);
+    },
     closeApp: function() {
       if (_state.roche && _state.roche.ui && _state.roche.ui.closeApp) {
         _state.roche.ui.closeApp();
@@ -714,6 +929,7 @@
           hookFetch();
           startDOMWatch();
           startConvWatch();
+          startRouteSniffer();
           addLog("info", "system", "Hofter Monitor v1.0.0 started");
           addLog("info", "system", "roche API available: " + !!roche);
           if (roche && roche.conversation) {

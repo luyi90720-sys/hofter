@@ -1060,16 +1060,19 @@
   function saveFandomTags(t) { state.fandomTags = t; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("fandomTags"), t); }
   function saveSummariesCache(a) {
     state.summaries = a;
-    if (state.summaries.length > 100) {
-      var withContent = [];
-      var withoutContent = [];
-      for (var i = 0; i < state.summaries.length; i++) {
-        if (state.summaries[i].fullContent) withContent.push(state.summaries[i]);
-        else withoutContent.push(state.summaries[i]);
-      }
-      var keep = withContent.concat(withoutContent);
-      state.summaries = keep.slice(0, 100);
+    /* 推荐页最多保留100条未生成正文的摘要卡片 */
+    var withoutContent = [];
+    var withContent = [];
+    for (var i = 0; i < state.summaries.length; i++) {
+      if (state.summaries[i].fullContent) withContent.push(state.summaries[i]);
+      else withoutContent.push(state.summaries[i]);
     }
+    /* 未生成正文的摘要限制100条，超出则删除最旧的（末尾） */
+    if (withoutContent.length > 100) {
+      withoutContent = withoutContent.slice(0, 100);
+    }
+    /* 有正文的摘要全部保留（供历史/订阅查看），但排在后面 */
+    state.summaries = withoutContent.concat(withContent);
     if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("summaries_cache"), state.summaries);
   }
   function savePublishedWorks(a) { state.publishedWorks = a; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("published_works"), a); }
@@ -2408,11 +2411,16 @@
   var PAGE_SIZE = 20;
   function loadMoreSummaries(grid) {
     if (!grid || state._homeAllLoaded) return;
+    /* 推荐页只加载未生成正文的摘要 */
+    var followSummaries = [];
+    for (var fi = 0; fi < state.summaries.length; fi++) {
+      if (!state.summaries[fi].fullContent) followSummaries.push(state.summaries[fi]);
+    }
     var start = state._homePageEnd || 0;
-    var end = Math.min(start + PAGE_SIZE, state.summaries.length);
-    for (var i = start; i < end; i++) grid.appendChild(createSummaryCard(state.summaries[i]));
+    var end = Math.min(start + PAGE_SIZE, followSummaries.length);
+    for (var i = start; i < end; i++) grid.appendChild(createSummaryCard(followSummaries[i]));
     state._homePageEnd = end;
-    state._homeAllLoaded = end >= state.summaries.length;
+    state._homeAllLoaded = end >= followSummaries.length;
     var moreBtn = document.getElementById("hp-load-more");
     if (state._homeAllLoaded && moreBtn) moreBtn.remove();
   }
@@ -2421,12 +2429,17 @@
     tabs.innerHTML = '<div class="hp-tab ' + (state.homeTab==="follow"?"active":"") + '" onclick="window.__hofter.switchHomeTab(\'follow\')">\u5173\u6ce8</div><div class="hp-tab ' + (state.homeTab==="subscribe"?"active":"") + '" onclick="window.__hofter.switchHomeTab(\'subscribe\')">\u8ba2\u9605</div>';
     container.appendChild(tabs);
     if (state.homeTab === "follow") {
-      if (state.summaries.length === 0) { container.innerHTML += '<div class="hp-empty">' + ICONS.refresh + '<p>\u4e0b\u62c9\u5237\u65b0\u83b7\u53d6\u540c\u4eba\u6587\u63a8\u8350</p></div>'; return; }
+      /* 推荐页只显示未生成正文的摘要 */
+      var followSummaries = [];
+      for (var fi = 0; fi < state.summaries.length; fi++) {
+        if (!state.summaries[fi].fullContent) followSummaries.push(state.summaries[fi]);
+      }
+      if (followSummaries.length === 0) { container.innerHTML += '<div class="hp-empty">' + ICONS.refresh + '<p>\u4e0b\u62c9\u5237\u65b0\u83b7\u53d6\u540c\u4eba\u6587\u63a8\u8350</p></div>'; return; }
       var grid = document.createElement("div"); grid.className = "hp-card-grid";
-      var displayCount = Math.min(state.summaries.length, PAGE_SIZE);
+      var displayCount = Math.min(followSummaries.length, PAGE_SIZE);
       state._homePageEnd = displayCount;
-      state._homeAllLoaded = displayCount >= state.summaries.length;
-      for (var i = 0; i < displayCount; i++) grid.appendChild(createSummaryCard(state.summaries[i]));
+      state._homeAllLoaded = displayCount >= followSummaries.length;
+      for (var i = 0; i < displayCount; i++) grid.appendChild(createSummaryCard(followSummaries[i]));
       container.appendChild(grid);
       if (!state._homeAllLoaded) {
         var moreBtn = document.createElement("div");
@@ -2438,7 +2451,7 @@
       }
       var totalInfo = document.createElement("div");
       totalInfo.style.cssText = "text-align:center;padding:8px;color:var(--text-hint);font-size:11px";
-      totalInfo.textContent = "\u5171 " + state.summaries.length + " \u7bc7";
+      totalInfo.textContent = "\u5171 " + followSummaries.length + " \u7bc7\u63a8\u8350";
       container.appendChild(totalInfo);
     } else {
       var readSummaries = [];
@@ -3533,6 +3546,14 @@
     if (comments.length === 0 && annotations.length === 0) {
       html += '<div style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px"><p>\u8fd8\u6ca1\u6709\u8bc4\u8bba</p><p style="font-size:12px;margin-top:4px">\u70b9\u51fb\u53f3\u4e0a\u89d2\u5237\u65b0\u6309\u94ae\u751f\u6210\u8bc4\u8bba</p></div>';
     }
+    /* 为每条评论分配唯一cid，用于删除操作 */
+    state._commentMap = {};
+    var cidCounter = 0;
+    for (var ci = 0; ci < comments.length; ci++) {
+      var cid = "c" + (cidCounter++);
+      comments[ci]._cid = cid;
+      state._commentMap[cid] = comments[ci];
+    }
     /* 嵌套评论渲染：先构建树结构，再递归渲染 */
     var topLevel = [];
     var repliesMap = {};
@@ -3560,7 +3581,8 @@
         translationHtml = '<span class="hp-translation-toggle" data-trans-id="' + transId + '" onclick="var el=document.getElementById(\'' + transId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" style="display:inline-flex;align-items:center;margin-left:6px;cursor:pointer;color:#0ea5a0;font-size:12px;gap:2px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>\u8bd1</span>';
         translationHtml += '<div id="' + transId + '" style="display:none;font-size:12px;color:#0ea5a0;margin-top:4px;padding:4px 8px;background:rgba(14,165,160,0.08);border-radius:6px;border-left:2px solid #0ea5a0">' + escapeHtml(comment.translation) + '</div>';
       }
-      var h = '<div class="hp-comment-item' + charClass + '" style="' + indent + '" onclick="window.__hofter.replyToComment(\'' + escapeHtml(comment.name||"").replace(/'/g,"\\'") + '\')"><div class="hp-comment-avatar">' + charAvatar + '</div><div class="hp-comment-body"><div class="hp-comment-name">' + replyLabel + escapeHtml(comment.name||"\u533f\u540d") + charBadge + '</div><div class="hp-comment-text">' + escapeHtml(comment.text||"") + translationHtml + '</div><div class="hp-comment-time">' + escapeHtml(comment.time||"") + charConvInfo + '<span class="hp-comment-report" onclick="event.stopPropagation();window.__hofter.reportComment(this)">\u4e3e\u62a5</span></div></div></div>';
+      var deleteBtn = '<span class="hp-comment-delete" data-cid="' + comment._cid + '" onclick="event.stopPropagation();window.__hofter.deleteComment(this,\'' + comment._cid + '\')" style="cursor:pointer;margin-left:8px;font-size:11px;color:var(--text-hint)">\u5220\u9664</span>';
+      var h = '<div class="hp-comment-item' + charClass + '" style="' + indent + '" onclick="window.__hofter.replyToComment(\'' + escapeHtml(comment.name||"").replace(/'/g,"\\'") + '\')"><div class="hp-comment-avatar">' + charAvatar + '</div><div class="hp-comment-body"><div class="hp-comment-name">' + replyLabel + escapeHtml(comment.name||"\u533f\u540d") + charBadge + '</div><div class="hp-comment-text">' + escapeHtml(comment.text||"") + translationHtml + '</div><div class="hp-comment-time">' + escapeHtml(comment.time||"") + charConvInfo + '<span class="hp-comment-report" onclick="event.stopPropagation();window.__hofter.reportComment(this)">\u4e3e\u62a5</span>' + deleteBtn + '</div></div></div>';
       var replies = repliesMap[comment.name] || [];
       for (var r = 0; r < replies.length; r++) {
         h += renderCommentNode(replies[r], depth + 1);
@@ -3662,9 +3684,9 @@
     var text = "[HF]";
     /* 语境描述：让char知道这是同人社区分享的同人文 */
     if (isByUser) {
-      text += "[CONTEXT]" + userName + "\u5411\u60a8\u5206\u4eab\u4e86\u4e00\u7bc7\u6765\u81eaHofter\u540c\u4eba\u793e\u533a\u7684\u540c\u4eba\u6587\u7ae0\u3002\u8fd9\u662f" + userName + "\u81ea\u5df1\u5199\u7684\u6587\u7ae0\uff01\u8bf7\u4ee5\u89d2\u8272\u81ea\u5df1\u7684\u89c6\u89d2\u9605\u8bfb\u5e76\u81ea\u7136\u5730\u53cd\u5e94\u3002[/CONTEXT]";
+      text += "[CONTEXT]" + userName + "\u5411\u60a8\u5206\u4eab\u4e86\u4e00\u7bc7\u6765\u81eaHofter\u540c\u4eba\u793e\u533a\u7684\u540c\u4eba\u6587\u7ae0\u3002\u8fd9\u662f" + userName + "\u81ea\u5df1\u5199\u7684\u6587\u7ae0\uff01\u8bf7\u4ee5\u4f60\u81ea\u5df1\u7684\u89c6\u89d2\u9605\u8bfb\u5e76\u81ea\u7136\u5730\u53cd\u5e94\u3002[/CONTEXT]";
     } else {
-      text += "[CONTEXT]" + userName + "\u5411\u60a8\u5206\u4eab\u4e86\u4e00\u7bc7\u6765\u81eaHofter\u540c\u4eba\u793e\u533a\u7684\u540c\u4eba\u6587\u7ae0\u3002\u8fd9\u662f\u4e00\u4e2a\u540c\u4eba\u7231\u597d\u8005\u4eec\u5206\u4eab\u521b\u4f5c\u7684\u793e\u533a\uff0c\u8bf7\u4ee5\u89d2\u8272\u81ea\u5df1\u7684\u89c6\u89d2\u9605\u8bfb\u5e76\u81ea\u7136\u5730\u53cd\u5e94\u3002[/CONTEXT]";
+      text += "[CONTEXT]" + userName + "\u5411\u60a8\u5206\u4eab\u4e86\u4e00\u7bc7\u6765\u81eaHofter\u540c\u4eba\u793e\u533a\u7684\u540c\u4eba\u6587\u7ae0\u3002\u8fd9\u662f\u4e00\u4e2a\u540c\u4eba\u7231\u597d\u8005\u4eec\u5206\u4eab\u521b\u4f5c\u7684\u793e\u533a\uff0c\u8bf7\u4ee5\u4f60\u81ea\u5df1\u7684\u89c6\u89d2\u9605\u8bfb\u5e76\u81ea\u7136\u5730\u53cd\u5e94\u3002[/CONTEXT]";
     }
     text += "[TITLE]" + (summary.title || "\u65e0\u6807\u9898") + "[/TITLE]";
     text += "[AUTHOR]" + author + (isByUser ? "(" + userName + "\u7684\u521b\u4f5c)" : "") + "[/AUTHOR]";
@@ -3811,19 +3833,71 @@
     } catch(e) { return false; }
   }
 
-  /* 写入事实记忆（降级方案） */
+  /* 写入事实记忆：追加到最新一条事实记忆 */
   function writeCharFactMemory(conversationId, charName, title, commentText, isGroup) {
     if (!state.roche || !state.roche.memory) return;
     var where = isGroup ? "Hofter\u7fa4\u804a" : "Hofter";
+    var now = new Date();
+    var timeStr = now.getHours() + ":" + (now.getMinutes() < 10 ? "0" : "") + now.getMinutes();
+    var appendText = "\uff1b[" + timeStr + "] " + charName + "\u8bc4\u8bba\u4e86\u300a" + title + "\u300b\uff1a" + (commentText || "").substring(0, 100);
+    /* 尝试获取现有事实记忆，追加到最新一条 */
+    state.roche.memory.getLongTerm({ conversationId: conversationId }).then(function(lt) {
+      var facts = (lt && lt.facts) ? lt.facts : [];
+      if (facts.length > 0) {
+        /* 找到最新一条事实记忆（数组最后一条） */
+        var latestFact = facts[facts.length - 1];
+        var existingText = latestFact.summaryText || latestFact.action || latestFact.text || "";
+        /* 追加到该条记忆文本后面 */
+        var updatedText = existingText + appendText;
+        /* 由于Roche memory API可能不支持更新，采用新建一条的方式 */
+        state.roche.memory.write({
+          conversationId: conversationId,
+          summaryText: updatedText,
+          who: latestFact.who || [charName],
+          action: latestFact.action || ("\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b"),
+          when: "\u521a\u521a",
+          where: where,
+          source: "hofter-plugin"
+        }).catch(function(e) { debugLog("writeCharFactMemory append error:" + e.message); });
+      } else {
+        /* 没有现有事实记忆，新建一条 */
+        state.roche.memory.write({
+          conversationId: conversationId,
+          summaryText: "[" + timeStr + "] " + charName + "\u5728" + where + "\u540c\u4eba\u793e\u533a\u8bc4\u8bba\u4e86\u300a" + title + "\u300b\uff1a" + (commentText || "").substring(0, 100),
+          who: [charName],
+          action: "\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b",
+          when: "\u521a\u521a",
+          where: where,
+          source: "hofter-plugin"
+        }).catch(function(e) { debugLog("writeCharFactMemory new error:" + e.message); });
+      }
+    }).catch(function(e) {
+      debugLog("writeCharFactMemory getLongTerm error:" + e.message);
+      /* 获取失败时降级：直接新建一条 */
+      state.roche.memory.write({
+        conversationId: conversationId,
+        summaryText: "[" + timeStr + "] " + charName + "\u5728" + where + "\u540c\u4eba\u793e\u533a\u8bc4\u8bba\u4e86\u300a" + title + "\u300b\uff1a" + (commentText || "").substring(0, 100),
+        who: [charName],
+        action: "\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b",
+        when: "\u521a\u521a",
+        where: where,
+        source: "hofter-plugin"
+      }).catch(function(e2) { debugLog("writeCharFactMemory fallback error:" + e2.message); });
+    });
+  }
+
+  /* 删除char评论时，同步写入遗忘标记到事实记忆 */
+  function deleteCharFactMemory(conversationId, charName, title) {
+    if (!state.roche || !state.roche.memory) return;
     state.roche.memory.write({
       conversationId: conversationId,
-      summaryText: "\u5728" + where + "\u540c\u4eba\u793e\u533a\u8bc4\u8bba\u4e86\u300a" + title + "\u300b\uff1a" + (commentText || "").substring(0, 100),
+      summaryText: "[Hofter] " + charName + "\u64a4\u56de\u4e86\u5728Hofter\u540c\u4eba\u793e\u533a\u5bf9\u300a" + title + "\u300b\u7684\u8bc4\u8bba",
       who: [charName],
-      action: "\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b",
+      action: "\u64a4\u56de\u4e86\u5728Hofter\u540c\u4eba\u793e\u533a\u5bf9\u300a" + title + "\u300b\u7684\u8bc4\u8bba",
       when: "\u521a\u521a",
-      where: where,
+      where: "Hofter",
       source: "hofter-plugin"
-    }).catch(function(e) { debugLog("writeCharFactMemory error:" + e.message); });
+    }).catch(function(e) { debugLog("deleteCharFactMemory error:" + e.message); });
   }
 
   /* 检查已分享的会话，生成char评论 */
@@ -4031,6 +4105,10 @@
             sharedInfo.lastCharCommentAt = Date.now();
             if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
             renderReaderContent(summary);
+            /* 将char评论追加到事实记忆 */
+            for (var mi = 0; mi < comments.length; mi++) {
+              writeCharFactMemory(conversationId, charName, title, comments[mi].text || "", false);
+            }
             /* 记忆注入由分享悬浮球负责（按 shareMemoryMode 设置） */
             if (callback) callback();
           } catch(e) {
@@ -4180,6 +4258,11 @@
               sharedInfo.lastCharCommentAt = Date.now();
               if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
               renderReaderContent(summary);
+              /* 将群聊char评论追加到事实记忆 */
+              for (var gi = 0; gi < comments.length; gi++) {
+                var gName = comments[gi].name || "\u89d2\u8272";
+                writeCharFactMemory(conversationId, gName, title, comments[gi].text || "", true);
+              }
               /* 群聊记忆注入由分享悬浮球负责 */
               if (callback) callback();
             } catch(e) {
@@ -5832,6 +5915,69 @@
       }, summary.fullContent.comments);
     },
     reportComment: function(el) { if (el) el.textContent = "\u5df2\u4e3e\u62a5"; el.style.color = "var(--text-hint)"; showToast("\u5df2\u4e3e\u62a5\uff0c\u611f\u8c22\u53cd\u9988"); },
+    deleteComment: function(el, cid) {
+      if (!el || !cid) return;
+      /* 防误触：第一次点击变为确认状态，3秒内再次点击才真正删除 */
+      if (el.getAttribute("data-confirm") === "true") {
+        /* 第二次点击：执行删除 */
+        var summary = state.currentReadingSummary;
+        if (!summary || !summary.fullContent || !summary.fullContent.comments) { showToast("\u65e0\u6cd5\u5220\u9664"); return; }
+        var comment = state._commentMap ? state._commentMap[cid] : null;
+        if (!comment) { showToast("\u8bc4\u8bba\u5df2\u4e0d\u5b58\u5728"); return; }
+        var commentName = comment.name || "";
+        var commentText = comment.text || "";
+        var isCharComment = comment.isCharacter === true;
+        var conversationId = comment.conversationId || "";
+        /* 递归删除该评论及所有回复该评论的评论 */
+        var commentsArr = summary.fullContent.comments;
+        var namesToRemove = [commentName];
+        /* 找出所有间接回复的评论名 */
+        var changed = true;
+        while (changed) {
+          changed = false;
+          for (var k = 0; k < commentsArr.length; k++) {
+            if (namesToRemove.indexOf(commentsArr[k].replyTo) >= 0 && namesToRemove.indexOf(commentsArr[k].name) < 0) {
+              namesToRemove.push(commentsArr[k].name);
+              changed = true;
+            }
+          }
+        }
+        /* 删除所有匹配的评论 */
+        var newComments = [];
+        for (var j = 0; j < commentsArr.length; j++) {
+          var shouldRemove = false;
+          /* 删除目标评论本身 */
+          if (commentsArr[j] === comment) shouldRemove = true;
+          /* 删除回复该评论的所有评论 */
+          if (namesToRemove.indexOf(commentsArr[j].name) >= 0 && commentsArr[j].replyTo && namesToRemove.indexOf(commentsArr[j].replyTo) >= 0) shouldRemove = true;
+          if (!shouldRemove) newComments.push(commentsArr[j]);
+        }
+        summary.fullContent.comments = newComments;
+        if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+        renderReaderContent(summary);
+        showToast("\u8bc4\u8bba\u5df2\u5220\u9664");
+        /* 如果是角色评论，同步删除事实记忆 */
+        if (isCharComment && conversationId) {
+          deleteCharFactMemory(conversationId, commentName, summary.title || "");
+        }
+      } else {
+        /* 第一次点击：进入确认状态 */
+        el.setAttribute("data-confirm", "true");
+        el.textContent = "\u786e\u8ba4\u5220\u9664\uff1f";
+        el.style.color = "#e74c3c";
+        el.style.fontWeight = "600";
+        /* 3秒后自动恢复 */
+        var timerId = setTimeout(function() {
+          if (el && el.parentNode) {
+            el.removeAttribute("data-confirm");
+            el.textContent = "\u5220\u9664";
+            el.style.color = "var(--text-hint)";
+            el.style.fontWeight = "";
+          }
+        }, 3000);
+        el._resetTimer = timerId;
+      }
+    },
     switchPersona: function(personaId) {
       var p = getPersonaById(personaId);
       if (p) {
@@ -6198,7 +6344,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.7.0",
+    version: "2.8.0",
     apps: [
       {
         id: "hofter-home",

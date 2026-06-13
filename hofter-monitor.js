@@ -477,9 +477,12 @@
   }
 
   function renderBall() {
-    /* 避免重复创建悬浮球 */
+    /* 如果已存在就不重复创建 */
     var existingBall = document.getElementById("hm-ball");
-    if (existingBall) return;
+    if (existingBall && existingBall.parentNode) return;
+    /* 如果存在但已脱离DOM，移除引用 */
+    if (existingBall) existingBall.remove();
+
     var ball = document.createElement("div");
     ball.className = "hm-ball";
     ball.id = "hm-ball";
@@ -548,6 +551,18 @@
       togglePanel();
     });
     document.body.appendChild(ball);
+
+    /* 监控悬浮球是否被意外移除，自动重建 */
+    if (!_state.ballObserver) {
+      _state.ballObserver = new MutationObserver(function() {
+        var b = document.getElementById("hm-ball");
+        if (!b || !b.parentNode) {
+          /* 悬浮球被移除了，延迟重建 */
+          setTimeout(function() { renderBall(); }, 100);
+        }
+      });
+      _state.ballObserver.observe(document.body, { childList: true });
+    }
   }
 
   function togglePanel() {

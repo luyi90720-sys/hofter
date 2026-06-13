@@ -2985,7 +2985,7 @@
   function doRefresh() {
     if (state.isLoading) return; _lastRefreshTime = Date.now(); debugLog("doRefresh start"); showLoading();
     var lockTag = state.currentTagPage || null;
-    var timeout = setTimeout(function() { hideLoading(); showToast("\u751f\u6210\u8d85\u65f6\uff0c\u8bf7\u91cd\u8bd5"); }, 120000);
+    var timeout = setTimeout(function() { hideLoading(); showToast("\u751f\u6210\u8d85\u65f6\uff0c\u8bf7\u91cd\u8bd5"); }, 300000);
     generateLayer1Summaries(lockTag, function(summaries) {
       clearTimeout(timeout);
       hideLoading();
@@ -3641,7 +3641,53 @@
   function navigateToChat(conversationId, convName) {
     debugLog("navigateToChat: id=" + conversationId + " name=" + convName);
 
-    /* 先探测Roche前台的DOM结构，记录日志供调试 */
+    /* 方案0：尝试 Roche API 直接打开会话 */
+    if (state.roche) {
+      /* roche.conversation.open / navigate / show */
+      if (state.roche.conversation) {
+        if (state.roche.conversation.open) {
+          debugLog("Trying roche.conversation.open(" + conversationId + ")");
+          try {
+            var result = state.roche.conversation.open(conversationId);
+            debugLog("conversation.open returned: " + JSON.stringify(result).substring(0, 100));
+            if (result) return true;
+          } catch(e) { debugLog("conversation.open error: " + e.message); }
+        }
+        if (state.roche.conversation.navigate) {
+          debugLog("Trying roche.conversation.navigate(" + conversationId + ")");
+          try {
+            state.roche.conversation.navigate(conversationId);
+            return true;
+          } catch(e) { debugLog("conversation.navigate error: " + e.message); }
+        }
+        if (state.roche.conversation.show) {
+          debugLog("Trying roche.conversation.show(" + conversationId + ")");
+          try {
+            state.roche.conversation.show(conversationId);
+            return true;
+          } catch(e) { debugLog("conversation.show error: " + e.message); }
+        }
+      }
+      /* roche.ui.openConversation / navigateTo */
+      if (state.roche.ui) {
+        if (state.roche.ui.openConversation) {
+          debugLog("Trying roche.ui.openConversation(" + conversationId + ")");
+          try {
+            state.roche.ui.openConversation(conversationId);
+            return true;
+          } catch(e) { debugLog("openConversation error: " + e.message); }
+        }
+        if (state.roche.ui.navigateTo) {
+          debugLog("Trying roche.ui.navigateTo(/chat/" + conversationId + ")");
+          try {
+            state.roche.ui.navigateTo("/chat/" + conversationId);
+            return true;
+          } catch(e) { debugLog("navigateTo error: " + e.message); }
+        }
+      }
+    }
+
+    /* 方案1：DOM操作点击侧边栏 */
     var sidebarSelectors = [
       '[class*="sidebar"]', '[class*="chat-list"]', '[class*="conv-list"]',
       '[class*="contact-list"]', '[class*="session-list"]', '[class*="message-list"]',
@@ -3651,16 +3697,9 @@
       var sidebarEl = document.querySelector(sidebarSelectors[si]);
       if (sidebarEl) {
         debugLog("Found sidebar: " + sidebarSelectors[si] + " children=" + sidebarEl.children.length + " classes=" + sidebarEl.className.substring(0, 80));
-        /* 记录子元素结构 */
-        for (var ci = 0; ci < Math.min(sidebarEl.children.length, 5); ci++) {
-          var child = sidebarEl.children[ci];
-          debugLog("  child[" + ci + "]: tag=" + child.tagName + " class=" + (child.className || "").substring(0, 60) + " data-attrs=" +
-            Array.from(child.attributes).filter(function(a){return a.name.indexOf("data-")===0}).map(function(a){return a.name+"="+a.value.substring(0,20)}).join(","));
-        }
       }
     }
 
-    /* 方案1：DOM操作点击侧边栏 */
     var selectors = [
       '[class*="chat-item"]', '[class*="conversation-item"]', '[class*="contact"]',
       '[class*="chat-list"] > *', '[class*="conv-list"] > *',
@@ -3694,14 +3733,14 @@
       for (var r = 0; r < routes.length; r++) {
         debugLog("Trying route: " + routes[r]);
       }
-      /* 如果Roche使用hash路由 */
-      if (window.location.hash !== undefined) {
-        debugLog("Current hash: " + window.location.hash);
-        debugLog("Current pathname: " + window.location.pathname);
-      }
+      /* 尝试hash路由跳转 */
+      try {
+        window.location.hash = "#/chat/" + conversationId;
+        debugLog("Set hash to #/chat/" + conversationId);
+      } catch(e) { debugLog("hash route error: " + e.message); }
     }
 
-    debugLog("navigateToChat: FAILED - no matching element found");
+    debugLog("navigateToChat: FAILED - no method worked");
     return false;
   }
 

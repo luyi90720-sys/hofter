@@ -369,6 +369,7 @@
         <div class="hm-panel-actions">
           <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.scanDOM()">Scan DOM</button>
           <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.listConvs()">Convs</button>
+          <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.tryNavChat()">Nav Chat</button>
           <button class="hm-btn hm-btn-secondary" onclick="window.__hofterMonitor.clearLogs()">Clear</button>
           <button class="hm-btn hm-btn-primary" onclick="window.__hofterMonitor.togglePanel()">X</button>
         </div>
@@ -403,14 +404,19 @@
       refreshLogPanel();
     },
     scanDOM: function() {
-      addLog("info", "dom-scan", "=== Manual DOM Scan ===");
-      /* 扫描所有可能的聊天列表元素 */
+      addLog("info", "dom-scan", "=== Deep DOM Scan ===");
+      /* 1. 扫描所有可能的聊天列表元素 */
       var selectors = [
         '[class*="sidebar"]', '[class*="chat-list"]', '[class*="conv-list"]',
         '[class*="session-list"]', '[class*="contact-list"]', '[class*="message-list"]',
         'nav', 'aside', '[role="navigation"]', '[role="complementary"]',
         '[class*="list-item"]', '[class*="chat-item"]', '[class*="conv-item"]',
-        '[data-id]', '[data-conversation-id]', '[data-session-id]'
+        '[data-id]', '[data-conversation-id]', '[data-session-id"]',
+        '[class*="router"]', '[class*="view"]', '[class*="page"]',
+        '[class*="app"]', '[class*="main"]', '[class*="content"]',
+        '[class*="frame"]', '[class*="container"]', '[class*="layout"]',
+        '[class*="dialog"]', '[class*="modal"]', '[class*="overlay"]',
+        'iframe', '[class*="iframe"]', '[class*="embed"]'
       ];
       for (var s = 0; s < selectors.length; s++) {
         var els = document.querySelectorAll(selectors[s]);
@@ -419,22 +425,83 @@
           for (var e = 0; e < Math.min(els.length, 3); e++) {
             var el = els[e];
             var tag = el.tagName;
-            var cn = (el.className || "").substring(0, 60);
+            var cn = (el.className || "").substring(0, 80);
             var dataAttrs = "";
             if (el.attributes) {
               for (var a = 0; a < el.attributes.length; a++) {
-                if (el.attributes[a].name.indexOf("data-") === 0 || el.attributes[a].name === "id" || el.attributes[a].name === "href") {
-                  dataAttrs += el.attributes[a].name + "=" + el.attributes[a].value.substring(0, 30) + " ";
+                if (el.attributes[a].name.indexOf("data-") === 0 || el.attributes[a].name === "id" || el.attributes[a].name === "href" || el.attributes[a].name === "src") {
+                  dataAttrs += el.attributes[a].name + "=" + el.attributes[a].value.substring(0, 50) + " ";
                 }
               }
             }
-            var text = (el.textContent || "").substring(0, 40).replace(/\n/g, " ");
+            var text = (el.textContent || "").substring(0, 60).replace(/\n/g, " ");
             addLog("info", "dom-scan", "  [" + e + "] <" + tag + "> class=" + cn + " " + dataAttrs.trim() + " text=" + text);
           }
         }
       }
+      /* 2. 扫描body直接子元素结构 */
+      addLog("info", "dom-scan", "--- Body children ---");
+      var bodyChildren = document.body.children;
+      for (var bi = 0; bi < Math.min(bodyChildren.length, 15); bi++) {
+        var bc = bodyChildren[bi];
+        var bcn = (bc.className || "").substring(0, 60);
+        var bid = bc.id || "";
+        addLog("info", "dom-scan", "body[" + bi + "] <" + bc.tagName + "> id=" + bid + " class=" + bcn + " children=" + bc.children.length);
+      }
+      /* 3. 探测 Roche API */
+      addLog("info", "dom-scan", "--- Roche API ---");
+      if (window.roche) {
+        var rocheKeys = Object.keys(window.roche);
+        addLog("info", "dom-scan", "roche keys: " + rocheKeys.join(", "));
+        if (roche.ui) {
+          var uiKeys = Object.keys(roche.ui);
+          addLog("info", "dom-scan", "roche.ui keys: " + uiKeys.join(", "));
+        }
+        if (roche.conversation) {
+          var convKeys = Object.keys(roche.conversation);
+          addLog("info", "dom-scan", "roche.conversation keys: " + convKeys.join(", "));
+        }
+        if (roche.ai) {
+          var aiKeys = Object.keys(roche.ai);
+          addLog("info", "dom-scan", "roche.ai keys: " + aiKeys.join(", "));
+        }
+      } else {
+        addLog("warn", "dom-scan", "window.roche not found");
+      }
+      /* 4. 探测路由 */
+      addLog("info", "dom-scan", "--- Router ---");
       addLog("info", "dom-scan", "URL: " + window.location.href);
       addLog("info", "dom-scan", "Hash: " + window.location.hash);
+      addLog("info", "dom-scan", "Pathname: " + window.location.pathname);
+      addLog("info", "dom-scan", "Search: " + window.location.search);
+      /* 检测常见前端框架路由 */
+      if (window.__NEXT_DATA__) addLog("info", "dom-scan", "Next.js detected");
+      if (window.__NUXT__) addLog("info", "dom-scan", "Nuxt.js detected");
+      if (window.__VUE__) addLog("info", "dom-scan", "Vue detected");
+      if (window.angular) addLog("info", "dom-scan", "Angular detected");
+      if (window.__SVELTE__) addLog("info", "dom-scan", "Svelte detected");
+      /* 5. 尝试找到可点击的聊天入口 */
+      addLog("info", "dom-scan", "--- Clickable chat entries ---");
+      var allClickable = document.querySelectorAll('[onclick], [role="button"], [role="link"], a[href], button');
+      addLog("info", "dom-scan", "Total clickable elements: " + allClickable.length);
+      for (var ci = 0; ci < Math.min(allClickable.length, 20); ci++) {
+        var ce = allClickable[ci];
+        var ceText = (ce.textContent || "").substring(0, 30).replace(/\n/g, " ");
+        var ceHref = ce.getAttribute("href") || "";
+        var ceOnclick = ce.getAttribute("onclick") || "";
+        if (ceText || ceHref || ceOnclick) {
+          addLog("info", "dom-scan", "clickable[" + ci + "] <" + ce.tagName + "> text=" + ceText + " href=" + ceHref.substring(0, 50) + " onclick=" + ceOnclick.substring(0, 50));
+        }
+      }
+      /* 6. 检测所有 iframe */
+      var iframes = document.querySelectorAll("iframe");
+      if (iframes.length > 0) {
+        addLog("info", "dom-scan", "Found " + iframes.length + " iframes");
+        for (var ii = 0; ii < iframes.length; ii++) {
+          var iframe = iframes[ii];
+          addLog("info", "dom-scan", "iframe[" + ii + "] src=" + (iframe.src || "").substring(0, 80) + " id=" + (iframe.id || ""));
+        }
+      }
       addLog("info", "dom-scan", "=== Scan Complete ===");
     },
     listConvs: function() {
@@ -455,6 +522,117 @@
         });
       } else {
         addLog("warn", "conv-watch", "roche.conversation API not available");
+      }
+    },
+    /* 尝试用各种方式打开聊天 */
+    tryNavChat: function(convId) {
+      addLog("info", "nav-chat", "=== Try Navigate to Chat ===");
+      if (!convId) {
+        /* 先列出会话 */
+        if (window.roche && roche.conversation && roche.conversation.list) {
+          roche.conversation.list().then(function(list) {
+            if (list && list.length > 0) {
+              convId = list[0].id || list[0].conversationId || "";
+              addLog("info", "nav-chat", "Using first conv id: " + convId);
+              doNavigate(convId);
+            } else {
+              addLog("warn", "nav-chat", "No conversations found");
+            }
+          }).catch(function(e) {
+            addLog("error", "nav-chat", "Failed to list convs: " + (e && e.message ? e.message : String(e)));
+          });
+        } else {
+          addLog("warn", "nav-chat", "roche.conversation API not available");
+        }
+        return;
+      }
+      doNavigate(convId);
+
+      function doNavigate(cid) {
+        addLog("info", "nav-chat", "Target convId: " + cid);
+        /* 方法1: roche.conversation.open */
+        if (window.roche && roche.conversation) {
+          if (roche.conversation.open) {
+            addLog("info", "nav-chat", "Trying roche.conversation.open...");
+            try {
+              var result = roche.conversation.open(cid);
+              addLog("info", "nav-chat", "conversation.open returned: " + JSON.stringify(result).substring(0, 100));
+            } catch(e) {
+              addLog("error", "nav-chat", "conversation.open error: " + e.message);
+            }
+          }
+          if (roche.conversation.get) {
+            addLog("info", "nav-chat", "Trying roche.conversation.get...");
+            roche.conversation.get(cid).then(function(conv) {
+              addLog("info", "nav-chat", "conversation.get result: " + JSON.stringify(conv).substring(0, 200));
+              addLog("info", "nav-chat", "conv keys: " + Object.keys(conv || {}).join(", "));
+            }).catch(function(e) {
+              addLog("error", "nav-chat", "conversation.get error: " + (e && e.message ? e.message : String(e)));
+            });
+          }
+          if (roche.conversation.navigate) {
+            addLog("info", "nav-chat", "Trying roche.conversation.navigate...");
+            try {
+              roche.conversation.navigate(cid);
+              addLog("info", "nav-chat", "conversation.navigate called");
+            } catch(e) {
+              addLog("error", "nav-chat", "conversation.navigate error: " + e.message);
+            }
+          }
+          if (roche.conversation.show) {
+            addLog("info", "nav-chat", "Trying roche.conversation.show...");
+            try {
+              roche.conversation.show(cid);
+              addLog("info", "nav-chat", "conversation.show called");
+            } catch(e) {
+              addLog("error", "nav-chat", "conversation.show error: " + e.message);
+            }
+          }
+        }
+        /* 方法2: roche.ui */
+        if (window.roche && roche.ui) {
+          if (roche.ui.openConversation) {
+            addLog("info", "nav-chat", "Trying roche.ui.openConversation...");
+            try {
+              roche.ui.openConversation(cid);
+              addLog("info", "nav-chat", "openConversation called");
+            } catch(e) {
+              addLog("error", "nav-chat", "openConversation error: " + e.message);
+            }
+          }
+          if (roche.ui.navigateTo) {
+            addLog("info", "nav-chat", "Trying roche.ui.navigateTo...");
+            try {
+              roche.ui.navigateTo("/chat/" + cid);
+              addLog("info", "nav-chat", "navigateTo called");
+            } catch(e) {
+              addLog("error", "nav-chat", "navigateTo error: " + e.message);
+            }
+          }
+        }
+        /* 方法3: URL hash */
+        addLog("info", "nav-chat", "Trying hash routes...");
+        var routes = ["#/chat/" + cid, "#/conversation/" + cid, "#/c/" + cid];
+        for (var ri = 0; ri < routes.length; ri++) {
+          addLog("info", "nav-chat", "Try: " + routes[ri]);
+        }
+        /* 方法4: 模拟点击侧边栏 */
+        addLog("info", "nav-chat", "Trying DOM click on sidebar items...");
+        var clickSelectors = [
+          '[data-conversation-id="' + cid + '"]',
+          '[data-conv-id="' + cid + '"]',
+          '[data-id="' + cid + '"]',
+          '[data-session-id="' + cid + '"]'
+        ];
+        for (var cs = 0; cs < clickSelectors.length; cs++) {
+          var clickEl = document.querySelector(clickSelectors[cs]);
+          if (clickEl) {
+            addLog("info", "nav-chat", "Found and clicking: " + clickSelectors[cs]);
+            clickEl.click();
+            break;
+          }
+        }
+        addLog("info", "nav-chat", "=== Navigate attempts done ===");
       }
     },
     log: function(level, source, message) { addLog(level, source, message); },

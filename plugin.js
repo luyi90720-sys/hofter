@@ -1317,9 +1317,20 @@
     var controller = new AbortController();
     var _done = false;
     var fullContent = "";
+    var TIMEOUT_MS = 120000; /* 2分钟超时 */
+    var timeoutId = setTimeout(function() {
+      debugLog("customAiChat timeout after " + TIMEOUT_MS + "ms, model:" + preset.model);
+      controller.abort();
+      if (fullContent.length > 0) {
+        /* 超时但有部分内容，返回已获取的内容 */
+        finish(fullContent);
+      } else {
+        fail(new Error("请求超时（" + (TIMEOUT_MS/1000) + "秒），模型：" + preset.model));
+      }
+    }, TIMEOUT_MS);
 
-    function finish(raw) { if (_done) return; _done = true; onDone(raw); }
-    function fail(e) { if (_done) return; _done = true; if (onError) onError(e); else onDone(""); }
+    function finish(raw) { if (_done) return; _done = true; clearTimeout(timeoutId); onDone(raw); }
+    function fail(e) { if (_done) return; _done = true; clearTimeout(timeoutId); if (onError) onError(e); else onDone(""); }
 
     fetch(url, {
       method: "POST",
@@ -3124,8 +3135,30 @@
       if (works.length === 0) {
         container.innerHTML = '<div class="hp-empty">' + ICONS.comment + '<p>\u53d1\u5e03\u4f5c\u54c1\u540e\u624d\u4f1a\u6536\u5230\u8bc4\u8bba\u901a\u77e5\u54e6</p></div>'; return;
       }
-      for (var j = 0; j < Math.min(works.length, 8); j++) {
-        items.push({name: randomAuthorName(), text: "\u8bc4\u8bba\u4e86\u4f60\u7684\u300a" + (works[j].title||"\u4f5c\u54c1") + "\u300b\uff1a\u597d\u559c\u6b22\u8fd9\u7bc7\uff01", time: randomInt(1,48)+"\u5c0f\u65f6\u524d"});
+      /* 遍历所有已发布作品的评论，显示实际的评论内容 */
+      for (var j = 0; j < works.length; j++) {
+        var w = works[j];
+        var comments = (w.fullContent && w.fullContent.comments) ? w.fullContent.comments : [];
+        for (var c = 0; c < comments.length; c++) {
+          var cm = comments[c];
+          var cmName = cm.author || cm.name || cm.handle || randomAuthorName();
+          var cmText = cm.text || cm.content || "";
+          if (cmText.length > 40) cmText = cmText.substring(0, 40) + "...";
+          items.push({name: cmName, text: "\u8bc4\u8bba\u4e86\u4f60\u7684\u300a" + (w.title||"\u4f5c\u54c1") + "\u300b\uff1a" + cmText, time: cm.timeAgo || (randomInt(1,48)+"\u5c0f\u65f6\u524d"), workId: w.id});
+        }
+      }
+      /* 也从summaries中查找有评论的作品 */
+      for (var si = 0; si < state.summaries.length; si++) {
+        var sw = state.summaries[si];
+        if (sw.isByUser) continue;
+        var sComments = (sw.fullContent && sw.fullContent.comments) ? sw.fullContent.comments : [];
+        for (var sc = 0; sc < sComments.length; sc++) {
+          var scm = sComments[sc];
+          var scmName = scm.author || scm.name || scm.handle || randomAuthorName();
+          var scmText = scm.text || scm.content || "";
+          if (scmText.length > 40) scmText = scmText.substring(0, 40) + "...";
+          items.push({name: scmName, text: "\u8bc4\u8bba\u4e86\u300a" + (sw.title||"\u4f5c\u54c1") + "\u300b\uff1a" + scmText, time: scm.timeAgo || (randomInt(1,48)+"\u5c0f\u65f6\u524d"), workId: sw.id});
+        }
       }
     } else {
       if (state.publishedWorks.length === 0) {
@@ -4596,9 +4629,10 @@
       var sheet = document.createElement("div"); sheet.className = "hp-sheet";
       var contentSummary = summary.contentSummary || "";
       var html = '<div class="hp-sheet-handle"></div>';
-      html += '<div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u5185\u5bb9\u603b\u7ed3</div></div>';
+      html += '<div style="padding:0 16px 4px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:16px;font-weight:700">\u5185\u5bb9\u603b\u7ed3</div><div class="hp-icon-btn" style="width:28px;height:28px" onclick="window.__hofter.editContentSummary()">' + ICONS.edit.replace(/24/g,"16") + '</div></div>';
       if (contentSummary) {
-        html += '<div style="padding:8px 16px"><div style="font-size:14px;line-height:1.8;color:var(--text-primary)">' + escapeHtml(contentSummary) + '</div></div>';
+        html += '<div id="hp-summary-display" style="padding:8px 16px"><div style="font-size:14px;line-height:1.8;color:var(--text-primary);white-space:pre-wrap">' + escapeHtml(contentSummary) + '</div></div>';
+        html += '<div id="hp-summary-edit" style="padding:8px 16px;display:none"><textarea id="hp-summary-textarea" class="hp-textarea" style="font-size:14px;line-height:1.8;min-height:120px">' + escapeHtml(contentSummary) + '</textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="hp-btn hp-btn-outline" style="flex:1" onclick="window.__hofter.cancelEditSummary()">\u53d6\u6d88</button><button class="hp-btn" style="flex:1" onclick="window.__hofter.saveContentSummary()">\u4fdd\u5b58</button></div></div>';
       } else {
         html += '<div style="padding:16px;font-size:14px;color:var(--text-hint)">\u6682\u65e0\u5185\u5bb9\u603b\u7ed3\uff0c\u751f\u6210\u6b63\u6587\u540e\u81ea\u52a8\u4ea7\u751f</div>';
       }
@@ -4855,6 +4889,34 @@
           } else { showToast("\u8ffd\u66f4\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
         } else { showToast("\u8ffd\u66f4\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
       });
+    },
+    editContentSummary: function() {
+      var displayEl = document.getElementById("hp-summary-display");
+      var editEl = document.getElementById("hp-summary-edit");
+      if (displayEl) displayEl.style.display = "none";
+      if (editEl) editEl.style.display = "block";
+    },
+    cancelEditSummary: function() {
+      var displayEl = document.getElementById("hp-summary-display");
+      var editEl = document.getElementById("hp-summary-edit");
+      if (displayEl) displayEl.style.display = "block";
+      if (editEl) editEl.style.display = "none";
+    },
+    saveContentSummary: function() {
+      var summary = state.currentReadingSummary;
+      if (!summary) return;
+      var textarea = document.getElementById("hp-summary-textarea");
+      if (!textarea) return;
+      var newSummary = textarea.value.trim();
+      summary.contentSummary = newSummary;
+      /* 保存到存储 */
+      saveSummariesCache(state.summaries);
+      savePublishedWorks(state.publishedWorks);
+      showToast("内容总结已保存");
+      /* 关闭面板并重新打开 */
+      var panel = document.getElementById("hp-summary-panel");
+      if (panel) panel.remove();
+      window.__hofter.showSummaryPanel();
     },
     showModelContext: function() {
       var summary = state.currentReadingSummary;

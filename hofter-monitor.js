@@ -416,42 +416,52 @@
   };
 
   /* ─── 插件注册 ─── */
-  if (window.roche && roche.plugin && roche.plugin.register) {
-    roche.plugin.register({
-      id: PLUGIN_ID,
-      name: "Hofter Monitor",
-      description: "前台监控悬浮球控制台",
-      version: "1.0.0",
-      mount: function(container) {
-        _state.containerEl = container;
-        /* 注入样式 */
-        var styleEl = document.createElement("style");
-        styleEl.textContent = getStyles();
-        styleEl.setAttribute("data-hofter-monitor-style", "1");
-        document.head.appendChild(styleEl);
-        _state.styleEl = styleEl;
-        /* 渲染悬浮球 */
-        renderBall();
-        /* 启动监控 */
-        hookConsole();
-        hookFetch();
-        startDOMWatch();
-        startConvWatch();
-        addLog("info", "system", "Hofter Monitor v1.0.0 started");
-      },
-      unmount: function(container) {
-        /* 清理 */
-        for (var i = 0; i < _state.observers.length; i++) {
-          try { _state.observers[i].disconnect(); } catch(e) {}
+  window.RochePlugin.register({
+    id: PLUGIN_ID,
+    name: "Hofter Monitor",
+    version: "1.0.0",
+    apps: [
+      {
+        id: "hofter-monitor-home",
+        name: "Hofter Monitor",
+        icon: "extension",
+        iconImage: "",
+        mount: function(container, roche) {
+          _state.containerEl = container;
+          _state.roche = roche;
+          /* 注入样式 */
+          var styleEl = document.createElement("style");
+          styleEl.textContent = getStyles();
+          styleEl.setAttribute("data-hofter-monitor-style", "1");
+          document.head.appendChild(styleEl);
+          _state.styleEl = styleEl;
+          /* 渲染悬浮球 */
+          renderBall();
+          /* 启动监控 */
+          hookConsole();
+          hookFetch();
+          startDOMWatch();
+          startConvWatch();
+          addLog("info", "system", "Hofter Monitor v1.0.0 started");
+          addLog("info", "system", "roche API available: " + !!roche);
+          if (roche && roche.conversation) {
+            addLog("info", "system", "roche.conversation API available");
+          }
+        },
+        unmount: function(container) {
+          /* 清理 */
+          for (var i = 0; i < _state.observers.length; i++) {
+            try { _state.observers[i].disconnect(); } catch(e) {}
+          }
+          _state.observers = [];
+          var ball = document.getElementById("hm-ball");
+          if (ball) ball.remove();
+          var panel = document.getElementById("hm-panel");
+          if (panel) panel.remove();
+          if (_state.styleEl && _state.styleEl.parentNode) _state.styleEl.parentNode.removeChild(_state.styleEl);
+          if (container) container.replaceChildren();
         }
-        _state.observers = [];
-        var ball = document.getElementById("hm-ball");
-        if (ball) ball.remove();
-        var panel = document.getElementById("hm-panel");
-        if (panel) panel.remove();
-        if (_state.styleEl && _state.styleEl.parentNode) _state.styleEl.parentNode.removeChild(_state.styleEl);
-        addLog("info", "system", "Hofter Monitor stopped");
       }
-    });
-  }
+    ]
+  });
 })();

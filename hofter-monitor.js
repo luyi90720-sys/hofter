@@ -539,6 +539,7 @@
       if (isDragging && !dragMoved) {
         /* 触摸没有移动 = 点击，直接切换面板 */
         togglePanel();
+        touchHandled = true; /* 阻止后续 click 事件再次触发 */
       }
       onEnd();
     });

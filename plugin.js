@@ -1504,7 +1504,16 @@
     ctx.push(tagStr);
     if (activePersona) { ctx.push("", "\u2501\u2501 \u7b2c\u4e09\u89d2\u8272\uff08\u53ef\u4f5c\u4e3a\u53c2\u8003\u4eba\u7269\u6216\u4e92\u52a8\u5bf9\u8c61\uff09 \u2501\u2501", "\u540d\u79f0: " + (activePersona.name || activePersona.handle || "\u672a\u77e5"), "\u4eba\u8bbe: " + (activePersona.persona || activePersona.bio || "")); }
 
-    if (lockTag) ctx.push("", "\u6ce8\u610f\uff1a\u672c\u6b21\u53ea\u751f\u6210\u5173\u4e8e " + lockTag.name + " \u7684\u6458\u8981");
+    if (lockTag) {
+      var isTropeLock = !lockTag.leftSide;
+      if (isTropeLock) {
+        ctx.push("", "\u2501\u2501 \u91cd\u8981\uff1a\u672c\u6b21\u53ea\u751f\u6210\u5305\u542b\u6897\u6807\u7b7e\u300c" + lockTag.name + "\u300d\u7684\u6458\u8981 \u2501\u2501");
+        ctx.push("\u6bcf\u7bc7\u6458\u8981\u7684 tags \u6570\u7ec4\u4e2d\u5fc5\u987b\u5305\u542b\u300c" + lockTag.name + "\u300d");
+        ctx.push("\u8bf7\u786e\u4fdd\u6240\u6709\u6458\u8981\u7684\u5185\u5bb9\u90fd\u56f4\u7ed5\u8fd9\u4e2a\u6897\u5c55\u5f00");
+      } else {
+        ctx.push("", "\u6ce8\u610f\uff1a\u672c\u6b21\u53ea\u751f\u6210\u5173\u4e8e " + lockTag.name + " \u7684\u6458\u8981");
+      }
+    }
     debugLog("L1 ctx built, lines:" + ctx.length + " tagStr len:" + tagStr.length);
 
     var doChat = function(memText) {
@@ -3010,12 +3019,22 @@
     }
     showLoading();
     var lockTag = state.currentTagPage || null;
+    var isTropeLock = lockTag && !lockTag.leftSide;
     var timeout = setTimeout(function() { hideLoading(); showToast("\u751f\u6210\u8d85\u65f6\uff0c\u8bf7\u91cd\u8bd5"); }, 300000);
     generateLayer1Summaries(lockTag, function(summaries) {
       clearTimeout(timeout);
       hideLoading();
       if (summaries && summaries.length > 0) {
-        for (var i = 0; i < summaries.length; i++) summaries[i].id = summaries[i].id || generateId();
+        for (var i = 0; i < summaries.length; i++) {
+          summaries[i].id = summaries[i].id || generateId();
+          /* 梗标签锁定时，确保摘要被打上该梗标签 */
+          if (isTropeLock) {
+            if (!summaries[i].tags) summaries[i].tags = [];
+            if (summaries[i].tags.indexOf(lockTag.name) < 0) summaries[i].tags.push(lockTag.name);
+            if (!summaries[i].tropeTags) summaries[i].tropeTags = [];
+            if (summaries[i].tropeTags.indexOf(lockTag.name) < 0) summaries[i].tropeTags.push(lockTag.name);
+          }
+        }
         var newIds = {};
         for (var j = 0; j < summaries.length; j++) newIds[summaries[j].id] = true;
         var existing = [];
@@ -4384,15 +4403,32 @@
   function renderSharePanel() {
     /* 检查是否在聊天页面（DOM 检测优先，URL 兜底） */
     if (!isInChatPage()) {
-      showToast("\u8bf7\u5148\u6253\u5f00\u804a\u5929\u754c\u9762");
+      /* 不在聊天页时静默关闭面板，不弹Toast */
+      var existingPanel = document.getElementById("hp-share-panel-ball");
+      if (existingPanel) { existingPanel.remove(); _shareBallState.panelVisible = false; }
       return;
     }
     var conversationId = getCurrentConversationId();
 
     getPendingShares().then(function(shares) {
       if (shares.length === 0) {
-        showToast("\u6682\u65e0\u5f85\u5206\u4eab\u5185\u5bb9");
         hideShareBall();
+        return;
+      }
+      /* 筛选与当前会话匹配的 pending shares */
+      var matchedShares = [];
+      var unmatchedCount = 0;
+      for (var fi = 0; fi < shares.length; fi++) {
+        if (!shares[fi].conversationId || shares[fi].conversationId === conversationId) {
+          matchedShares.push(shares[fi]);
+        } else {
+          unmatchedCount++;
+        }
+      }
+      if (matchedShares.length === 0) {
+        /* 当前会话没有待分享内容，静默关闭 */
+        var existingPanel2 = document.getElementById("hp-share-panel-ball");
+        if (existingPanel2) { existingPanel2.remove(); _shareBallState.panelVisible = false; }
         return;
       }
 
@@ -4404,11 +4440,11 @@
       var sheet = document.createElement("div");
       sheet.className = "hp-sheet";
       var html = '<div class="hp-sheet-handle"></div>';
-      html += '<div style="padding:0 16px 4px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:16px;font-weight:700">\u5206\u4eab\u6587\u7ae0</div><span style="font-size:12px;color:var(--text-hint)">\u5f53\u524d\u4f1a\u8bdd: ' + (conversationId ? escapeHtml(conversationId) : "\u5df2\u8fde\u63a5") + '</span></div>';
+      html += '<div style="padding:0 16px 4px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:16px;font-weight:700">\u6ce8\u5165\u5206\u4eab</div><span style="font-size:12px;color:var(--text-hint)">' + (conversationId ? escapeHtml(conversationId) : "\u5df2\u8fde\u63a5") + (unmatchedCount > 0 ? ' \u00b7 \u5176\u4ed6' + unmatchedCount + '\u4e2a\u4f1a\u8bdd\u5f85\u5206\u4eab' : '') + '</span></div>';
       html += '<div style="padding:8px 16px;max-height:40vh;overflow-y:auto">';
 
-      for (var i = 0; i < shares.length; i++) {
-        var s = shares[i];
+      for (var i = 0; i < matchedShares.length; i++) {
+        var s = matchedShares[i];
         html += '<div class="hp-share-ball-item" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--bg-secondary)">';
         html += '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">' + escapeHtml(s.title || "\u65e0\u6807\u9898") + '</div>';
         html += '<div style="font-size:11px;color:var(--text-hint);margin-top:2px">' + (s.cpTagName ? escapeHtml(s.cpTagName) + " \u00b7 " : "") + (s.sendSummary ? "\u5185\u5bb9\u603b\u7ed3" : "\u6b63\u6587") + '</div></div>';
@@ -4446,7 +4482,26 @@
     getPendingShares().then(function(shares) {
       if (shares.length > 0) {
         debugLog("checkAndShowShareBall: " + shares.length + " pending shares found");
-        renderShareBall();
+        /* 只在聊天页才显示悬浮球 */
+        if (isInChatPage()) {
+          var conversationId = getCurrentConversationId();
+          /* 检查是否有与当前会话匹配的 pending shares */
+          var hasMatch = false;
+          for (var i = 0; i < shares.length; i++) {
+            if (!shares[i].conversationId || shares[i].conversationId === conversationId) {
+              hasMatch = true;
+              break;
+            }
+          }
+          if (hasMatch) {
+            renderShareBall();
+            updateShareBadge(shares.length);
+          } else {
+            debugLog("checkAndShowShareBall: no matching shares for current conversation");
+          }
+        } else {
+          debugLog("checkAndShowShareBall: not in chat page, ball hidden until user enters chat");
+        }
       } else {
         debugLog("checkAndShowShareBall: no pending shares");
       }
@@ -5212,8 +5267,8 @@
       overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
       var sheet = document.createElement("div"); sheet.className = "hp-sheet";
       var html = '<div class="hp-sheet-handle"></div>';
-      html += '<div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u5b58\u5165\u5206\u4eab</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px">\u5b58\u5165\u540e\u8bf7\u6253\u5f00\u804a\u5929\uff0c\u70b9\u51fb\u60ac\u6d6e\u7403\u5206\u4eab</div></div>';
-      /* 内容选择：正文 or 内容总结，默认内容总结，摘要始终包含 */
+      html += '<div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u5206\u4eab\u6587\u7ae0</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px">\u9009\u62e9\u8981\u5206\u4eab\u7ed9\u54ea\u4e9b\u4f1a\u8bdd</div></div>';
+      /* 内容选择 */
       html += '<div style="padding:12px 16px;border-top:1px solid var(--bg-secondary)">';
       html += '<div style="font-size:13px;font-weight:600;margin-bottom:8px">\u53d1\u9001\u5185\u5bb9</div>';
       html += '<div style="display:flex;gap:8px">';
@@ -5221,39 +5276,64 @@
       html += '<button class="hp-btn hp-btn-sm hp-btn-primary" id="hp-share-mode-summary" onclick="document.getElementById(\'hp-share-mode-summary\').classList.add(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-summary\').classList.remove(\'hp-btn-outline\');document.getElementById(\'hp-share-mode-fulltext\').classList.remove(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-fulltext\').classList.add(\'hp-btn-outline\')">\u5185\u5bb9\u603b\u7ed3</button>';
       html += '<div style="font-size:11px;color:var(--text-hint);margin-left:8px;align-self:center">\u6458\u8981\u59cb\u7ec8\u5305\u542b</div>';
       html += '</div></div>';
-      html += '<div style="padding:12px 16px;display:flex;gap:8px"><button class="hp-btn hp-btn-outline" style="flex:1" onclick="document.getElementById(\'hp-share-panel\').remove()">\u53d6\u6d88</button><button class="hp-btn hp-btn-primary" style="flex:1" onclick="window.__hofter.doShareWork()">\u5b58\u5165\u5206\u4eab</button></div>';
+      /* 会话列表 */
+      html += '<div style="padding:0 16px;border-top:1px solid var(--bg-secondary)">';
+      html += '<div style="font-size:13px;font-weight:600;margin:8px 0">\u9009\u62e9\u4f1a\u8bdd</div>';
+      html += '<div id="hp-share-conv-list" style="max-height:35vh;overflow-y:auto"></div>';
+      html += '</div>';
+      html += '<div style="padding:12px 16px;display:flex;gap:8px"><button class="hp-btn hp-btn-outline" style="flex:1" onclick="document.getElementById(\'hp-share-panel\').remove()">\u53d6\u6d88</button><button class="hp-btn hp-btn-primary" style="flex:1" onclick="window.__hofter.doShareWork()">\u786e\u8ba4\u5206\u4eab</button></div>';
       sheet.innerHTML = html;
       overlay.appendChild(sheet);
       state.containerEl.appendChild(overlay);
+      /* 加载会话列表 */
+      var convListEl = document.getElementById("hp-share-conv-list");
+      if (convListEl && state.roche && state.roche.conversation) {
+        convListEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-hint);font-size:13px">\u52a0\u8f7d\u4e2d...</div>';
+        state.roche.conversation.list().then(function(convs) {
+          state.conversations = convs || [];
+          convListEl.innerHTML = "";
+          if (convs.length === 0) {
+            convListEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-hint);font-size:13px">\u6682\u65e0\u4f1a\u8bdd</div>';
+            return;
+          }
+          for (var i = 0; i < convs.length; i++) {
+            var c = convs[i];
+            var item = document.createElement("div");
+            item.className = "hp-conversation-item";
+            item.setAttribute("data-conv-id", c.id);
+            item.setAttribute("data-conv-name", c.name || c.title || "");
+            item.setAttribute("data-conv-is-group", c.isGroup ? "1" : "0");
+            item.innerHTML = '<div class="hp-check"></div><div class="hp-list-item-info"><div class="hp-list-item-name">' + escapeHtml(c.name||c.title||("\u4f1a\u8bdd"+(i+1))) + '</div><div class="hp-list-item-desc">' + escapeHtml((c.lastMessage||"").substring(0,40)) + '</div></div>';
+            item.onclick = function() {
+              var check = this.querySelector('.hp-check');
+              if (this.classList.contains('selected')) {
+                this.classList.remove('selected');
+                check.innerHTML = '';
+              } else {
+                this.classList.add('selected');
+                check.innerHTML = ICONS.check.replace(/24/g,"14").replace("currentColor","#fff");
+              }
+            };
+            convListEl.appendChild(item);
+          }
+        }).catch(function() {
+          convListEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-hint);font-size:13px">\u52a0\u8f7d\u5931\u8d25</div>';
+        });
+      } else if (convListEl) {
+        convListEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-hint);font-size:13px">\u65e0\u6cd5\u83b7\u53d6\u4f1a\u8bdd\u5217\u8868</div>';
+      }
     },
     doShareWork: function() {
       var summary = state.currentReadingSummary;
       if (!summary) { showToast("\u65e0\u6cd5\u5206\u4eab"); return; }
+      /* 读取用户选择的会话 */
+      var selectedItems = document.querySelectorAll('#hp-share-conv-list .hp-conversation-item.selected');
+      if (selectedItems.length === 0) { showToast("\u8bf7\u81f3\u5c11\u9009\u62e9\u4e00\u4e2a\u4f1a\u8bdd"); return; }
       /* 确定内容模式：正文 or 内容总结 */
       var summaryModeBtn = document.getElementById('hp-share-mode-summary');
       var sendSummary = summaryModeBtn && summaryModeBtn.classList.contains('hp-btn-primary');
       /* 构建分享卡片文本 */
       var cardText = buildShareCardText(summary, sendSummary);
-      /* 保存分享信息 */
-      if (!summary._sharedConversations) summary._sharedConversations = [];
-      var sharedInfo = {
-        conversationId: "",
-        contactId: "",
-        isGroup: false,
-        memberIds: [],
-        memberProfiles: [],
-        sharedAt: Date.now(),
-        sendSummary: sendSummary,
-        injectedAt: null,
-        processed: false,
-        detectedAt: null,
-        lastCharCommentAt: null
-      };
-      summary._sharedConversations.push(sharedInfo);
-      if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
-      /* 关闭分享面板 */
-      var panel = document.getElementById("hp-share-panel");
-      if (panel) panel.remove();
       /* 构建记忆文本 */
       var userName = state.activePersona ? (state.activePersona.handle || state.activePersona.name || "\u6211") : "\u6211";
       var title = summary.title || "\u65e0\u6807\u9898";
@@ -5263,35 +5343,66 @@
       if (state.settings.shareMemoryMode === "auto") {
         memoryText = "\u270d\ufe0f [" + userName + "\u7684Hofter\u5206\u4eab]\n" + userName + "\u5728Hofter\u540c\u4eba\u793e\u533a\u5206\u4eab\u4e86\u4e00\u7bc7\u6587\u7ae0\u300a" + title + "\u300b\n\u4f5c\u8005\uff1a" + author + (summary.isByUser ? "\uff08\u7528\u6237\u521b\u4f5c\uff09" : "") + (cpName ? "\nCP\uff1a" + cpName : "");
       }
+      /* 为每个选中的会话创建 pending share 和 sharedInfo */
+      if (!summary._sharedConversations) summary._sharedConversations = [];
+      var newShares = [];
+      for (var si = 0; si < selectedItems.length; si++) {
+        var convId = selectedItems[si].getAttribute("data-conv-id") || "";
+        var convName = selectedItems[si].getAttribute("data-conv-name") || "";
+        var isGroup = selectedItems[si].getAttribute("data-conv-is-group") === "1";
+        /* sharedInfo */
+        var sharedInfo = {
+          conversationId: convId,
+          contactId: "",
+          isGroup: isGroup,
+          memberIds: [],
+          memberProfiles: [],
+          sharedAt: Date.now(),
+          sendSummary: sendSummary,
+          injectedAt: null,
+          processed: false,
+          detectedAt: null,
+          lastCharCommentAt: null
+        };
+        summary._sharedConversations.push(sharedInfo);
+        /* pending share */
+        var pendingShare = {
+          id: "share_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+          summaryId: summary.id,
+          title: title,
+          cpTagName: cpName,
+          author: author,
+          isByUser: !!summary.isByUser,
+          cardText: cardText,
+          sendSummary: sendSummary,
+          sharedAt: Date.now(),
+          memoryText: memoryText,
+          conversationId: convId,
+          convName: convName,
+          contactId: "",
+          isGroup: isGroup
+        };
+        newShares.push(pendingShare);
+      }
+      if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+      /* 关闭分享面板 */
+      var panel = document.getElementById("hp-share-panel");
+      if (panel) panel.remove();
       /* 存入 pending shares */
-      var pendingShare = {
-        id: "share_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
-        summaryId: summary.id,
-        title: title,
-        cpTagName: cpName,
-        author: author,
-        isByUser: !!summary.isByUser,
-        cardText: cardText,
-        sendSummary: sendSummary,
-        sharedAt: Date.now(),
-        memoryText: memoryText,
-        conversationId: "",
-        convName: "",
-        contactId: "",
-        isGroup: false
-      };
       getPendingShares().then(function(shares) {
-        shares.push(pendingShare);
+        for (var ni = 0; ni < newShares.length; ni++) shares.push(newShares[ni]);
         var jsonStr = JSON.stringify(shares);
         if (state.roche && state.roche.storage) {
           state.roche.storage.set("_hofter_pending_shares", jsonStr);
         }
         try { localStorage.setItem("_hofter_pending_shares", jsonStr); } catch(e) {}
-        showToast("\u5df2\u5b58\u5165\uff01\u8bf7\u6253\u5f00\u804a\u5929\u540e\u70b9\u51fb\u60ac\u6d6e\u7403\u5206\u4eab");
-        debugLog("doShareWork: saved pending share, id=" + pendingShare.id);
-        /* 立即渲染悬浮球，确保用户关闭插件后球仍然可见 */
-        renderShareBall();
-        updateShareBadge(shares.length);
+        showToast("\u5df2\u5206\u4eab\u7ed9" + newShares.length + "\u4e2a\u4f1a\u8bdd\uff01\u6253\u5f00\u804a\u5929\u540e\u70b9\u51fb\u60ac\u6d6e\u7403\u6ce8\u5165");
+        debugLog("doShareWork: saved " + newShares.length + " pending shares");
+        /* 如果当前在聊天页，立即渲染悬浮球 */
+        if (isInChatPage()) {
+          renderShareBall();
+          updateShareBadge(shares.length);
+        }
       });
     },
     continueReading: function() {
@@ -5804,8 +5915,8 @@
           if (shares[i].id === shareId) { item = shares[i]; break; }
         }
         if (!item) { showToast("\u5206\u4eab\u5df2\u8fc7\u671f"); return; }
-        /* 用 DOM 检测判断是否在聊天页，不再仅依赖 URL */
-        if (!isInChatPage()) { showToast("\u8bf7\u5148\u6253\u5f00\u804a\u5929\u754c\u9762"); return; }
+        /* 用 DOM 检测判断是否在聊天页，不在聊天页时静默返回 */
+        if (!isInChatPage()) { return; }
         var conversationId = getCurrentConversationId() || "";
         showToast("\u6b63\u5728\u5206\u4eab...");
         injectAndSend(item.cardText).then(function(sent) {
@@ -5891,7 +6002,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.0.1",
+    version: "2.1.0",
     apps: [
       {
         id: "hofter-home",

@@ -495,14 +495,14 @@
       "",
       "【输出格式】",
       "请返回纯JSON格式：",
-      '{ "inline_checks": [{ "intent": "", "vibe_match": "", "scan_result": "", "paragraph_text": "" }], "chapter": { "title": "", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "continuation_summary": "", "content_summary": "" }',
+      '{ "inline_checks": [{ "intent": "", "vibe_match": "", "scan_result": "", "paragraph_text": "" }], "chapter": { "title": "", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "author_notes": "", "continuation_summary": "", "content_summary": "" }',
       "",
-      "其中 inline_checks 是每段的内联自检记录，每生成一段正文前必须先写一条对应的inline_check。continuation_summary 是150字左右的续写摘要，概括本篇内容与情感走向，供后续连载追更时作为上下文传入。content_summary 是200字以内的内容摘要，细致记述正文讲了什么、角色做了什么、情感如何流动，供追更时作为上下文参考。",
+      "其中 inline_checks 是每段的内联自检记录，每生成一段正文前必须先写一条对应的inline_check。author_notes 是「作者有话说」——以同人女作者的口吻，写一段50-100字的碎碎念，可以是对CP的磕点感叹、对角色某个瞬间的尖叫、对剧情走向的吐槽、或者写这段时的感受。语气要像真实的同人女在Lofter发完文后写的碎碎念，可以带颜文字，可以语无伦次，可以反复感叹「啊啊啊」，但不要剧透后续剧情。continuation_summary 是150字左右的续写摘要，概括本篇内容与情感走向，供后续连载追更时作为上下文传入。content_summary 是200字以内的内容摘要，细致记述正文讲了什么、角色做了什么、情感如何流动，供追更时作为上下文参考。",
       "字数要求：[WORD_COUNT_PLACEHOLDER]",
       "",
       "【输出流程示范】",
       "<macro_chain>（完成Step 1至Step 7的完整推演，每步必须宣告Pass/Fail）</macro_chain>",
-      '{ "inline_checks": [{ "intent": "本段核心意图", "vibe_match": "是否与Step3规划一致", "scan_result": "①通过 ②通过 ③通过 ④通过 ⑤通过 ⑥不适用 ⑦通过 ⑧通过 ⑨通过 ⑩通过 ⑪通过 ⑫通过 ⑬通过 ⑭通过 ⑮通过", "paragraph_text": "本段正文" }], "chapter": { "title": "章节标题", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "continuation_summary": "150字续写摘要", "content_summary": "200字内容摘要" }',
+      '{ "inline_checks": [{ "intent": "本段核心意图", "vibe_match": "是否与Step3规划一致", "scan_result": "①通过 ②通过 ③通过 ④通过 ⑤通过 ⑥不适用 ⑦通过 ⑧通过 ⑨通过 ⑩通过 ⑪通过 ⑫通过 ⑬通过 ⑭通过 ⑮通过", "paragraph_text": "本段正文" }], "chapter": { "title": "章节标题", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "author_notes": "啊啊啊写这段的时候我整个人都在尖叫！！他们之间的张力我真的受不了呜呜呜", "continuation_summary": "150字续写摘要", "content_summary": "200字内容摘要" }',
 
       "",
       "<system_execution_directive>",
@@ -831,14 +831,14 @@
       "",
       "[Output Format]",
       "请返回纯JSON格式：",
-      "{ \"inline_checks\": [{ \"intent\": \"\", \"vibe_match\": \"\", \"scan_result\": \"\", \"paragraph_text\": \"\" }], \"chapter\": { \"title\": \"\", \"content\": [{ \"type\": \"p|dialogue|narrator\", \"text\": \"\" }] }, \"continuation_summary\": \"\", \"content_summary\": \"\" }",
+      "{ \"inline_checks\": [{ \"intent\": \"\", \"vibe_match\": \"\", \"scan_result\": \"\", \"paragraph_text\": \"\" }], \"chapter\": { \"title\": \"\", \"content\": [{ \"type\": \"p|dialogue|narrator\", \"text\": \"\" }] }, \"author_notes\": \"\", \"continuation_summary\": \"\", \"content_summary\": \"\" }",
       "",
-      "Where inline_checks is the per-paragraph self-check record — before generating each text paragraph, you must first write a corresponding inline_check entry. continuation_summary is a ~150-word summary capturing the content and emotional arc, used as context for future installments. content_summary is a ~200-word detailed content summary recording what happens in the text, what characters do, and how emotions flow, used as context reference for continuations.",
+      "Where inline_checks is the per-paragraph self-check record — before generating each text paragraph, you must first write a corresponding inline_check entry. author_notes is \"Author's Ramblings\" — written in the voice of a fangirl author, a 50-100 character ramble about the ship moments, screaming over a character's expression,吐槽 about the plot direction, or feelings while writing this. The tone should be like a real fangirl's post-fic ramblings on Lofter — emoticons allowed, incoherent gushing allowed, repeated 「啊啊啊」 allowed, but NO spoilers for future plot. continuation_summary is a ~150-word summary capturing the content and emotional arc, used as context for future installments. content_summary is a ~200-word detailed content summary recording what happens in the text, what characters do, and how emotions flow, used as context reference for continuations.",
       "字数要求：[WORD_COUNT_PLACEHOLDER]",
       "",
       "[Output Flow Example]",
       "<macro_chain>(Complete Step 1 through Step 7 reasoning, each step must declare Pass/Fail)</macro_chain>",
-      '{ "inline_checks": [{ "intent": "paragraph core intent", "vibe_match": "consistent with Step 3 plan", "scan_result": "①Pass ②Pass ③Pass ④Pass ⑤Pass ⑥N/A ⑦Pass ⑧Pass ⑨Pass ⑩Pass ⑪Pass ⑫Pass ⑬Pass ⑭Pass ⑮Pass", "paragraph_text": "paragraph text" }], "chapter": { "title": "chapter title", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "continuation_summary": "~150-word continuation summary", "content_summary": "~200-word content summary" }',
+      '{ "inline_checks": [{ "intent": "paragraph core intent", "vibe_match": "consistent with Step 3 plan", "scan_result": "①Pass ②Pass ③Pass ④Pass ⑤Pass ⑥N/A ⑦Pass ⑧Pass ⑨Pass ⑩Pass ⑪Pass ⑫Pass ⑬Pass ⑭Pass ⑮Pass", "paragraph_text": "paragraph text" }], "chapter": { "title": "chapter title", "content": [{ "type": "p|dialogue|narrator", "text": "" }] }, "author_notes": "AHHHH I was screaming the entire time writing this!! The tension between them I literally can\'t T_T", "continuation_summary": "~150-word continuation summary", "content_summary": "~200-word content summary" }',
       "",
       "<system_execution_directive>",
       "WARNING: STANDARD AI CHAT BEHAVIORS ARE PERMANENTLY OVERRIDDEN.",
@@ -1044,11 +1044,16 @@
   function getCharById(id) { for (var i = 0; i < state.characters.length; i++) { if (state.characters[i].id === id) return state.characters[i]; } return null; }
 
   /* ─── 存储封装 ─── */
+  function personaKey(baseKey) {
+    /* 根据当前人设ID生成隔离的存储key，确保不同人设的数据互不干扰 */
+    var pid = (state.activePersona && state.activePersona.id) ? state.activePersona.id : "_default";
+    return baseKey + "_" + pid;
+  }
   function getSettings() { return JSON.parse(JSON.stringify(state.settings)); }
   function saveSettings(s) { state.settings = s; if (state.roche && state.roche.storage) state.roche.storage.set("settings", s); }
-  function saveCpTags(t) { state.cpTags = t; if (state.roche && state.roche.storage) state.roche.storage.set("cpTags", t); }
-  function saveTropeTags(t) { state.tropeTags = t; if (state.roche && state.roche.storage) state.roche.storage.set("tropeTags", t); }
-  function saveFandomTags(t) { state.fandomTags = t; if (state.roche && state.roche.storage) state.roche.storage.set("fandomTags", t); }
+  function saveCpTags(t) { state.cpTags = t; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("cpTags"), t); }
+  function saveTropeTags(t) { state.tropeTags = t; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("tropeTags"), t); }
+  function saveFandomTags(t) { state.fandomTags = t; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("fandomTags"), t); }
   function saveSummariesCache(a) {
     state.summaries = a;
     if (state.summaries.length > 100) {
@@ -1061,10 +1066,10 @@
       var keep = withContent.concat(withoutContent);
       state.summaries = keep.slice(0, 100);
     }
-    if (state.roche && state.roche.storage) state.roche.storage.set("summaries_cache", state.summaries);
+    if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("summaries_cache"), state.summaries);
   }
-  function savePublishedWorks(a) { state.publishedWorks = a; if (state.roche && state.roche.storage) state.roche.storage.set("published_works", a); }
-  function saveFavoritesData(d) { state.favorites = d.favorites || []; state.readHistory = d.readHistory || []; state.readLater = d.readLater || []; if (state.roche && state.roche.storage) state.roche.storage.set("favorites", d); }
+  function savePublishedWorks(a) { state.publishedWorks = a; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("published_works"), a); }
+  function saveFavoritesData(d) { state.favorites = d.favorites || []; state.readHistory = d.readHistory || []; state.readLater = d.readLater || []; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("favorites"), d); }
 
   /* ─── 记忆模块 ─── */
   function shouldAttachMemory() { return Math.random() * 100 < (state.settings.memoryAttachProbability || 30); }
@@ -1636,6 +1641,10 @@
             } else if (data && data.continuation_summary) {
               /* 没有content_summary时，用continuation_summary作为contentSummary */
               summary.contentSummary = data.continuation_summary;
+            }
+            if (data && data.author_notes) {
+              summary.authorNotes = data.author_notes;
+              debugLog("L2 author_notes: " + data.author_notes.substring(0, 80));
             }
             if (macroChain) summary._debugContext.macroChain = macroChain;
             callback(data);
@@ -2214,6 +2223,16 @@
     else if (state.currentPage === "profile") { title = "\u6211\u7684"; rightHtml = '<div class="hp-icon-btn" onclick="window.__hofter.showSettings()">' + ICONS.settings + '</div>'; }
     else if (state.currentPage === "tagPage") { title = state.currentTagPage ? state.currentTagPage.name : ""; leftHtml = '<div class="hp-icon-btn" onclick="window.__hofter.goBackFromTag()">' + ICONS.back + '</div>'; }
     var titleHtml = (state.currentPage === "home") ? title : escapeHtml(title);
+    /* 当一侧为空另一侧有内容时，添加占位元素保持标题居中 */
+    var leftHasContent = leftHtml.length > 0;
+    var rightHasContent = rightHtml.length > 0;
+    if (!leftHasContent && rightHasContent) {
+      /* 计算右侧按钮数量来匹配占位宽度 */
+      var rightBtnCount = (rightHtml.match(/hp-icon-btn/g) || []).length;
+      leftHtml = '<div style="display:flex;gap:4px;width:' + (rightBtnCount * 40) + 'px;flex-shrink:0"></div>';
+    } else if (leftHasContent && !rightHasContent) {
+      rightHtml = '<div style="width:36px;flex-shrink:0"></div>';
+    }
     header.innerHTML = '<div class="hp-header-left">' + leftHtml + '</div><div class="hp-header-title">' + titleHtml + '</div><div class="hp-header-right">' + rightHtml + '</div>';
   }
 
@@ -2481,7 +2500,7 @@
   }
 
   /* ─── 合集功能 ─── */
-  function saveCollections() { if (state.roche && state.roche.storage) state.roche.storage.set("collections", state.collections); }
+  function saveCollections() { if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("collections"), state.collections); }
 
   function renderCollectionsTab(container) {
     /* 创建合集按钮 */
@@ -3152,14 +3171,19 @@
           renderReaderContent(summary);
           /* 自动生成评论 */
           if (state.settings.autoGenerateComments) {
+            debugLog("autoGenerateComments enabled, starting L3...");
             var fullText = "";
             if (result.chapters) { for (var ci = 0; ci < result.chapters.length; ci++) { var contents = result.chapters[ci].content || []; for (var cj = 0; cj < contents.length; cj++) fullText += (contents[cj].text || "") + "\n"; } }
+            debugLog("autoComment fullText len:" + fullText.length);
             if (fullText.length > 50) {
               showCommentLoading();
               generateLayer3Comments(fullText, function(comments, annotations) {
                 hideCommentLoading();
+                debugLog("autoComment done, comments:" + (comments?comments.length:0) + " annotations:" + (annotations?annotations.length:0));
                 if (comments && comments.length > 0) {
                   summary.fullContent.comments = comments;
+                } else {
+                  debugLog("autoComment: no comments generated, check L3 logs above");
                 }
                 if (annotations && annotations.length > 0) {
                   if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
@@ -3236,6 +3260,19 @@
       }
     }
     html += '</div>';
+    /* 作者有话说 */
+    var chAuthorNotes = "";
+    if (chIdx >= 0 && chIdx < chapters.length && chapters[chIdx].author_notes) {
+      chAuthorNotes = chapters[chIdx].author_notes;
+    } else if (summary.authorNotes) {
+      chAuthorNotes = summary.authorNotes;
+    }
+    if (chAuthorNotes) {
+      html += '<div class="hp-reader-author-notes" style="margin:16px;padding:16px;background:linear-gradient(135deg,rgba(232,160,191,0.08),rgba(232,160,191,0.03));border-radius:12px;border:1px solid rgba(232,160,191,0.15)">';
+      html += '<div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:4px">' + ICONS.edit.replace(/24/g,"14") + ' 作者有话说</div>';
+      html += '<div style="font-size:13px;line-height:1.7;color:var(--text-secondary)">' + renderRichText(chAuthorNotes) + '</div>';
+      html += '</div>';
+    }
     if (chapters.length > 1) {
       html += '<div style="display:flex;justify-content:center;gap:12px;padding:12px;font-size:13px">';
       if (currentCh > 1) html += '<span style="cursor:pointer;color:var(--primary);padding:8px 20px;border-radius:20px;background:var(--primary-light)" onclick="window.__hofter.goChapter(' + (currentCh - 1) + ')">\u25c0 \u4e0a\u4e00\u7ae0</span>';
@@ -5014,7 +5051,39 @@
     reportComment: function(el) { if (el) el.textContent = "\u5df2\u4e3e\u62a5"; el.style.color = "var(--text-hint)"; showToast("\u5df2\u4e3e\u62a5\uff0c\u611f\u8c22\u53cd\u9988"); },
     switchPersona: function(personaId) {
       var p = getPersonaById(personaId);
-      if (p) { state.activePersona = p; state.settings.activePersonaId = p.id; saveSettings(state.settings); closeSheet("persona-switcher"); renderApp(); showToast("\u5df2\u5207\u6362\u5230 " + (p.name||p.handle)); }
+      if (p) {
+        /* 保存当前人设的数据 */
+        saveCpTags(state.cpTags);
+        saveTropeTags(state.tropeTags);
+        saveSummariesCache(state.summaries);
+        savePublishedWorks(state.publishedWorks);
+        saveFavoritesData({favorites: state.favorites, readHistory: state.readHistory, readLater: state.readLater});
+        saveCollections();
+        /* 切换人设 */
+        state.activePersona = p;
+        state.settings.activePersonaId = p.id;
+        saveSettings(state.settings);
+        closeSheet("persona-switcher");
+        /* 加载新人设的数据 */
+        state.cpTags = []; state.tropeTags = []; state.fandomTags = [];
+        state.summaries = []; state.publishedWorks = [];
+        state.favorites = []; state.readHistory = []; state.readLater = [];
+        state.collections = [];
+        if (state.roche && state.roche.storage) {
+          var dp = [];
+          dp.push(state.roche.storage.get(personaKey("cpTags")).then(function(v) { if (v) state.cpTags = v; }).catch(function(){}));
+          dp.push(state.roche.storage.get(personaKey("tropeTags")).then(function(v) { if (v) state.tropeTags = v; }).catch(function(){}));
+          dp.push(state.roche.storage.get(personaKey("fandomTags")).then(function(v) { if (v) state.fandomTags = v; }).catch(function(){}));
+          dp.push(state.roche.storage.get(personaKey("summaries_cache")).then(function(v) { if (v) state.summaries = v; }).catch(function(){}));
+          dp.push(state.roche.storage.get(personaKey("published_works")).then(function(v) { if (v) state.publishedWorks = v; }).catch(function(){}));
+          dp.push(state.roche.storage.get(personaKey("favorites")).then(function(v) { if (v) { state.favorites = v.favorites || []; state.readHistory = v.readHistory || []; state.readLater = v.readLater || []; } }).catch(function(){}));
+          dp.push(state.roche.storage.get(personaKey("collections")).then(function(v) { if (v) state.collections = v; }).catch(function(){}));
+          Promise.all(dp).then(function() { renderApp(); showToast("已切换到 " + (p.name||p.handle)); });
+        } else {
+          renderApp();
+          showToast("已切换到 " + (p.name||p.handle));
+        }
+      }
     },
     addNewTrope: function() {
       var input = document.getElementById("hp-new-trope"); if (!input || !input.value.trim()) return;
@@ -5149,14 +5218,8 @@
             var promises = [];
             if (roche.storage) {
               promises.push(roche.storage.get("settings").then(function(v) { if (v) { for (var k in v) { if (v.hasOwnProperty(k)) state.settings[k] = v[k]; } } }).catch(function(){}));
-              promises.push(roche.storage.get("cpTags").then(function(v) { if (v) state.cpTags = v; }).catch(function(){}));
-              promises.push(roche.storage.get("tropeTags").then(function(v) { if (v) state.tropeTags = v; }).catch(function(){}));
-              promises.push(roche.storage.get("fandomTags").then(function(v) { if (v) state.fandomTags = v; }).catch(function(){}));
-              promises.push(roche.storage.get("summaries_cache").then(function(v) { if (v) state.summaries = v; }).catch(function(){}));
-              promises.push(roche.storage.get("published_works").then(function(v) { if (v) state.publishedWorks = v; }).catch(function(){}));
-              promises.push(roche.storage.get("favorites").then(function(v) { if (v) { state.favorites = v.favorites || []; state.readHistory = v.readHistory || []; state.readLater = v.readLater || []; } }).catch(function(){}));
-              promises.push(roche.storage.get("collections").then(function(v) { if (v) state.collections = v; }).catch(function(){}));
             }
+            /* 先加载人设和角色信息，然后再加载人设相关数据 */
             if (roche.persona) {
               promises.push(roche.persona.getUserPersonas().then(function(list) { state.personas = list || []; }).catch(function(){}));
               promises.push(roche.persona.getActiveUserPersona().then(function(p) { if (p && !state.activePersona) state.activePersona = p; }).catch(function(){}));
@@ -5168,16 +5231,37 @@
               promises.push(roche.worldbook.list().then(function(cats) { state.worldbookCategories = cats || []; }).catch(function(){}));
             }
             Promise.all(promises).then(function() {
+              /* 人设加载完成，恢复activePersona */
               if (state.settings.activePersonaId) {
                 for (var i = 0; i < state.personas.length; i++) {
                   if (state.personas[i].id === state.settings.activePersonaId) { state.activePersona = state.personas[i]; break; }
                 }
               }
               if (state.settings.fontSize) state.fontSize = state.settings.fontSize;
-              console.log('[hofter] loadData done, calling renderApp, __hofter:', !!window.__hofter, 'containerEl:', !!state.containerEl);
-              renderApp();
-              /* 启动聊天消息观察器 */
-              startChatMessageObserver();
+              /* 人设已确定，现在加载人设相关数据 */
+              var dataPromises = [];
+              if (roche.storage) {
+                dataPromises.push(roche.storage.get(personaKey("cpTags")).then(function(v) { if (v) state.cpTags = v; }).catch(function(){}));
+                dataPromises.push(roche.storage.get(personaKey("tropeTags")).then(function(v) { if (v) state.tropeTags = v; }).catch(function(){}));
+                dataPromises.push(roche.storage.get(personaKey("fandomTags")).then(function(v) { if (v) state.fandomTags = v; }).catch(function(){}));
+                dataPromises.push(roche.storage.get(personaKey("summaries_cache")).then(function(v) { if (v) state.summaries = v; }).catch(function(){}));
+                dataPromises.push(roche.storage.get(personaKey("published_works")).then(function(v) { if (v) state.publishedWorks = v; }).catch(function(){}));
+                dataPromises.push(roche.storage.get(personaKey("favorites")).then(function(v) { if (v) { state.favorites = v.favorites || []; state.readHistory = v.readHistory || []; state.readLater = v.readLater || []; } }).catch(function(){}));
+                dataPromises.push(roche.storage.get(personaKey("collections")).then(function(v) { if (v) state.collections = v; }).catch(function(){}));
+                /* 兼容：如果人设相关key没有数据，尝试读取旧的全局key */
+                dataPromises.push(roche.storage.get("cpTags").then(function(v) { if (v && state.cpTags.length === 0) { state.cpTags = v; saveCpTags(v); } }).catch(function(){}));
+                dataPromises.push(roche.storage.get("tropeTags").then(function(v) { if (v && state.tropeTags.length === 0) { state.tropeTags = v; saveTropeTags(v); } }).catch(function(){}));
+                dataPromises.push(roche.storage.get("summaries_cache").then(function(v) { if (v && state.summaries.length === 0) { state.summaries = v; saveSummariesCache(v); } }).catch(function(){}));
+                dataPromises.push(roche.storage.get("published_works").then(function(v) { if (v && state.publishedWorks.length === 0) { state.publishedWorks = v; savePublishedWorks(v); } }).catch(function(){}));
+                dataPromises.push(roche.storage.get("favorites").then(function(v) { if (v && state.favorites.length === 0 && state.readHistory.length === 0) { state.favorites = v.favorites || []; state.readHistory = v.readHistory || []; state.readLater = v.readLater || []; saveFavoritesData(v); } }).catch(function(){}));
+                dataPromises.push(roche.storage.get("collections").then(function(v) { if (v && state.collections.length === 0) { state.collections = v; saveCollections(); } }).catch(function(){}));
+              }
+              Promise.all(dataPromises).then(function() {
+                console.log('[hofter] loadData done, calling renderApp, __hofter:', !!window.__hofter, 'containerEl:', !!state.containerEl);
+                renderApp();
+                /* 启动聊天消息观察器 */
+                startChatMessageObserver();
+              }).catch(function() { console.log('[hofter] dataLoad FAILED, calling renderApp anyway'); renderApp(); });
             }).catch(function() { console.log('[hofter] loadData FAILED, calling renderApp anyway'); renderApp(); });
           };
 

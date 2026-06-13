@@ -2730,7 +2730,18 @@
       var text = pullIndicator.querySelector("span");
       if (text) text.textContent = diff >= THRESHOLD ? "\u91ca\u653e\u5237\u65b0" : "\u4e0b\u62c9\u5237\u65b0";
     }
+    function isTabOrClickable(e) {
+      /* 检查事件目标是否在tabs、按钮、链接等可点击元素内，避免拦截点击 */
+      var target = e.target || e.srcElement;
+      if (!target) return false;
+      if (target.closest && (target.closest('.hp-tabs') || target.closest('.hp-tab') || target.closest('button') || target.closest('a') || target.closest('[onclick]') || target.closest('.hp-channel-item') || target.closest('.hp-icon-btn'))) return true;
+      /* fallback: 检查className */
+      var cn = target.className || "";
+      if (typeof cn === "string" && (cn.indexOf("hp-tab") >= 0 || cn.indexOf("hp-tabs") >= 0 || cn.indexOf("hp-channel") >= 0)) return true;
+      return false;
+    }
     function onTS(e) {
+      if (isTabOrClickable(e)) return;
       if (el.scrollTop > 15 || state.isLoading || Date.now() - _lastRefreshTime < COOLDOWN) return;
       startY = e.touches[0].clientY;
       pulling = true;
@@ -2772,7 +2783,7 @@
     el.addEventListener("touchend", onTE, {passive:true});
     state.eventListeners.push({el:el,type:"touchstart",fn:onTS},{el:el,type:"touchmove",fn:onTM},{el:el,type:"touchend",fn:onTE});
     var mStartY = 0, mPulling = false, mDiff = 0;
-    function onMD(e) { if (el.scrollTop > 15 || state.isLoading || Date.now() - _lastRefreshTime < COOLDOWN) return; mStartY = e.clientY; mPulling = true; createIndicator(); }
+    function onMD(e) { if (isTabOrClickable(e)) return; if (el.scrollTop > 15 || state.isLoading || Date.now() - _lastRefreshTime < COOLDOWN) return; mStartY = e.clientY; mPulling = true; createIndicator(); }
     function onMM(e) {
       if (!mPulling) return;
       mDiff = Math.min((e.clientY - mStartY) * 0.5, MAX_PULL);
@@ -3413,23 +3424,69 @@
   }
 
   function navigateToChat(conversationId, convName) {
+    debugLog("navigateToChat: id=" + conversationId + " name=" + convName);
+
+    /* 先探测Roche前台的DOM结构，记录日志供调试 */
+    var sidebarSelectors = [
+      '[class*="sidebar"]', '[class*="chat-list"]', '[class*="conv-list"]',
+      '[class*="contact-list"]', '[class*="session-list"]', '[class*="message-list"]',
+      'nav', 'aside', '[role="navigation"]', '[role="complementary"]'
+    ];
+    for (var si = 0; si < sidebarSelectors.length; si++) {
+      var sidebarEl = document.querySelector(sidebarSelectors[si]);
+      if (sidebarEl) {
+        debugLog("Found sidebar: " + sidebarSelectors[si] + " children=" + sidebarEl.children.length + " classes=" + sidebarEl.className.substring(0, 80));
+        /* 记录子元素结构 */
+        for (var ci = 0; ci < Math.min(sidebarEl.children.length, 5); ci++) {
+          var child = sidebarEl.children[ci];
+          debugLog("  child[" + ci + "]: tag=" + child.tagName + " class=" + (child.className || "").substring(0, 60) + " data-attrs=" +
+            Array.from(child.attributes).filter(function(a){return a.name.indexOf("data-")===0}).map(function(a){return a.name+"="+a.value.substring(0,20)}).join(","));
+        }
+      }
+    }
+
     /* 方案1：DOM操作点击侧边栏 */
     var selectors = [
       '[class*="chat-item"]', '[class*="conversation-item"]', '[class*="contact"]',
       '[class*="chat-list"] > *', '[class*="conv-list"] > *',
-      '[data-conversation-id]', '[data-conv-id]'
+      '[data-conversation-id]', '[data-conv-id]',
+      '[class*="session-item"]', '[class*="message-item"]',
+      '[class*="sidebar"] [class*="item"]', '[class*="sidebar"] > * > *'
     ];
     for (var s = 0; s < selectors.length; s++) {
       var items = document.querySelectorAll(selectors[s]);
+      debugLog("Selector " + selectors[s] + " found " + items.length + " items");
       for (var i = 0; i < items.length; i++) {
         var item = items[i];
-        var itemId = item.getAttribute('data-id') || item.getAttribute('data-conversation-id') || item.getAttribute('data-conv-id') || "";
-        if (itemId === conversationId || item.textContent.indexOf(convName) >= 0) {
+        var itemId = item.getAttribute('data-id') || item.getAttribute('data-conversation-id') || item.getAttribute('data-conv-id') || item.getAttribute('data-session-id') || "";
+        var itemText = (item.textContent || "").substring(0, 30);
+        if (itemId === conversationId || itemText.indexOf(convName) >= 0) {
+          debugLog("Clicking item: " + selectors[s] + " idx=" + i + " id=" + itemId + " text=" + itemText);
           item.click();
           return true;
         }
       }
     }
+
+    /* 方案2：尝试通过URL hash或路由跳转 */
+    if (conversationId) {
+      var routes = [
+        "/chat/" + conversationId,
+        "/conversation/" + conversationId,
+        "#/chat/" + conversationId,
+        "#/conversation/" + conversationId
+      ];
+      for (var r = 0; r < routes.length; r++) {
+        debugLog("Trying route: " + routes[r]);
+      }
+      /* 如果Roche使用hash路由 */
+      if (window.location.hash !== undefined) {
+        debugLog("Current hash: " + window.location.hash);
+        debugLog("Current pathname: " + window.location.pathname);
+      }
+    }
+
+    debugLog("navigateToChat: FAILED - no matching element found");
     return false;
   }
 
@@ -3908,6 +3965,27 @@
       } else {
         /* fallback: 完整重建 */
         renderApp();
+        debugLog("switchDiscoverTab done (fallback renderApp), discoverTab: " + state.discoverTab);
+        return;
+      }
+      /* 管理pull-to-refresh：recommend和explore需要，hot不需要 */
+      var mainContent = document.getElementById("hp-main-content");
+      if (mainContent) {
+        /* 移除旧的pull-to-refresh事件监听器 */
+        for (var ei = state.eventListeners.length - 1; ei >= 0; ei--) {
+          if (state.eventListeners[ei].el === mainContent) {
+            mainContent.removeEventListener(state.eventListeners[ei].type, state.eventListeners[ei].fn);
+            state.eventListeners.splice(ei, 1);
+          }
+        }
+        /* 移除残留的pull indicator */
+        var oldIndicator = document.getElementById("hp-pull-indicator");
+        if (oldIndicator) oldIndicator.remove();
+        mainContent.style.transform = "";
+        /* 按需重新初始化pull-to-refresh */
+        if (tab === "recommend" || tab === "explore") {
+          initPullToRefresh(mainContent);
+        }
       }
       debugLog("switchDiscoverTab done, discoverTab: " + state.discoverTab);
     },

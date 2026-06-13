@@ -3637,16 +3637,30 @@
   /* ─── 分享给角色：辅助函数 ─── */
   function buildShareCardText(summary, sendSummary) {
     var userName = state.activePersona ? (state.activePersona.handle || state.activePersona.name || "\u6211") : "\u6211";
-    var cpName = summary.cpTagName || "";
+    /* CP名：优先 cpTagName，其次 cp，再次从 cpTagId 查找 */
+    var cpName = summary.cpTagName || summary.cp || "";
+    if (!cpName && summary.cpTagId) {
+      for (var cpi = 0; cpi < state.cpTags.length; cpi++) {
+        if (state.cpTags[cpi].id === summary.cpTagId) { cpName = state.cpTags[cpi].name; break; }
+      }
+    }
     var author = summary.author || "\u533f\u540d";
     var isByUser = summary.isByUser || false;
+    /* 梗标签 */
+    var tropeTags = summary.tropeTags || summary.tags || [];
+    var tropeStr = (Array.isArray(tropeTags) ? tropeTags.join(", ") : String(tropeTags || ""));
     /* 使用 [HF]...[/HF] 标记包裹，方便正则捕捉 */
     var text = "[HF]";
     /* 语境描述：让char知道这是同人社区分享的同人文 */
-    text += "[CONTEXT]" + userName + "\u5411\u60a8\u5206\u4eab\u4e86\u4e00\u7bc7\u6765\u81eaHofter\u540c\u4eba\u793e\u533a\u7684\u540c\u4eba\u6587\u7ae0\u3002\u8fd9\u662f\u4e00\u4e2a\u540c\u4eba\u7231\u597d\u8005\u4eec\u5206\u4eab\u521b\u4f5c\u7684\u793e\u533a\uff0c\u8bf7\u4ee5\u89d2\u8272\u81ea\u5df1\u7684\u89c6\u89d2\u9605\u8bfb\u5e76\u81ea\u7136\u5730\u53cd\u5e94\u3002[/CONTEXT]";
+    if (isByUser) {
+      text += "[CONTEXT]" + userName + "\u5411\u60a8\u5206\u4eab\u4e86\u4e00\u7bc7\u6765\u81eaHofter\u540c\u4eba\u793e\u533a\u7684\u540c\u4eba\u6587\u7ae0\u3002\u8fd9\u662f" + userName + "\u81ea\u5df1\u5199\u7684\u6587\u7ae0\uff01\u8bf7\u4ee5\u89d2\u8272\u81ea\u5df1\u7684\u89c6\u89d2\u9605\u8bfb\u5e76\u81ea\u7136\u5730\u53cd\u5e94\u3002[/CONTEXT]";
+    } else {
+      text += "[CONTEXT]" + userName + "\u5411\u60a8\u5206\u4eab\u4e86\u4e00\u7bc7\u6765\u81eaHofter\u540c\u4eba\u793e\u533a\u7684\u540c\u4eba\u6587\u7ae0\u3002\u8fd9\u662f\u4e00\u4e2a\u540c\u4eba\u7231\u597d\u8005\u4eec\u5206\u4eab\u521b\u4f5c\u7684\u793e\u533a\uff0c\u8bf7\u4ee5\u89d2\u8272\u81ea\u5df1\u7684\u89c6\u89d2\u9605\u8bfb\u5e76\u81ea\u7136\u5730\u53cd\u5e94\u3002[/CONTEXT]";
+    }
     text += "[TITLE]" + (summary.title || "\u65e0\u6807\u9898") + "[/TITLE]";
-    text += "[AUTHOR]" + author + (isByUser ? "(\u7528\u6237\u521b\u4f5c)" : "") + "[/AUTHOR]";
+    text += "[AUTHOR]" + author + (isByUser ? "(" + userName + "\u7684\u521b\u4f5c)" : "") + "[/AUTHOR]";
     if (cpName) text += "[CP]" + cpName + "[/CP]";
+    if (tropeStr) text += "[TROPES]" + tropeStr + "[/TROPES]";
     text += "[USER]" + userName + "[/USER]";
     /* L1摘要始终包含 */
     var excerpt = summary.excerpt || summary.summary || "";
@@ -4308,6 +4322,11 @@
     ball.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>';
     ball.style.left = _shareBallState.position.x + "px";
     ball.style.top = _shareBallState.position.y + "px";
+    /* 确保初始位置在屏幕内 */
+    var maxX = window.innerWidth - 48;
+    var maxY = window.innerHeight - 48;
+    if (_shareBallState.position.x > maxX) { _shareBallState.position.x = Math.max(0, maxX); ball.style.left = _shareBallState.position.x + "px"; }
+    if (_shareBallState.position.y > maxY) { _shareBallState.position.y = Math.max(0, maxY); ball.style.top = _shareBallState.position.y + "px"; }
 
     var badge = document.createElement("div");
     badge.id = "hp-share-ball-badge";
@@ -4430,16 +4449,25 @@
       /* 浮动窗口：不覆盖全屏，毛玻璃背景 */
       var panel = document.createElement("div");
       panel.id = "hp-share-panel-ball";
-      /* 定位在悬浮球附近 */
+      /* 定位在悬浮球附近，自适应屏幕边界 */
       var ballX = _shareBallState.position.x;
       var ballY = _shareBallState.position.y;
       var panelW = 320;
-      var panelH = 420;
-      var px = ballX + 56;
-      var py = ballY - 20;
-      if (px + panelW > window.innerWidth) px = ballX - panelW - 8;
-      if (py + panelH > window.innerHeight) py = window.innerHeight - panelH - 10;
-      if (py < 10) py = 10;
+      var panelH = Math.min(420, window.innerHeight - 20);
+      var px, py;
+      /* 水平方向：优先在球右侧，空间不够则左侧 */
+      if (ballX + 56 + panelW <= window.innerWidth) {
+        px = ballX + 56;
+      } else if (ballX - panelW - 8 >= 0) {
+        px = ballX - panelW - 8;
+      } else {
+        /* 两侧都不够，居中 */
+        px = Math.max(5, (window.innerWidth - panelW) / 2);
+      }
+      /* 垂直方向：优先在球上方对齐，超出则向上调整 */
+      py = ballY - 20;
+      if (py + panelH > window.innerHeight) py = window.innerHeight - panelH - 5;
+      if (py < 5) py = 5;
 
       panel.style.cssText = "position:fixed;width:" + panelW + "px;max-height:" + panelH + "px;left:" + px + "px;top:" + py + "px;z-index:100000;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15)";
 
@@ -4472,7 +4500,13 @@
       html += '</div>';
 
       /* 底部操作栏 */
-      html += '<div style="padding:10px 12px;display:flex;gap:8px;flex-shrink:0;background:rgba(255,255,255,0.95);border-top:1px solid #f0f0f0"><button id="hp-share-inject-btn" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#0ea5a0,#06b6d4);color:#fff;font-size:14px;font-weight:600;cursor:pointer">\u6ce8\u5165\u9009\u4e2d</button></div>';
+      var memMode = state.settings.shareMemoryMode || "auto";
+      html += '<div style="padding:10px 12px;display:flex;gap:8px;flex-shrink:0;background:rgba(255,255,255,0.95);border-top:1px solid #f0f0f0">';
+      html += '<button id="hp-share-inject-btn" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#0ea5a0,#06b6d4);color:#fff;font-size:14px;font-weight:600;cursor:pointer">\u6ce8\u5165\u9009\u4e2d</button>';
+      if (memMode === "manual") {
+        html += '<button id="hp-share-memory-btn" style="flex:1;padding:10px;border-radius:10px;border:1px solid #0ea5a0;background:transparent;color:#0ea5a0;font-size:14px;font-weight:600;cursor:pointer">\u6ce8\u5165\u8bb0\u5fc6</button>';
+      }
+      html += '</div>';
 
       panel.innerHTML = html;
       document.body.appendChild(panel);
@@ -4480,6 +4514,8 @@
       /* 事件绑定 */
       document.getElementById("hp-share-close-btn").addEventListener("click", function() { panel.remove(); _shareBallState.panelVisible = false; });
       document.getElementById("hp-share-inject-btn").addEventListener("click", function() { window.__hofter.batchInjectShares(); });
+      var memoryBtn = document.getElementById("hp-share-memory-btn");
+      if (memoryBtn) memoryBtn.addEventListener("click", function() { window.__hofter.batchInjectShares(true); });
       document.getElementById("hp-share-select-all").addEventListener("click", function() {
         var items = panel.querySelectorAll(".hp-share-ball-item");
         for (var k = 0; k < items.length; k++) { items[k].classList.add("selected"); var ck = items[k].querySelector(".hp-check"); if (ck) { ck.innerHTML = checkSvg; ck.style.background = "#0ea5a0"; ck.style.borderColor = "#0ea5a0"; } }
@@ -6022,7 +6058,7 @@
         });
       });
     },
-    batchInjectShares: function() {
+    batchInjectShares: function(memoryOnly) {
       var selectedItems = document.querySelectorAll('.hp-share-ball-item.selected');
       if (selectedItems.length === 0) { showToast("\u8bf7\u5148\u9009\u62e9\u8981\u6ce8\u5165\u7684\u5206\u4eab"); return; }
       var ids = [];
@@ -6034,7 +6070,7 @@
       var idx = 0;
       function injectNext() {
         if (idx >= ids.length) {
-          showToast("\u5168\u90e8\u6ce8\u5165\u5b8c\u6210");
+          showToast(memoryOnly ? "\u8bb0\u5fc6\u6ce8\u5165\u5b8c\u6210" : "\u5168\u90e8\u6ce8\u5165\u5b8c\u6210");
           var panel = document.getElementById("hp-share-panel-ball");
           if (panel) { panel.remove(); _shareBallState.panelVisible = false; }
           return;
@@ -6046,41 +6082,55 @@
             if (shares[j].id === shareId) { item = shares[j]; break; }
           }
           if (!item) { idx++; injectNext(); return; }
-          injectAndSend(item.cardText).then(function(sent) {
-            if (sent) {
-              /* 更新 sharedInfo */
-              item.conversationId = conversationId;
-              var summary = findSummaryById(item.summaryId);
-              if (summary) {
-                var si = {
-                  conversationId: conversationId,
-                  contactId: item.contactId || "",
-                  isGroup: item.isGroup || false,
-                  memberIds: item.memberIds || [],
-                  memberProfiles: [],
-                  sharedAt: item.sharedAt,
-                  sendSummary: item.sendSummary,
-                  injectedAt: Date.now(),
-                  processed: false,
-                  detectedAt: null,
-                  lastCharCommentAt: null
-                };
-                if (!summary._sharedConversations) summary._sharedConversations = [];
-                summary._sharedConversations.push(si);
-                if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
-              }
-              /* 自动注入记忆 */
-              if (state.settings.shareMemoryMode === "auto" && item.memoryText) {
-                setTimeout(function() { injectAndSend(item.memoryText); }, 500);
-              }
-              removePendingShare(shareId);
+          if (memoryOnly) {
+            /* 只注入记忆文本 */
+            if (item.memoryText) {
+              injectAndSend(item.memoryText).then(function() {
+                debugLog("batchInjectShares: memory injected for " + shareId);
+              });
+            } else {
+              debugLog("batchInjectShares: no memoryText for " + shareId);
             }
             idx++;
             setTimeout(injectNext, 800);
-          });
+          } else {
+            /* 注入分享卡片 */
+            injectAndSend(item.cardText).then(function(sent) {
+              if (sent) {
+                /* 更新 sharedInfo */
+                item.conversationId = conversationId;
+                var summary = findSummaryById(item.summaryId);
+                if (summary) {
+                  var si = {
+                    conversationId: conversationId,
+                    contactId: item.contactId || "",
+                    isGroup: item.isGroup || false,
+                    memberIds: item.memberIds || [],
+                    memberProfiles: [],
+                    sharedAt: item.sharedAt,
+                    sendSummary: item.sendSummary,
+                    injectedAt: Date.now(),
+                    processed: false,
+                    detectedAt: null,
+                    lastCharCommentAt: null
+                  };
+                  if (!summary._sharedConversations) summary._sharedConversations = [];
+                  summary._sharedConversations.push(si);
+                  if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+                }
+                /* 自动注入记忆 */
+                if (state.settings.shareMemoryMode === "auto" && item.memoryText) {
+                  setTimeout(function() { injectAndSend(item.memoryText); }, 500);
+                }
+                removePendingShare(shareId);
+              }
+              idx++;
+              setTimeout(injectNext, 800);
+            });
+          }
         });
       }
-      showToast("\u5f00\u59cb\u6ce8\u5165 " + ids.length + " \u6761\u5206\u4eab...");
+      showToast(memoryOnly ? "\u5f00\u59cb\u6ce8\u5165 " + ids.length + " \u6761\u8bb0\u5fc6..." : "\u5f00\u59cb\u6ce8\u5165 " + ids.length + " \u6761\u5206\u4eab...");
       injectNext();
     },
     setShareMemoryMode: function(mode) {
@@ -6115,7 +6165,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.4.0",
+    version: "2.5.0",
     apps: [
       {
         id: "hofter-home",

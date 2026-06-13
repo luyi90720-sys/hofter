@@ -580,7 +580,7 @@
     /* 拖拽状态 */
     var dragMoved = false;
     var isDragging = false;
-    var isTouch = false; /* 标记是否为触摸操作 */
+    var _lastTouchTime = 0; /* 上次触摸事件的时间戳，用于屏蔽兼容性鼠标事件 */
     var startX = 0, startY = 0, posStartX = 0, posStartY = 0;
 
     function onStart(cx, cy) {
@@ -609,33 +609,33 @@
 
     /* 触摸事件（手机端） */
     ball.addEventListener("touchstart", function(e) {
-      isTouch = true;
+      _lastTouchTime = Date.now();
       var t = e.touches[0];
       onStart(t.clientX, t.clientY);
     }, { passive: true });
     document.addEventListener("touchmove", function(e) {
-      if (!isDragging || !isTouch) return;
+      if (!isDragging || Date.now() - _lastTouchTime > 5000) return;
       var t = e.touches[0];
       onMove(t.clientX, t.clientY);
     }, { passive: true });
     document.addEventListener("touchend", function() {
-      if (!isTouch) return;
+      if (Date.now() - _lastTouchTime > 5000) return;
+      _lastTouchTime = Date.now(); /* 更新时间戳，确保后续兼容性鼠标事件被屏蔽 */
       onEnd(true);
-      isTouch = false;
     });
 
-    /* 鼠标事件（桌面端） */
+    /* 鼠标事件（桌面端）— 触摸后800ms内忽略，防止兼容性鼠标事件双触发 */
     ball.addEventListener("mousedown", function(e) {
-      if (isTouch) return; /* 触摸设备忽略鼠标事件 */
+      if (Date.now() - _lastTouchTime < 800) return;
       onStart(e.clientX, e.clientY);
       e.preventDefault();
     });
     document.addEventListener("mousemove", function(e) {
-      if (!isDragging || isTouch) return;
+      if (!isDragging || Date.now() - _lastTouchTime < 800) return;
       onMove(e.clientX, e.clientY);
     });
     document.addEventListener("mouseup", function() {
-      if (isTouch) return;
+      if (Date.now() - _lastTouchTime < 800) return;
       onEnd(true);
     });
 
@@ -661,9 +661,9 @@
 
   var _lastToggleTime = 0;
   function togglePanel() {
-    /* 防抖：300ms 内只允许一次切换，防止 touchend+mouseup 双触发 */
+    /* 防抖：500ms 内只允许一次切换，防止触摸兼容性鼠标事件双触发 */
     var now = Date.now();
-    if (now - _lastToggleTime < 300) return;
+    if (now - _lastToggleTime < 500) return;
     _lastToggleTime = now;
 
     if (_state.panelVisible) {
@@ -688,7 +688,9 @@
     /* 阻止面板内点击事件冒泡到 document，防止被 Roche 或其他监听器拦截 */
     panel.addEventListener("touchstart", function(e) { e.stopPropagation(); }, { passive: true });
     panel.addEventListener("touchmove", function(e) { e.stopPropagation(); }, { passive: true });
+    panel.addEventListener("touchend", function(e) { e.stopPropagation(); }, { passive: true });
     panel.addEventListener("mousedown", function(e) { e.stopPropagation(); });
+    panel.addEventListener("mouseup", function(e) { e.stopPropagation(); });
     panel.addEventListener("click", function(e) { e.stopPropagation(); });
     panel.innerHTML = `
       <div class="hm-panel-header">
@@ -1058,7 +1060,7 @@
   window.RochePlugin.register({
     id: PLUGIN_ID,
     name: "Hofter Monitor",
-    version: "1.2.0",
+    version: "1.3.0",
     apps: [
       {
         id: "hofter-monitor-home",
@@ -1119,7 +1121,7 @@
           startDOMWatch();
           startConvWatch();
           startRouteSniffer();
-          addLog("info", "system", "Hofter Monitor v1.0.0 started");
+          addLog("info", "system", "Hofter Monitor v1.3.0 started");
           addLog("info", "system", "roche API available: " + !!roche);
           if (roche && roche.conversation) {
             addLog("info", "system", "roche.conversation API available");

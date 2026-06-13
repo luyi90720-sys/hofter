@@ -3759,36 +3759,90 @@
       var appNode = document.querySelector('#app') || document.querySelector('[data-v-app]') || document.body.firstElementChild;
       if (!appNode) return null;
 
-      /* Vue 3 */
-      var vueApp = appNode.__vue_app__;
-      if (vueApp) {
-        var router = vueApp.config && vueApp.config.globalProperties && vueApp.config.globalProperties.$router;
-        if (router) {
-          return { version: 3, router: router };
+      /* 方法1: Vue 3 __vue_app__ */
+      if (appNode.__vue_app__) {
+        var gp = appNode.__vue_app__.config && appNode.__vue_app__.config.globalProperties;
+        if (gp && gp.$router) return { version: 3, router: gp.$router };
+        if (appNode.__vue_app__._context && appNode.__vue_app__._context.config && appNode.__vue_app__._context.config.globalProperties) {
+          var r = appNode.__vue_app__._context.config.globalProperties.$router;
+          if (r) return { version: 3, router: r };
         }
       }
 
-      /* Vue 2 */
-      var vue2 = appNode.__vue__;
-      if (vue2 && vue2.$router) {
-        return { version: 2, router: vue2.$router };
+      /* 方法2: Vue 2 __vue__ */
+      if (appNode.__vue__ && appNode.__vue__.$router) {
+        return { version: 2, router: appNode.__vue__.$router };
       }
 
-      /* 遍历 DOM 寻找 Vue 实例 */
+      /* 方法3: 遍历 DOM 寻找 Vue 实例 */
       var allEls = document.querySelectorAll('*');
-      for (var i = 0; i < Math.min(allEls.length, 200); i++) {
+      for (var i = 0; i < Math.min(allEls.length, 500); i++) {
         var el = allEls[i];
         if (el.__vue_app__) {
-          var r3 = el.__vue_app__.config && el.__vue_app__.config.globalProperties && el.__vue_app__.config.globalProperties.$router;
-          if (r3) return { version: 3, router: r3 };
+          var gp3 = el.__vue_app__.config && el.__vue_app__.config.globalProperties;
+          if (gp3 && gp3.$router) return { version: 3, router: gp3.$router };
         }
         if (el.__vue__ && el.__vue__.$router) {
           return { version: 2, router: el.__vue__.$router };
         }
+        /* Vue 3 组件实例内部属性 */
+        var elKeys = Object.keys(el).filter(function(k) { return k.indexOf('__vue') >= 0 || k.indexOf('_instance') >= 0; });
+        for (var ki = 0; ki < elKeys.length; ki++) {
+          var val = el[elKeys[ki]];
+          if (val && val.appContext && val.appContext.config && val.appContext.config.globalProperties) {
+            var r2 = val.appContext.config.globalProperties.$router;
+            if (r2) return { version: 3, router: r2 };
+          }
+          if (val && val.proxy && val.proxy.$router) return { version: 3, router: val.proxy.$router };
+        }
+      }
+
+      /* 方法4: 从 _vnode 组件树深入搜索 */
+      var vnode = appNode._vnode || appNode.__vnode;
+      if (vnode) {
+        var routerFromVnode = searchVnodeForRouter(vnode, 0, 10);
+        if (routerFromVnode) return routerFromVnode;
       }
     } catch(e) {
       debugLog("probeVueRouter error: " + e.message);
     }
+    return null;
+  }
+
+  /* 递归搜索 vnode 组件树中的 router */
+  function searchVnodeForRouter(vnode, depth, maxDepth) {
+    if (!vnode || depth > maxDepth) return null;
+    try {
+      var comp = vnode.component;
+      if (comp) {
+        /* 从 appContext 获取 */
+        if (comp.appContext && comp.appContext.config && comp.appContext.config.globalProperties) {
+          var r = comp.appContext.config.globalProperties.$router;
+          if (r) return { version: 3, router: r };
+        }
+        /* 从 proxy 获取 */
+        if (comp.proxy && comp.proxy.$router) return { version: 3, router: comp.proxy.$router };
+        /* 递归子组件 */
+        if (comp.subTree) {
+          var result = searchVnodeForRouter(comp.subTree, depth + 1, maxDepth);
+          if (result) return result;
+        }
+      }
+      /* 遍历 children */
+      if (vnode.children && Array.isArray(vnode.children)) {
+        for (var i = 0; i < vnode.children.length; i++) {
+          var childResult = searchVnodeForRouter(vnode.children[i], depth + 1, maxDepth);
+          if (childResult) return childResult;
+        }
+      }
+      /* dynamicChildren */
+      if (vnode.dynamicChildren) {
+        for (var j = 0; j < vnode.dynamicChildren.length; j++) {
+          var dynResult = searchVnodeForRouter(vnode.dynamicChildren[j], depth + 1, maxDepth);
+          if (dynResult) return dynResult;
+        }
+      }
+    } catch(e) {}
     return null;
   }
 
@@ -5725,7 +5779,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "1.7.0",
+    version: "1.8.0",
     apps: [
       {
         id: "hofter-home",

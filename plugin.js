@@ -907,7 +907,7 @@
     tropeTags: [],
     fandomTags: [],
     worldbookCategories: [],
-    settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false, autoFollowTropeTags: false, modelPresets: [], activeModelPresetId: "", promptLanguage: "zh" },
+    settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false, autoFollowTropeTags: false, modelPresets: [], activeModelPresetId: "", promptLanguage: "zh", shareMemoryMode: "auto" },
     isLoading: false,
     batchSelectMode: false,
     batchSelectedIds: [],
@@ -3089,6 +3089,7 @@
       '<div class="hp-settings-row"><span>\u5b57\u6570\u8303\u56f4</span><div style="display:flex;gap:6px;align-items:center"><input type="number" class="hp-input" style="width:70px;text-align:center" min="1000" max="30000" value="' + (s.wordCountMin||3000) + '" onchange="window.__hofter.setWordCountMin(this.value)"><span style="color:var(--text-hint)">-</span><input type="number" class="hp-input" style="width:70px;text-align:center" min="1000" max="30000" value="' + (s.wordCountMax||8000) + '" onchange="window.__hofter.setWordCountMax(this.value)"><span style="color:var(--text-hint);font-size:12px">\u5b57</span></div></div>' +
       '<div class="hp-settings-row"><span>\u81ea\u52a8\u751f\u6210\u8bc4\u8bba</span><div class="hp-toggle ' + (s.autoGenerateComments?"on":"") + '" onclick="window.__hofter.toggleAutoComments()"></div></div>' +
       '<div class="hp-settings-row"><span>\u81ea\u52a8\u5173\u6ce8\u65b0\u6897\u6807\u7b7e</span><div class="hp-toggle ' + (s.autoFollowTropeTags?"on":"") + '" onclick="window.__hofter.toggleAutoFollowTropeTags()"></div></div>' +
+      '<div class="hp-settings-row"><span>\u5206\u4eab\u8bb0\u5fc6\u6ce8\u5165</span><div style="display:flex;gap:6px;align-items:center"><button class="hp-btn hp-btn-sm ' + (s.shareMemoryMode==="auto"?"hp-btn-primary":"hp-btn-outline") + '" data-sm-mode="auto" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setShareMemoryMode(\'auto\')">\u81ea\u52a8\u6ce8\u5165</button><button class="hp-btn hp-btn-sm ' + (s.shareMemoryMode==="manual"?"hp-btn-primary":"hp-btn-outline") + '" data-sm-mode="manual" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setShareMemoryMode(\'manual\')">\u624b\u52a8\u9009\u62e9</button><button class="hp-btn hp-btn-sm ' + (s.shareMemoryMode==="none"?"hp-btn-primary":"hp-btn-outline") + '" data-sm-mode="none" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setShareMemoryMode(\'none\')">\u4e0d\u6ce8\u5165</button></div></div>' +
       '<div class="hp-settings-row"><span>\u9884\u8bbe\u8bed\u8a00\uff08\u6b63\u6587+\u8bc4\u8bba\uff09</span><div style="display:flex;gap:6px;align-items:center"><button class="hp-btn hp-btn-sm ' + (s.promptLanguage!=="en"?"hp-btn-primary":"hp-btn-outline") + '" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setPromptLanguage(\'zh\')">\u4e2d\u6587</button><button class="hp-btn hp-btn-sm ' + (s.promptLanguage==="en"?"hp-btn-primary":"hp-btn-outline") + '" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setPromptLanguage(\'en\')">English</button></div></div></div>' +
       '<div class="hp-settings-section"><div class="hp-section-title">\u8f7b\u578b\u6a21\u578b</div>' +
       '<div style="font-size:12px;color:var(--text-hint);padding:0 0 8px">\u7528\u4e8e\u6807\u7b7e\u63a2\u7d22\u548c\u8bc4\u8bba\u751f\u6210\uff0c\u53ef\u5207\u6362\u81f3\u4f4e\u6210\u672c\u6a21\u578b</div>' +
@@ -3679,321 +3680,7 @@
   }
 
   /* 辅助函数：点击底部导航的消息 tab */
-  function clickBottomNavInbox() {
-    debugLog("clickBottomNavInbox: looking for .bottom-nav");
-    var nav = document.querySelector('.bottom-nav');
-    if (!nav) {
-      debugLog("clickBottomNavInbox: .bottom-nav not found, trying nav");
-      nav = document.querySelector('nav.fixed.bottom-0');
-    }
-    if (!nav) { debugLog("clickBottomNavInbox: no bottom nav found"); return false; }
-    /* 底部导航通常有几个 tab 按钮，找到消息/Inbox 那个 */
-    var buttons = nav.querySelectorAll('button, [role="tab"], a');
-    debugLog("clickBottomNavInbox: found " + buttons.length + " nav buttons");
-    for (var i = 0; i < buttons.length; i++) {
-      var btn = buttons[i];
-      var text = (btn.textContent || "").trim().toLowerCase();
-      var ariaLabel = (btn.getAttribute('aria-label') || "").toLowerCase();
-      var title = (btn.getAttribute('title') || "").toLowerCase();
-      /* 匹配消息/Inbox/Chat 等关键词 */
-      if (text.indexOf("消息") >= 0 || text.indexOf("inbox") >= 0 || text.indexOf("chat") >= 0 ||
-          text.indexOf("message") >= 0 || ariaLabel.indexOf("inbox") >= 0 || ariaLabel.indexOf("chat") >= 0 ||
-          title.indexOf("inbox") >= 0 || title.indexOf("chat") >= 0) {
-        debugLog("clickBottomNavInbox: clicking button " + i + " text=" + text);
-        btn.click();
-        return true;
-      }
-    }
-    /* 如果找不到明确的 Inbox 按钮，尝试点击第二个 tab（通常是消息） */
-    if (buttons.length >= 2) {
-      debugLog("clickBottomNavInbox: fallback clicking button[1]");
-      buttons[1].click();
-      return true;
-    }
-    debugLog("clickBottomNavInbox: no matching button found");
-    return false;
-  }
 
-  function navigateToChat(conversationId, convName) {
-    debugLog("navigateToChat: id=" + conversationId + " name=" + convName);
-    return new Promise(function(resolve) {
-      /* 方案0：Vue Router 劫持（最优雅） */
-      var vueRouter = probeVueRouter();
-      if (vueRouter) {
-        debugLog("navigateToChat: Found Vue Router v" + vueRouter.version);
-        try {
-          var targetPath = "/chat/" + conversationId;
-          debugLog("navigateToChat: trying router.push(" + targetPath + ")");
-          vueRouter.router.push(targetPath);
-          debugLog("navigateToChat: router.push succeeded");
-          waitForElement('.chat-input-textarea', 5000).then(function(inputEl) {
-            resolve(inputEl ? true : false);
-          });
-          return;
-        } catch(e) {
-          debugLog("navigateToChat: router.push error: " + e.message);
-        }
-      }
-
-      /* 方案1：整页跳转（最可靠） */
-      /* Vue Router 找不到时，用 window.location.href 强制整页跳转 */
-      /* Vue Router 在页面加载时会读取 URL 并渲染对应页面 */
-      debugLog("navigateToChat: Vue Router not found, using full page navigation");
-      var targetUrl = "/chat/" + conversationId;
-      debugLog("navigateToChat: navigating to " + targetUrl);
-      window.location.href = targetUrl;
-      /* 整页跳转后当前 JS 上下文会丢失，resolve 不会被调用 */
-      /* 但 doShareWork 会在跳转前把文本存到 roche.storage */
-      /* 页面重新加载后 autoInjectAfterNav 会自动注入 */
-    });
-  }
-
-  /* 探测 Vue Router 实例 */
-  function probeVueRouter() {
-    try {
-      var appNode = document.querySelector('#app') || document.querySelector('[data-v-app]') || document.body.firstElementChild;
-      if (!appNode) return null;
-
-      /* 方法1: Vue 3 __vue_app__ */
-      if (appNode.__vue_app__) {
-        var gp = appNode.__vue_app__.config && appNode.__vue_app__.config.globalProperties;
-        if (gp && gp.$router) { debugLog("probeVueRouter: found via __vue_app__.config.globalProperties"); return { version: 3, router: gp.$router }; }
-        if (appNode.__vue_app__._context && appNode.__vue_app__._context.config && appNode.__vue_app__._context.config.globalProperties) {
-          var r = appNode.__vue_app__._context.config.globalProperties.$router;
-          if (r) { debugLog("probeVueRouter: found via __vue_app__._context"); return { version: 3, router: r }; }
-        }
-      }
-
-      /* 方法2: Vue 2 __vue__ */
-      if (appNode.__vue__ && appNode.__vue__.$router) {
-        debugLog("probeVueRouter: found via __vue__.$router");
-        return { version: 2, router: appNode.__vue__.$router };
-      }
-
-      /* 方法3: 遍历 DOM 寻找 Vue 实例 */
-      var allEls = document.querySelectorAll('*');
-      for (var i = 0; i < Math.min(allEls.length, 500); i++) {
-        var el = allEls[i];
-        if (el.__vue_app__) {
-          var gp3 = el.__vue_app__.config && el.__vue_app__.config.globalProperties;
-          if (gp3 && gp3.$router) { debugLog("probeVueRouter: found via DOM el __vue_app__"); return { version: 3, router: gp3.$router }; }
-        }
-        if (el.__vue__ && el.__vue__.$router) {
-          debugLog("probeVueRouter: found via DOM el __vue__");
-          return { version: 2, router: el.__vue__.$router };
-        }
-      }
-
-      /* 方法4: 从 _vnode 组件树深入搜索 */
-      var vnode = appNode._vnode || appNode.__vnode;
-      if (vnode) {
-        debugLog("probeVueRouter: found _vnode, searching component tree...");
-        var routerFromVnode = searchVnodeForRouter(vnode, 0, 15);
-        if (routerFromVnode) return routerFromVnode;
-      }
-
-      /* 方法5: 遍历 DOM 子元素的内部属性（_instance 等） */
-      var children = appNode.querySelectorAll('*');
-      for (var j = 0; j < Math.min(children.length, 800); j++) {
-        var child = children[j];
-        var keys = Object.keys(child).filter(function(k) { return k.indexOf('__vue') >= 0 || k.indexOf('_vnode') >= 0 || k.indexOf('_instance') >= 0; });
-        if (keys.length > 0) {
-          for (var ki = 0; ki < keys.length; ki++) {
-            var val = child[keys[ki]];
-            if (!val) continue;
-            /* 从 appContext 获取 */
-            if (val.appContext && val.appContext.config && val.appContext.config.globalProperties) {
-              var r2 = val.appContext.config.globalProperties.$router;
-              if (r2) { debugLog("probeVueRouter: found $router via element " + keys[ki] + ".appContext"); return { version: 3, router: r2 }; }
-            }
-            /* 从 proxy 获取 */
-            if (val.proxy && val.proxy.$router) { debugLog("probeVueRouter: found $router via element " + keys[ki] + ".proxy"); return { version: 3, router: val.proxy.$router }; }
-            /* 从 setupState 获取 */
-            if (val.setupState && val.setupState.$router) { debugLog("probeVueRouter: found $router via element " + keys[ki] + ".setupState"); return { version: 3, router: val.setupState.$router }; }
-            /* 从 _instance 组件获取 */
-            if (val.proxy && val.proxy.$options && val.proxy.$options.setup) {
-              var setupResult = val.proxy.$options.setup;
-              /* 检查组件是否注入了 router */
-              if (val.setupState) {
-                for (var sk in val.setupState) {
-                  if (val.setupState[sk] && val.setupState[sk].push && val.setupState[sk].currentRoute) {
-                    debugLog("probeVueRouter: found router-like object in setupState." + sk);
-                    return { version: 3, router: val.setupState[sk] };
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      debugLog("probeVueRouter: Vue Router not found via any method");
-    } catch(e) {
-      debugLog("probeVueRouter error: " + e.message);
-    }
-    return null;
-  }
-
-  /* 递归搜索 vnode 组件树中的 router */
-  function searchVnodeForRouter(vnode, depth, maxDepth) {
-    if (!vnode || depth > maxDepth) return null;
-    try {
-      var comp = vnode.component;
-      if (comp) {
-        /* 从 appContext 获取 */
-        if (comp.appContext && comp.appContext.config && comp.appContext.config.globalProperties) {
-          var r = comp.appContext.config.globalProperties.$router;
-          if (r) return { version: 3, router: r };
-        }
-        /* 从 proxy 获取 */
-        if (comp.proxy && comp.proxy.$router) return { version: 3, router: comp.proxy.$router };
-        /* 递归子组件 */
-        if (comp.subTree) {
-          var result = searchVnodeForRouter(comp.subTree, depth + 1, maxDepth);
-          if (result) return result;
-        }
-      }
-      /* 遍历 children */
-      if (vnode.children && Array.isArray(vnode.children)) {
-        for (var i = 0; i < vnode.children.length; i++) {
-          var childResult = searchVnodeForRouter(vnode.children[i], depth + 1, maxDepth);
-          if (childResult) return childResult;
-        }
-      }
-      /* dynamicChildren */
-      if (vnode.dynamicChildren) {
-        for (var j = 0; j < vnode.dynamicChildren.length; j++) {
-          var dynResult = searchVnodeForRouter(vnode.dynamicChildren[j], depth + 1, maxDepth);
-          if (dynResult) return dynResult;
-        }
-      }
-    } catch(e) {}
-    return null;
-  }
-
-  /* DOM 点击兜底方案 */
-  function domClickFallback(conversationId, convName, resolve) {
-    debugLog("navigateToChat: falling back to DOM click navigation");
-    phase1_ensureInboxPage().then(function(inInbox) {
-      if (!inInbox) {
-        debugLog("navigateToChat: failed to reach inbox page");
-        resolve(false); return;
-      }
-      phase2_clickConversation(conversationId, convName).then(function(clicked) {
-        if (!clicked) {
-          debugLog("navigateToChat: failed to find/click target conversation");
-          resolve(false); return;
-        }
-        waitForElement('.chat-input-textarea', 8000).then(function(inputEl) {
-          if (inputEl) {
-            debugLog("navigateToChat: DOM click navigation successful");
-            resolve(true);
-          } else {
-            debugLog("navigateToChat: chat page did not load");
-            resolve(false);
-          }
-        });
-      });
-    });
-  }
-
-  /* 阶段1：确保用户在消息列表页面 */
-  function phase1_ensureInboxPage() {
-    return new Promise(function(resolve) {
-      /* 先检查是否已在消息列表页（有 .conversation-item 或 .inbox-header） */
-      var inboxHeader = document.querySelector('.inbox-header');
-      var convItems = document.querySelectorAll('.conversation-item');
-      if (inboxHeader || convItems.length > 0) {
-        debugLog("phase1: already on inbox page");
-        resolve(true); return;
-      }
-      /* 如果在聊天页面，先返回 */
-      var backBtn = document.querySelector('.chat-header-button--back');
-      if (backBtn) {
-        debugLog("phase1: on chat page, clicking back button");
-        backBtn.click();
-        /* 等待返回后检查是否到了 inbox */
-        setTimeout(function() {
-          var ih = document.querySelector('.inbox-header');
-          var ci = document.querySelectorAll('.conversation-item');
-          if (ih || ci.length > 0) {
-            debugLog("phase1: back button worked, now on inbox");
-            resolve(true); return;
-          }
-          /* 还没到 inbox，尝试点击底部导航 */
-          clickBottomNavAndCheck(resolve);
-        }, 800);
-        return;
-      }
-      /* 不在任何已知页面，尝试点击底部导航 */
-      clickBottomNavAndCheck(resolve);
-    });
-  }
-
-  function clickBottomNavAndCheck(resolve) {
-    var clicked = clickBottomNavInbox();
-    if (!clicked) {
-      debugLog("phase1: cannot find bottom nav inbox button");
-      resolve(false); return;
-    }
-    /* 等待 inbox 页面加载 */
-    waitForElement('.conversation-item, .inbox-header', 5000).then(function(el) {
-      if (el) {
-        debugLog("phase1: inbox page loaded after clicking nav");
-        resolve(true);
-      } else {
-        debugLog("phase1: inbox page did not load after clicking nav");
-        resolve(false);
-      }
-    });
-  }
-
-  /* 阶段2：在会话列表中找到并点击目标会话 */
-  function phase2_clickConversation(conversationId, convName) {
-    return new Promise(function(resolve) {
-      /* 等待会话列表渲染 */
-      waitForElement('.conversation-item', 3000).then(function() {
-        var convItems = document.querySelectorAll('.conversation-item');
-        debugLog("phase2: found " + convItems.length + " .conversation-item elements");
-        for (var ci = 0; ci < convItems.length; ci++) {
-          var convEl = convItems[ci];
-          var nameEl = convEl.querySelector('.conv-name');
-          var convText = nameEl ? nameEl.textContent.trim() : "";
-          var convDataId = convEl.getAttribute('data-id') || convEl.getAttribute('data-conversation-id') || "";
-          debugLog("phase2: conv[" + ci + "] dataId=" + convDataId + " name=" + convText);
-          if (convDataId === conversationId || (convName && convText.indexOf(convName) >= 0)) {
-            debugLog("phase2: clicking .conversation-item idx=" + ci);
-            convEl.click();
-            resolve(true); return;
-          }
-        }
-        /* 兜底：尝试其他选择器 */
-        var fallbackSelectors = [
-          '[data-conversation-id="' + conversationId + '"]',
-          '[data-id="' + conversationId + '"]',
-          'main.flex-1.overflow-y-auto > div.flex.items-center'
-        ];
-        for (var s = 0; s < fallbackSelectors.length; s++) {
-          var items = document.querySelectorAll(fallbackSelectors[s]);
-          if (items.length > 0) {
-            debugLog("phase2: fallback selector " + fallbackSelectors[s] + " found " + items.length);
-            for (var i = 0; i < items.length; i++) {
-              var item = items[i];
-              var nameInItem = item.querySelector('.conv-name');
-              var itemText = nameInItem ? nameInItem.textContent.trim() : (item.textContent || "").substring(0, 30);
-              if (item.getAttribute('data-id') === conversationId || item.getAttribute('data-conversation-id') === conversationId || (convName && itemText.indexOf(convName) >= 0)) {
-                debugLog("phase2: clicking fallback item idx=" + i);
-                item.click();
-                resolve(true); return;
-              }
-            }
-          }
-        }
-        debugLog("phase2: target conversation not found in list");
-        resolve(false);
-      });
-    });
-  }
 
   function findChatInput() {
     /* 基于 Roche 真实 CSS 钩子：.chat-input-textarea */
@@ -4018,65 +3705,6 @@
       if (!allTa[j].closest('.' + ROOT_CLASS)) return allTa[j];
     }
     return null;
-  }
-
-  /* 整页跳转后自动注入分享文本 */
-  function autoInjectAfterNav() {
-    /* 从 roche.storage 或 localStorage 读取 pending share */
-    var tryInject = function(pendingStr) {
-      if (!pendingStr) return false;
-      try {
-        var pending = JSON.parse(pendingStr);
-        if (!pending || !pending.cardText) return false;
-        /* 检查是否过期（5分钟内有效） */
-        if (Date.now() - pending.sharedAt > 300000) {
-          debugLog("autoInjectAfterNav: pending share expired");
-          return false;
-        }
-        debugLog("autoInjectAfterNav: found pending share for " + (pending.convName || pending.conversationId));
-        /* 等待聊天输入框出现后注入 */
-        waitForElement('.chat-input-textarea', 10000).then(function(inputEl) {
-          if (inputEl) {
-            debugLog("autoInjectAfterNav: found chat input, injecting...");
-            var result = doInject(inputEl, pending.cardText);
-            if (result) {
-              showToast("\u5206\u4eab\u6210\u529f\uff01");
-            } else {
-              showToast("\u6ce8\u5165\u5931\u8d25\uff0c\u8bf7\u624b\u52a8\u7c98\u8d34");
-              if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(pending.cardText).catch(function(){});
-              }
-            }
-          } else {
-            debugLog("autoInjectAfterNav: chat input not found, copying to clipboard");
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(pending.cardText).then(function() {
-                showToast("\u804a\u5929\u8f93\u5165\u672a\u627e\u5230\uff0c\u5185\u5bb9\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f");
-              }).catch(function(){});
-            }
-          }
-          /* 清除 pending share */
-          if (state.roche && state.roche.storage) state.roche.storage.delete("_hofter_pending_share");
-          try { localStorage.removeItem("_hofter_pending_share"); } catch(e) {}
-        });
-        return true;
-      } catch(e) {
-        debugLog("autoInjectAfterNav: parse error: " + e.message);
-        return false;
-      }
-    };
-
-    /* 先尝试 localStorage（更快，同步） */
-    var localStr = null;
-    try { localStr = localStorage.getItem("_hofter_pending_share"); } catch(e) {}
-    if (tryInject(localStr)) return;
-
-    /* 再尝试 roche.storage（异步） */
-    if (state.roche && state.roche.storage) {
-      state.roche.storage.get("_hofter_pending_share").then(function(v) {
-        if (v) tryInject(typeof v === 'string' ? v : JSON.stringify(v));
-      }).catch(function(){});
-    }
   }
 
   function injectAndSend(text) {
@@ -4307,13 +3935,7 @@
             sharedInfo.lastCharCommentAt = Date.now();
             if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
             renderReaderContent(summary);
-            /* 写入记忆：优先注入旁白消息，失败则写事实记忆 */
-            var commentTexts = [];
-            for (var j = 0; j < comments.length; j++) commentTexts.push(comments[j].text || "");
-            var narratorText = charName + "\u5728Hofter\u540c\u4eba\u793e\u533a\u8bc4\u8bba\u4e86\u300a" + title + "\u300b";
-            if (!injectNarratorMessage(conversationId, narratorText)) {
-              writeCharFactMemory(conversationId, charName, title, commentTexts.join("\uff1b"), false);
-            }
+            /* 记忆注入由分享悬浮球负责（按 shareMemoryMode 设置） */
             if (callback) callback();
           } catch(e) {
             debugLog("generateCharComment parse error:" + e.message);
@@ -4462,13 +4084,7 @@
               sharedInfo.lastCharCommentAt = Date.now();
               if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
               renderReaderContent(summary);
-              /* 群聊只写群聊会话事实记忆，不重复写个人会话 */
-              var commentingNames = [];
-              for (var j = 0; j < comments.length; j++) commentingNames.push(comments[j].name || "\u89d2\u8272");
-              var narratorText = commentingNames.join("\u3001") + "\u5728Hofter\u540c\u4eba\u793e\u533a\u7fa4\u804a\u4e2d\u8bc4\u8bba\u4e86\u300a" + title + "\u300b";
-              if (!injectNarratorMessage(conversationId, narratorText)) {
-                writeCharFactMemory(conversationId, commentingNames.join("\u3001"), title, "", true);
-              }
+              /* 群聊记忆注入由分享悬浮球负责 */
               if (callback) callback();
             } catch(e) {
               debugLog("generateGroupCharComments parse error:" + e.message);
@@ -4522,6 +4138,298 @@
         }
       }
     } catch(e) {}
+  }
+
+  /* ─── 分享悬浮球 ─── */
+
+  var _shareBallState = {
+    position: { x: 20, y: 200 },
+    visible: false,
+    panelVisible: false,
+    _lastTouchTime: 0,
+    _lastToggleTime: 0,
+    _dragMoved: false,
+    _isDragging: false,
+    _ball: null,
+    _panel: null,
+    _observer: null
+  };
+
+  function getCurrentConversationId() {
+    var path = window.location.pathname;
+    var match = path.match(/\/chat\/(c_\d+)/);
+    if (match) return match[1];
+    return null;
+  }
+
+  function getPendingShares() {
+    return new Promise(function(resolve) {
+      /* 先尝试 localStorage（同步） */
+      try {
+        var localStr = localStorage.getItem("_hofter_pending_shares");
+        if (localStr) {
+          var parsed = JSON.parse(localStr);
+          if (Array.isArray(parsed)) { resolve(parsed); return; }
+        }
+      } catch(e) {}
+      /* 再尝试 roche.storage（异步） */
+      if (state.roche && state.roche.storage) {
+        state.roche.storage.get("_hofter_pending_shares").then(function(v) {
+          if (v) {
+            try {
+              var arr = typeof v === 'string' ? JSON.parse(v) : v;
+              if (Array.isArray(arr)) { resolve(arr); return; }
+            } catch(e) {}
+          }
+          resolve([]);
+        }).catch(function() { resolve([]); });
+      } else {
+        resolve([]);
+      }
+    });
+  }
+
+  function removePendingShare(shareId) {
+    getPendingShares().then(function(shares) {
+      var filtered = [];
+      for (var i = 0; i < shares.length; i++) {
+        if (shares[i].id !== shareId) filtered.push(shares[i]);
+      }
+      var jsonStr = JSON.stringify(filtered);
+      if (state.roche && state.roche.storage) {
+        state.roche.storage.set("_hofter_pending_shares", jsonStr);
+      }
+      try { localStorage.setItem("_hofter_pending_shares", jsonStr); } catch(e) {}
+      /* 如果为空，隐藏悬浮球 */
+      if (filtered.length === 0) {
+        hideShareBall();
+      } else {
+        updateShareBadge(filtered.length);
+      }
+    });
+  }
+
+  function updateShareBadge(count) {
+    var badge = document.getElementById("hp-share-ball-badge");
+    if (badge) badge.textContent = count > 99 ? "99+" : String(count);
+  }
+
+  function hideShareBall() {
+    var ball = document.getElementById("hp-share-ball");
+    if (ball && ball.parentNode) ball.parentNode.removeChild(ball);
+    _shareBallState.visible = false;
+    _shareBallState.panelVisible = false;
+    var panel = document.getElementById("hp-share-panel-ball");
+    if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
+  }
+
+  function renderShareBall() {
+    if (_shareBallState.visible) return;
+    var existingBall = document.getElementById("hp-share-ball");
+    if (existingBall && existingBall.parentNode) return;
+    if (existingBall) existingBall.remove();
+
+    var ball = document.createElement("div");
+    ball.id = "hp-share-ball";
+    ball.style.cssText = "position:fixed;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;z-index:99999;box-shadow:0 2px 12px rgba(102,126,234,0.4);cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none";
+    ball.textContent = "\u270d";
+    ball.style.left = _shareBallState.position.x + "px";
+    ball.style.top = _shareBallState.position.y + "px";
+
+    var badge = document.createElement("div");
+    badge.id = "hp-share-ball-badge";
+    badge.style.cssText = "position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#e94560;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700";
+    ball.appendChild(badge);
+
+    /* 先获取 pending shares 数量再设置 badge */
+    getPendingShares().then(function(shares) {
+      badge.textContent = shares.length > 99 ? "99+" : String(shares.length);
+    });
+
+    /* 触摸/鼠标事件处理（复用 monitor 验证有效的方案） */
+    function onStart(cx, cy) {
+      _shareBallState._isDragging = true;
+      _shareBallState._dragMoved = false;
+      _shareBallState._startX = cx;
+      _shareBallState._startY = cy;
+      _shareBallState._posStartX = _shareBallState.position.x;
+      _shareBallState._posStartY = _shareBallState.position.y;
+    }
+    function onMove(cx, cy) {
+      if (!_shareBallState._isDragging) return;
+      var dx = cx - _shareBallState._startX, dy = cy - _shareBallState._startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) _shareBallState._dragMoved = true;
+      var maxX = window.innerWidth - 48;
+      var maxY = window.innerHeight - 48;
+      _shareBallState.position.x = Math.max(0, Math.min(maxX, _shareBallState._posStartX + dx));
+      _shareBallState.position.y = Math.max(0, Math.min(maxY, _shareBallState._posStartY + dy));
+      ball.style.left = _shareBallState.position.x + "px";
+      ball.style.top = _shareBallState.position.y + "px";
+    }
+    function onEnd(wasClick) {
+      _shareBallState._isDragging = false;
+      if (wasClick && !_shareBallState._dragMoved) {
+        toggleSharePanel();
+      }
+    }
+
+    ball.addEventListener("touchstart", function(e) {
+      _shareBallState._lastTouchTime = Date.now();
+      var t = e.touches[0];
+      onStart(t.clientX, t.clientY);
+    }, { passive: true });
+    document.addEventListener("touchmove", function(e) {
+      if (!_shareBallState._isDragging || Date.now() - _shareBallState._lastTouchTime > 5000) return;
+      var t = e.touches[0];
+      onMove(t.clientX, t.clientY);
+    }, { passive: true });
+    document.addEventListener("touchend", function() {
+      if (Date.now() - _shareBallState._lastTouchTime > 5000) return;
+      _shareBallState._lastTouchTime = Date.now();
+      onEnd(true);
+    });
+
+    ball.addEventListener("mousedown", function(e) {
+      if (Date.now() - _shareBallState._lastTouchTime < 800) return;
+      onStart(e.clientX, e.clientY);
+      e.preventDefault();
+    });
+    document.addEventListener("mousemove", function(e) {
+      if (!_shareBallState._isDragging || Date.now() - _shareBallState._lastTouchTime < 800) return;
+      onMove(e.clientX, e.clientY);
+    });
+    document.addEventListener("mouseup", function() {
+      if (Date.now() - _shareBallState._lastTouchTime < 800) return;
+      onEnd(true);
+    });
+
+    ball.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+
+    document.body.appendChild(ball);
+    _shareBallState.visible = true;
+    _shareBallState._ball = ball;
+
+    /* MutationObserver 自动重建 */
+    if (!_shareBallState._observer) {
+      _shareBallState._observer = new MutationObserver(function() {
+        var b = document.getElementById("hp-share-ball");
+        if (!b || !b.parentNode) {
+          if (_shareBallState.visible) {
+            setTimeout(function() { renderShareBall(); }, 100);
+          }
+        }
+      });
+      _shareBallState._observer.observe(document.body, { childList: true });
+    }
+  }
+
+  function toggleSharePanel() {
+    var now = Date.now();
+    if (now - _shareBallState._lastToggleTime < 500) return;
+    _shareBallState._lastToggleTime = now;
+
+    var existingPanel = document.getElementById("hp-share-panel-ball");
+    if (existingPanel) {
+      existingPanel.remove();
+      _shareBallState.panelVisible = false;
+      return;
+    }
+    renderSharePanel();
+  }
+
+  function renderSharePanel() {
+    /* 检查是否在聊天页面 */
+    var conversationId = getCurrentConversationId();
+    if (!conversationId) {
+      showToast("\u8bf7\u5148\u6253\u5f00\u804a\u5929\u754c\u9762");
+      return;
+    }
+
+    getPendingShares().then(function(shares) {
+      if (shares.length === 0) {
+        showToast("\u6682\u65e0\u5f85\u5206\u4eab\u5185\u5bb9");
+        hideShareBall();
+        return;
+      }
+
+      var overlay = document.createElement("div");
+      overlay.id = "hp-share-panel-ball";
+      overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99998;display:flex;align-items:flex-end;justify-content:center";
+      overlay.onclick = function(e) { if (e.target === overlay) { overlay.remove(); _shareBallState.panelVisible = false; } };
+
+      var sheet = document.createElement("div");
+      sheet.className = "hp-sheet";
+      var html = '<div class="hp-sheet-handle"></div>';
+      html += '<div style="padding:0 16px 4px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:16px;font-weight:700">\u5206\u4eab\u6587\u7ae0</div><span style="font-size:12px;color:var(--text-hint)">\u5f53\u524d\u4f1a\u8bdd: ' + escapeHtml(conversationId) + '</span></div>';
+      html += '<div style="padding:8px 16px;max-height:40vh;overflow-y:auto">';
+
+      for (var i = 0; i < shares.length; i++) {
+        var s = shares[i];
+        html += '<div class="hp-share-ball-item" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--bg-secondary)">';
+        html += '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">' + escapeHtml(s.title || "\u65e0\u6807\u9898") + '</div>';
+        html += '<div style="font-size:11px;color:var(--text-hint);margin-top:2px">' + (s.cpTagName ? escapeHtml(s.cpTagName) + " \u00b7 " : "") + (s.sendSummary ? "\u5185\u5bb9\u603b\u7ed3" : "\u6b63\u6587") + '</div></div>';
+        html += '<div style="display:flex;gap:6px;flex-shrink:0">';
+        html += '<button class="hp-btn hp-btn-sm hp-btn-primary" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.injectShareFromBall(\'' + s.id + '\')">\u5206\u4eab</button>';
+        if (s.memoryText) {
+          html += '<button class="hp-btn hp-btn-sm hp-btn-outline" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.injectMemoryFromBall(\'' + s.id + '\')">\u8bb0\u5fc6</button>';
+        }
+        html += '</div></div>';
+      }
+
+      html += '</div>';
+      html += '<div style="padding:8px 16px;text-align:center"><button class="hp-btn hp-btn-outline" style="width:100%" onclick="document.getElementById(\'hp-share-panel-ball\').remove();_shareBallState.panelVisible=false">\u5173\u95ed</button></div>';
+      sheet.innerHTML = html;
+      overlay.appendChild(sheet);
+      document.body.appendChild(overlay);
+
+      /* 面板事件 stopPropagation */
+      panelEventBlock(sheet);
+      _shareBallState.panelVisible = true;
+      _shareBallState._panel = overlay;
+    });
+  }
+
+  function panelEventBlock(el) {
+    el.addEventListener("touchstart", function(e) { e.stopPropagation(); }, { passive: true });
+    el.addEventListener("touchmove", function(e) { e.stopPropagation(); }, { passive: true });
+    el.addEventListener("touchend", function(e) { e.stopPropagation(); }, { passive: true });
+    el.addEventListener("mousedown", function(e) { e.stopPropagation(); });
+    el.addEventListener("mouseup", function(e) { e.stopPropagation(); });
+    el.addEventListener("click", function(e) { e.stopPropagation(); });
+  }
+
+  function checkAndShowShareBall() {
+    getPendingShares().then(function(shares) {
+      if (shares.length > 0) {
+        debugLog("checkAndShowShareBall: " + shares.length + " pending shares found");
+        renderShareBall();
+      } else {
+        debugLog("checkAndShowShareBall: no pending shares");
+      }
+    });
+  }
+
+  function getCurrentConvNameFromSummary(summary) {
+    if (!summary || !summary._sharedConversations) return "";
+    var convs = summary._sharedConversations;
+    for (var i = convs.length - 1; i >= 0; i--) {
+      if (convs[i].conversationId) return convs[i].conversationId;
+    }
+    return "";
+  }
+
+  function findSummaryById(id) {
+    if (!id) return null;
+    for (var i = 0; i < state.summaries.length; i++) {
+      if (state.summaries[i].id === id) return state.summaries[i];
+    }
+    for (var j = 0; j < state.publishedWorks.length; j++) {
+      if (state.publishedWorks[j].id === id) return state.publishedWorks[j];
+    }
+    return null;
   }
 
   /* ─── 全局方法注册 ─── */
@@ -5226,60 +5134,28 @@
       if (!summary) { showToast("\u65e0\u6cd5\u5206\u4eab"); return; }
       var existing = document.getElementById("hp-share-panel");
       if (existing) { existing.remove(); return; }
-      /* 加载会话列表 */
-      if (!state.roche || !state.roche.conversation) { showToast("\u65e0\u6cd5\u83b7\u53d6\u4f1a\u8bdd\u5217\u8868"); return; }
-      state.roche.conversation.list().then(function(convs) {
-        var overlay = document.createElement("div"); overlay.id = "hp-share-panel";
-        overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99997;display:flex;align-items:flex-end;justify-content:center";
-        overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
-        var sheet = document.createElement("div"); sheet.className = "hp-sheet";
-        var html = '<div class="hp-sheet-handle"></div>';
-        html += '<div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u5206\u4eab\u7ed9\u89d2\u8272</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px">\u9009\u62e9\u804a\u5929\uff0c\u5206\u4eab\u5361\u7247\u5c06\u81ea\u52a8\u53d1\u9001</div></div>';
-        html += '<div style="padding:8px 16px;max-height:40vh;overflow-y:auto">';
-        if (!convs || convs.length === 0) {
-          html += '<div style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px">\u6682\u65e0\u4f1a\u8bdd</div>';
-        } else {
-          for (var i = 0; i < convs.length; i++) {
-            var c = convs[i];
-            var cName = c.handle || c.name || c.title || "\u672a\u77e5\u4f1a\u8bdd";
-            var cAvatar = c.avatar || "";
-            var cId = c.conversationId || c.id || "";
-            var isGroup = c.isGroup || c.type === "group";
-            var typeLabel = isGroup ? "\u7fa4\u804a" : "\u5355\u804a";
-            html += '<div class="hp-share-conv-item" data-conv-id="' + escapeHtml(cId) + '" data-conv-name="' + escapeHtml(cName) + '" data-is-group="' + (isGroup ? "1" : "0") + '" data-contact-id="' + escapeHtml(c.contactId || "") + '" style="display:flex;align-items:center;gap:12px;padding:12px 8px;cursor:pointer;border-radius:8px;transition:background .2s" onclick="this.parentElement.querySelectorAll(\'.hp-share-conv-item\').forEach(function(el){el.style.background=\'\';el.style.outline=\'\'});this.style.background=\'var(--primary-light)\';this.style.outline=\'2px solid var(--primary)\'">';
-            if (cAvatar) {
-              html += '<img src="' + escapeHtml(cAvatar) + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">';
-            } else {
-              html += '<div style="width:36px;height:36px;border-radius:50%;background:var(--primary-gradient);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600;flex-shrink:0">' + (cName || "?")[0] + '</div>';
-            }
-            html += '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">' + escapeHtml(cName) + '</div><div style="font-size:11px;color:var(--text-hint)">' + typeLabel + '</div></div>';
-            html += '</div>';
-          }
-        }
-        html += '</div>';
-        /* 内容选择：正文 or 内容总结，默认内容总结，摘要始终包含 */
-        html += '<div style="padding:12px 16px;border-top:1px solid var(--bg-secondary)">';
-        html += '<div style="font-size:13px;font-weight:600;margin-bottom:8px">\u53d1\u9001\u5185\u5bb9</div>';
-        html += '<div style="display:flex;gap:8px">';
-        html += '<button class="hp-btn hp-btn-sm hp-btn-outline" id="hp-share-mode-fulltext" onclick="document.getElementById(\'hp-share-mode-fulltext\').classList.add(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-fulltext\').classList.remove(\'hp-btn-outline\');document.getElementById(\'hp-share-mode-summary\').classList.remove(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-summary\').classList.add(\'hp-btn-outline\')">\u6b63\u6587</button>';
-        html += '<button class="hp-btn hp-btn-sm hp-btn-primary" id="hp-share-mode-summary" onclick="document.getElementById(\'hp-share-mode-summary\').classList.add(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-summary\').classList.remove(\'hp-btn-outline\');document.getElementById(\'hp-share-mode-fulltext\').classList.remove(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-fulltext\').classList.add(\'hp-btn-outline\')">\u5185\u5bb9\u603b\u7ed3</button>';
-        html += '<div style="font-size:11px;color:var(--text-hint);margin-left:8px;align-self:center">\u6458\u8981\u59cb\u7ec8\u5305\u542b</div>';
-        html += '</div></div>';
-        html += '<div style="padding:12px 16px;display:flex;gap:8px"><button class="hp-btn hp-btn-outline" style="flex:1" onclick="document.getElementById(\'hp-share-panel\').remove()">\u53d6\u6d88</button><button class="hp-btn hp-btn-primary" style="flex:1" onclick="window.__hofter.doShareWork()">\u5206\u4eab\u5e76\u8df3\u8f6c</button></div>';
-        sheet.innerHTML = html;
-        overlay.appendChild(sheet);
-        state.containerEl.appendChild(overlay);
-      }).catch(function(e) { showToast("\u83b7\u53d6\u4f1a\u8bdd\u5931\u8d25"); });
+      var overlay = document.createElement("div"); overlay.id = "hp-share-panel";
+      overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99997;display:flex;align-items:flex-end;justify-content:center";
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+      var sheet = document.createElement("div"); sheet.className = "hp-sheet";
+      var html = '<div class="hp-sheet-handle"></div>';
+      html += '<div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u5b58\u5165\u5206\u4eab</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px">\u5b58\u5165\u540e\u8bf7\u6253\u5f00\u804a\u5929\uff0c\u70b9\u51fb\u60ac\u6d6e\u7403\u5206\u4eab</div></div>';
+      /* 内容选择：正文 or 内容总结，默认内容总结，摘要始终包含 */
+      html += '<div style="padding:12px 16px;border-top:1px solid var(--bg-secondary)">';
+      html += '<div style="font-size:13px;font-weight:600;margin-bottom:8px">\u53d1\u9001\u5185\u5bb9</div>';
+      html += '<div style="display:flex;gap:8px">';
+      html += '<button class="hp-btn hp-btn-sm hp-btn-outline" id="hp-share-mode-fulltext" onclick="document.getElementById(\'hp-share-mode-fulltext\').classList.add(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-fulltext\').classList.remove(\'hp-btn-outline\');document.getElementById(\'hp-share-mode-summary\').classList.remove(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-summary\').classList.add(\'hp-btn-outline\')">\u6b63\u6587</button>';
+      html += '<button class="hp-btn hp-btn-sm hp-btn-primary" id="hp-share-mode-summary" onclick="document.getElementById(\'hp-share-mode-summary\').classList.add(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-summary\').classList.remove(\'hp-btn-outline\');document.getElementById(\'hp-share-mode-fulltext\').classList.remove(\'hp-btn-primary\');document.getElementById(\'hp-share-mode-fulltext\').classList.add(\'hp-btn-outline\')">\u5185\u5bb9\u603b\u7ed3</button>';
+      html += '<div style="font-size:11px;color:var(--text-hint);margin-left:8px;align-self:center">\u6458\u8981\u59cb\u7ec8\u5305\u542b</div>';
+      html += '</div></div>';
+      html += '<div style="padding:12px 16px;display:flex;gap:8px"><button class="hp-btn hp-btn-outline" style="flex:1" onclick="document.getElementById(\'hp-share-panel\').remove()">\u53d6\u6d88</button><button class="hp-btn hp-btn-primary" style="flex:1" onclick="window.__hofter.doShareWork()">\u5b58\u5165\u5206\u4eab</button></div>';
+      sheet.innerHTML = html;
+      overlay.appendChild(sheet);
+      state.containerEl.appendChild(overlay);
     },
     doShareWork: function() {
       var summary = state.currentReadingSummary;
       if (!summary) { showToast("\u65e0\u6cd5\u5206\u4eab"); return; }
-      var selectedItem = document.querySelector('.hp-share-conv-item[style*="outline"]');
-      if (!selectedItem) { showToast("\u8bf7\u9009\u62e9\u4e00\u4e2a\u4f1a\u8bdd"); return; }
-      var conversationId = selectedItem.getAttribute('data-conv-id');
-      var convName = selectedItem.getAttribute('data-conv-name');
-      var isGroup = selectedItem.getAttribute('data-is-group') === "1";
-      var contactId = selectedItem.getAttribute('data-contact-id') || "";
       /* 确定内容模式：正文 or 内容总结 */
       var summaryModeBtn = document.getElementById('hp-share-mode-summary');
       var sendSummary = summaryModeBtn && summaryModeBtn.classList.contains('hp-btn-primary');
@@ -5288,9 +5164,9 @@
       /* 保存分享信息 */
       if (!summary._sharedConversations) summary._sharedConversations = [];
       var sharedInfo = {
-        conversationId: conversationId,
-        contactId: contactId,
-        isGroup: isGroup,
+        conversationId: "",
+        contactId: "",
+        isGroup: false,
         memberIds: [],
         memberProfiles: [],
         sharedAt: Date.now(),
@@ -5305,52 +5181,41 @@
       /* 关闭分享面板 */
       var panel = document.getElementById("hp-share-panel");
       if (panel) panel.remove();
-      /* 先把分享文本存到 roche.storage，整页跳转后可以自动注入 */
-      var pendingShare = {
-        conversationId: conversationId,
-        convName: convName,
-        cardText: cardText,
-        sharedAt: Date.now()
-      };
-      if (state.roche && state.roche.storage) {
-        state.roche.storage.set("_hofter_pending_share", JSON.stringify(pendingShare));
-        debugLog("doShareWork: saved pending share to roche.storage");
+      /* 构建记忆文本 */
+      var userName = state.activePersona ? (state.activePersona.handle || state.activePersona.name || "\u6211") : "\u6211";
+      var title = summary.title || "\u65e0\u6807\u9898";
+      var cpName = summary.cpTagName || "";
+      var author = summary.author || "\u533f\u540d";
+      var memoryText = "";
+      if (state.settings.shareMemoryMode === "auto") {
+        memoryText = "\u270d\ufe0f [" + userName + "\u7684Hofter\u5206\u4eab]\n" + userName + "\u5728Hofter\u540c\u4eba\u793e\u533a\u5206\u4eab\u4e86\u4e00\u7bc7\u6587\u7ae0\u300a" + title + "\u300b\n\u4f5c\u8005\uff1a" + author + (summary.isByUser ? "\uff08\u7528\u6237\u521b\u4f5c\uff09" : "") + (cpName ? "\nCP\uff1a" + cpName : "");
       }
-      /* 也存到 localStorage 作为备份 */
-      try { localStorage.setItem("_hofter_pending_share", JSON.stringify(pendingShare)); } catch(e) {}
-      showToast("\u6b63\u5728\u8df3\u8f6c...");
-      navigateToChat(conversationId, convName).then(function(navigated) {
-        if (!navigated) {
-          showToast("\u8df3\u8f6c\u5931\u8d25\uff0c\u5185\u5bb9\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f");
-          /* 降级：复制到剪贴板 */
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(cardText).catch(function(){});
-          }
-          return;
+      /* 存入 pending shares */
+      var pendingShare = {
+        id: "share_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+        summaryId: summary.id,
+        title: title,
+        cpTagName: cpName,
+        author: author,
+        isByUser: !!summary.isByUser,
+        cardText: cardText,
+        sendSummary: sendSummary,
+        sharedAt: Date.now(),
+        memoryText: memoryText,
+        conversationId: "",
+        convName: "",
+        contactId: "",
+        isGroup: false
+      };
+      getPendingShares().then(function(shares) {
+        shares.push(pendingShare);
+        var jsonStr = JSON.stringify(shares);
+        if (state.roche && state.roche.storage) {
+          state.roche.storage.set("_hofter_pending_shares", jsonStr);
         }
-        /* 导航成功，延迟后注入发送 */
-        setTimeout(function() {
-          var result = injectAndSend(cardText);
-          var handleResult = function(sent) {
-            if (sent) {
-              sharedInfo.injectedAt = Date.now();
-              showToast("\u5206\u4eab\u6210\u529f\uff01");
-              /* 清除 pending share */
-              if (state.roche && state.roche.storage) state.roche.storage.delete("_hofter_pending_share");
-              try { localStorage.removeItem("_hofter_pending_share"); } catch(e) {}
-            } else {
-              showToast("\u81ea\u52a8\u53d1\u9001\u5931\u8d25\uff0c\u8bf7\u624b\u52a8\u7c98\u8d34");
-              if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(cardText).catch(function(){});
-              }
-            }
-          };
-          if (result && typeof result.then === 'function') {
-            result.then(handleResult);
-          } else {
-            handleResult(result);
-          }
-        }, 1500);
+        try { localStorage.setItem("_hofter_pending_shares", jsonStr); } catch(e) {}
+        showToast("\u5df2\u5b58\u5165\uff01\u8bf7\u6253\u5f00\u804a\u5929\u540e\u70b9\u51fb\u60ac\u6d6e\u7403\u5206\u4eab");
+        debugLog("doShareWork: saved pending share, id=" + pendingShare.id);
       });
     },
     continueReading: function() {
@@ -5854,6 +5719,82 @@
         showToast("\u5df2\u6dfb\u52a0" + added + "\u4e2a\u6807\u7b7e");
         renderApp();
       } else { showToast("\u672a\u9009\u62e9\u65b0\u6807\u7b7e"); }
+    },
+    /* 分享悬浮球 API */
+    injectShareFromBall: function(shareId) {
+      getPendingShares().then(function(shares) {
+        var item = null;
+        for (var i = 0; i < shares.length; i++) {
+          if (shares[i].id === shareId) { item = shares[i]; break; }
+        }
+        if (!item) { showToast("\u5206\u4eab\u5df2\u8fc7\u671f"); return; }
+        var conversationId = getCurrentConversationId();
+        if (!conversationId) { showToast("\u8bf7\u5148\u6253\u5f00\u804a\u5929\u754c\u9762"); return; }
+        showToast("\u6b63\u5728\u5206\u4eab...");
+        injectAndSend(item.cardText).then(function(sent) {
+          if (!sent) {
+            showToast("\u6ce8\u5165\u5931\u8d25\uff0c\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f");
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(item.cardText).catch(function(){});
+            return;
+          }
+          item.conversationId = conversationId;
+          var summary = findSummaryById(item.summaryId);
+          if (summary) {
+            var si = {
+              conversationId: conversationId,
+              contactId: "",
+              isGroup: false,
+              memberIds: [],
+              memberProfiles: [],
+              sharedAt: item.sharedAt,
+              sendSummary: item.sendSummary,
+              injectedAt: Date.now(),
+              processed: false,
+              detectedAt: null,
+              lastCharCommentAt: null
+            };
+            if (!summary._sharedConversations) summary._sharedConversations = [];
+            summary._sharedConversations.push(si);
+            if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+          }
+          if (state.settings.shareMemoryMode === "auto" && item.memoryText) {
+            setTimeout(function() {
+              injectAndSend(item.memoryText);
+            }, 500);
+          }
+          removePendingShare(shareId);
+          showToast("\u5206\u4eab\u6210\u529f\uff01");
+          var panel = document.getElementById("hp-share-panel-ball");
+          if (panel) { panel.remove(); _shareBallState.panelVisible = false; }
+        });
+      });
+    },
+    injectMemoryFromBall: function(shareId) {
+      getPendingShares().then(function(shares) {
+        var item = null;
+        for (var i = 0; i < shares.length; i++) {
+          if (shares[i].id === shareId) { item = shares[i]; break; }
+        }
+        if (!item || !item.memoryText) { showToast("\u65e0\u53ef\u6ce8\u5165\u7684\u8bb0\u5fc6"); return; }
+        injectAndSend(item.memoryText).then(function(sent) {
+          if (sent) { showToast("\u8bb0\u5fc6\u5df2\u6ce8\u5165"); }
+          else { showToast("\u6ce8\u5165\u5931\u8d25"); }
+        });
+      });
+    },
+    setShareMemoryMode: function(mode) {
+      var s = getSettings();
+      s.shareMemoryMode = mode;
+      saveSettings(s);
+      state.settings.shareMemoryMode = mode;
+      var btns = document.querySelectorAll('#settings-page [data-sm-mode]');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].className = btns[i].className.replace(/\bhp-btn-primary\b/g, "hp-btn-outline");
+        if (btns[i].getAttribute("data-sm-mode") === mode) {
+          btns[i].className = btns[i].className.replace(/\bhp-btn-outline\b/g, "hp-btn-primary");
+        }
+      }
+      showToast("\u5df2\u5207\u6362\u4e3a" + (mode === "auto" ? "\u81ea\u52a8\u6ce8\u5165" : mode === "manual" ? "\u624b\u52a8\u9009\u62e9" : "\u4e0d\u6ce8\u5165"));
     }
   };
   }
@@ -5873,7 +5814,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "1.9.1",
+    version: "2.0.0",
     apps: [
       {
         id: "hofter-home",
@@ -5959,9 +5900,9 @@
                 renderApp();
                 /* 启动聊天消息观察器 */
                 startChatMessageObserver();
-                /* 检查是否有待注入的分享文本（整页跳转后恢复） */
-                autoInjectAfterNav();
-              }).catch(function() { console.log('[hofter] dataLoad FAILED, calling renderApp anyway'); renderApp(); autoInjectAfterNav(); });
+                /* 检查是否有待分享的分享悬浮球 */
+                checkAndShowShareBall();
+              }).catch(function() { console.log('[hofter] dataLoad FAILED, calling renderApp anyway'); renderApp(); checkAndShowShareBall(); });
             }).catch(function() { console.log('[hofter] loadData FAILED, calling renderApp anyway'); renderApp(); });
           };
 

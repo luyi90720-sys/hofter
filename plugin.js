@@ -3642,6 +3642,8 @@
     var isByUser = summary.isByUser || false;
     /* 使用 [HF]...[/HF] 标记包裹，方便正则捕捉 */
     var text = "[HF]";
+    /* 语境描述：让char知道这是同人社区分享的同人文 */
+    text += "[CONTEXT]" + userName + "\u5411\u60a8\u5206\u4eab\u4e86\u4e00\u7bc7\u6765\u81eaHofter\u540c\u4eba\u793e\u533a\u7684\u540c\u4eba\u6587\u7ae0\u3002\u8fd9\u662f\u4e00\u4e2a\u540c\u4eba\u7231\u597d\u8005\u4eec\u5206\u4eab\u521b\u4f5c\u7684\u793e\u533a\uff0c\u8bf7\u4ee5\u89d2\u8272\u81ea\u5df1\u7684\u89c6\u89d2\u9605\u8bfb\u5e76\u81ea\u7136\u5730\u53cd\u5e94\u3002[/CONTEXT]";
     text += "[TITLE]" + (summary.title || "\u65e0\u6807\u9898") + "[/TITLE]";
     text += "[AUTHOR]" + author + (isByUser ? "(\u7528\u6237\u521b\u4f5c)" : "") + "[/AUTHOR]";
     if (cpName) text += "[CP]" + cpName + "[/CP]";
@@ -3808,12 +3810,15 @@
     for (var i = 0; i < shared.length; i++) {
       if (!shared[i].processed) pending.push(shared[i]);
     }
+    debugLog("checkSharedInConversations: " + shared.length + " shared, " + pending.length + " pending");
     if (pending.length === 0) { if (callback) callback(); return; }
     var processed = 0;
     for (var j = 0; j < pending.length; j++) {
       (function(s) {
-        /* 方式1：注入标记检查 */
+        debugLog("checkShared: convId=" + s.conversationId + " contactId=" + s.contactId + " injectedAt=" + s.injectedAt);
+        /* 方式1：注入标记检查（注入5秒后视为已到达） */
         if (s.injectedAt && Date.now() - s.injectedAt > 5000) {
+          debugLog("checkShared: injected >5s ago, generating char comment");
           s.processed = true;
           s.detectedAt = Date.now();
           generateCharCommentForShared(summary, s, function() {
@@ -3822,17 +3827,20 @@
           });
           return;
         }
-        /* 方式2：getShortTerm兜底 */
+        /* 方式2：getShortTerm兜底 - 检查聊天记录中是否包含 [HF] 标记 */
         if (state.roche && state.roche.memory) {
           state.roche.memory.getShortTerm({ conversationId: s.conversationId, limit: 100 }).then(function(messages) {
             var found = false;
             if (messages) {
               for (var k = 0; k < messages.length; k++) {
-                if (messages[k].text && messages[k].text.indexOf("Hofter\u540c\u4eba\u793e\u533a") >= 0) {
+                var msgText = messages[k].text || "";
+                /* 兼容新旧格式：检查 [HF] 标记或 "Hofter同人社区" 或 "Hofter" */
+                if (msgText.indexOf("[HF]") >= 0 || msgText.indexOf("Hofter\u540c\u4eba\u793e\u533a") >= 0 || msgText.indexOf("Hofter") >= 0) {
                   found = true; break;
                 }
               }
             }
+            debugLog("checkShared: getShortTerm found=" + found + " messages_count=" + (messages ? messages.length : 0));
             if (found || (s.injectedAt && Date.now() - s.injectedAt > 5000)) {
               s.processed = true;
               s.detectedAt = Date.now();
@@ -3841,14 +3849,17 @@
                 if (processed >= pending.length && callback) callback();
               });
             } else {
+              debugLog("checkShared: share not yet detected in chat, skipping");
               processed++;
               if (processed >= pending.length && callback) callback();
             }
-          }).catch(function() {
+          }).catch(function(e) {
+            debugLog("checkShared: getShortTerm error: " + (e && e.message ? e.message : String(e)));
             processed++;
             if (processed >= pending.length && callback) callback();
           });
         } else {
+          debugLog("checkShared: no roche.memory available");
           processed++;
           if (processed >= pending.length && callback) callback();
         }
@@ -3858,18 +3869,51 @@
 
   /* 为已分享的会话生成char评论 */
   function generateCharCommentForShared(summary, sharedInfo, callback) {
+    debugLog("generateCharCommentForShared: convId=" + sharedInfo.conversationId + " contactId=" + sharedInfo.contactId + " isGroup=" + sharedInfo.isGroup);
     if (sharedInfo.isGroup) {
       generateGroupCharComments(summary, sharedInfo, callback);
     } else {
       /* 单聊：获取角色信息 */
       var charId = sharedInfo.contactId;
-      if (!charId || !state.roche || !state.roche.character) {
+      if (!charId) {
+        /* 尝试从 conversationId 推断 contactId */
+        debugLog("generateCharCommentForShared: contactId is empty, trying to get from roche");
+        if (state.roche && state.roche.conversation) {
+          state.roche.conversation.get(sharedInfo.conversationId).then(function(conv) {
+            debugLog("generateCharCommentForShared: got conv=" + JSON.stringify(conv ? {id:conv.id, characterIds:conv.characterIds, contactId:conv.contactId} : null));
+            if (conv) {
+              var resolvedId = conv.contactId || (conv.characterIds && conv.characterIds.length > 0 ? conv.characterIds[0] : null);
+              if (resolvedId) {
+                sharedInfo.contactId = resolvedId;
+                debugLog("generateCharCommentForShared: resolved contactId=" + resolvedId);
+                state.roche.character.get(resolvedId).then(function(char) {
+                  if (!char) { debugLog("generateCharCommentForShared: character.get returned null"); if (callback) callback(); return; }
+                  generateCharComment(summary, char, sharedInfo, callback);
+                }).catch(function(e) { debugLog("generateCharCommentForShared: character.get error: " + e.message); if (callback) callback(); });
+              } else {
+                debugLog("generateCharCommentForShared: no contactId found in conversation");
+                if (callback) callback();
+              }
+            } else {
+              debugLog("generateCharCommentForShared: conversation.get returned null");
+              if (callback) callback();
+            }
+          }).catch(function(e) { debugLog("generateCharCommentForShared: conversation.get error: " + e.message); if (callback) callback(); });
+          return;
+        }
+        debugLog("generateCharCommentForShared: no roche.conversation available, cannot resolve contactId");
+        if (callback) callback();
+        return;
+      }
+      if (!state.roche || !state.roche.character) {
+        debugLog("generateCharCommentForShared: no roche.character available");
         if (callback) callback(); return;
       }
       state.roche.character.get(charId).then(function(char) {
-        if (!char) { if (callback) callback(); return; }
+        if (!char) { debugLog("generateCharCommentForShared: character.get(" + charId + ") returned null"); if (callback) callback(); return; }
+        debugLog("generateCharCommentForShared: got character " + (char.handle || char.name));
         generateCharComment(summary, char, sharedInfo, callback);
-      }).catch(function() { if (callback) callback(); });
+      }).catch(function(e) { debugLog("generateCharCommentForShared: character.get error: " + e.message); if (callback) callback(); });
     }
   }
 
@@ -3881,6 +3925,7 @@
     var userName = state.activePersona ? (state.activePersona.handle || state.activePersona.name || "\u6211") : "\u6211";
     var cpName = summary.cpTagName || "";
     var title = summary.title || "\u65e0\u6807\u9898";
+    debugLog("generateCharComment: charName=" + charName + " convId=" + conversationId + " title=" + title);
     /* 读取记忆 */
     var memPromises = [];
     var coreMemory = "";
@@ -5301,6 +5346,13 @@
             item.setAttribute("data-conv-id", c.id);
             item.setAttribute("data-conv-name", c.name || c.title || "");
             item.setAttribute("data-conv-is-group", c.isGroup ? "1" : "0");
+            /* 保存 contactId 用于后续 char 评论生成 */
+            var contactId = c.contactId || (c.characterIds && c.characterIds.length > 0 ? c.characterIds[0] : "");
+            item.setAttribute("data-conv-contact-id", contactId);
+            /* 保存 memberIds 用于群聊 */
+            if (c.characterIds && c.characterIds.length > 0) {
+              item.setAttribute("data-conv-member-ids", c.characterIds.join(","));
+            }
             item.innerHTML = '<div class="hp-check"></div><div class="hp-list-item-info"><div class="hp-list-item-name">' + escapeHtml(c.name||c.title||("\u4f1a\u8bdd"+(i+1))) + '</div><div class="hp-list-item-desc">' + escapeHtml((c.lastMessage||"").substring(0,40)) + '</div></div>';
             item.onclick = function() {
               var check = this.querySelector('.hp-check');
@@ -5348,12 +5400,15 @@
         var convId = selectedItems[si].getAttribute("data-conv-id") || "";
         var convName = selectedItems[si].getAttribute("data-conv-name") || "";
         var isGroup = selectedItems[si].getAttribute("data-conv-is-group") === "1";
+        var contactId = selectedItems[si].getAttribute("data-conv-contact-id") || "";
+        var memberIdsStr = selectedItems[si].getAttribute("data-conv-member-ids") || "";
+        var memberIds = memberIdsStr ? memberIdsStr.split(",") : [];
         /* sharedInfo */
         var sharedInfo = {
           conversationId: convId,
-          contactId: "",
+          contactId: contactId,
           isGroup: isGroup,
-          memberIds: [],
+          memberIds: memberIds,
           memberProfiles: [],
           sharedAt: Date.now(),
           sendSummary: sendSummary,
@@ -5377,7 +5432,7 @@
           memoryText: memoryText,
           conversationId: convId,
           convName: convName,
-          contactId: "",
+          contactId: contactId,
           isGroup: isGroup
         };
         newShares.push(pendingShare);
@@ -5635,7 +5690,9 @@
       generateLayer3Comments(chaptersText, function(comments, annotations) {
         hideCommentLoading();
         if (comments && comments.length > 0) {
-          summary.fullContent.comments = comments;
+          /* 追加而非替换 */
+          if (!summary.fullContent.comments) summary.fullContent.comments = [];
+          summary.fullContent.comments = summary.fullContent.comments.concat(comments);
         }
         if (annotations && annotations.length > 0) {
           if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
@@ -5997,9 +6054,9 @@
               if (summary) {
                 var si = {
                   conversationId: conversationId,
-                  contactId: "",
+                  contactId: item.contactId || "",
                   isGroup: item.isGroup || false,
-                  memberIds: [],
+                  memberIds: item.memberIds || [],
                   memberProfiles: [],
                   sharedAt: item.sharedAt,
                   sendSummary: item.sendSummary,
@@ -6058,7 +6115,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.3.2",
+    version: "2.4.0",
     apps: [
       {
         id: "hofter-home",

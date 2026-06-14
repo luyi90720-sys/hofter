@@ -1877,6 +1877,13 @@
       if (callback) callback(null, new Error("\u672a\u914d\u7f6e\u6da6\u8272\u6a21\u578b\u9884\u8bbe\uff0c\u8bf7\u5728\u8bbe\u7f6e\u4e2d\u914d\u7f6e\u8f7b\u578b\u6a21\u578b\u6216\u6da6\u8272\u4e13\u7528\u6a21\u578b"));
       return;
     }
+    /* 如果有多章，跳过润色（影响后续章节一致性） */
+    var totalCh = (summary.fullContent && summary.fullContent.chapters) ? summary.fullContent.chapters.length : 1;
+    if (totalCh > 1) {
+      debugLog("polishText: skipping, has " + totalCh + " chapters");
+      if (callback) callback(null, new Error("\u5df2\u6709\u591a\u7ae0\u8ffd\u66f4\uff0c\u8df3\u8fc7\u6da6\u8272"));
+      return;
+    }
     /* 获取当前激活的润色预设 */
     var polishPreset = null;
     if (s.activePolishPresetId && s.polishPresets) {
@@ -5820,6 +5827,9 @@
     manualPolish: function() {
       var summary = state.currentReadingSummary;
       if (!summary || !summary.fullContent) { showToast("\u65e0\u6cd5\u6da6\u8272"); return; }
+      /* 如果有多章，禁止润色（润色只适合单章场景） */
+      var totalCh = (summary.fullContent.chapters || []).length;
+      if (totalCh > 1) { showToast("\u5df2\u6709\u591a\u7ae0\u8ffd\u66f4\uff0c\u4e0d\u652f\u6301\u6da6\u8272\uff08\u4f1a\u5f71\u54cd\u540e\u7eed\u7ae0\u8282\u4e00\u81f4\u6027\uff09"); return; }
       ensurePolishPresets();
       var preset = getPolishModelPreset();
       if (!preset) { showToast("\u8bf7\u5148\u5728\u8bbe\u7f6e\u4e2d\u914d\u7f6e\u8f7b\u578b\u6a21\u578b\u6216\u6da6\u8272\u4e13\u7528\u6a21\u578b"); return; }
@@ -5989,7 +5999,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.18.0",
+          version: "2.18.1",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -6004,7 +6014,7 @@
         };
       } else {
         data = {
-          version: "2.18.0",
+          version: "2.18.1",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -6728,6 +6738,19 @@
             if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
             renderReaderContent(summary);
             showToast("\u91cd\u65b0\u751f\u6210\u5b8c\u6210\uff01");
+            /* 重新生成后自动润色+评论 */
+            if (state.settings.autoPolish) {
+              polishText(summary, function(polished, err) {
+                if (polished) {
+                  if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+                  renderReaderContent(summary);
+                  showToast("\u6da6\u8272\u5b8c\u6210");
+                }
+                if (state.settings.autoGenerateComments) { doAutoComment(summary); }
+              });
+            } else if (state.settings.autoGenerateComments) {
+              doAutoComment(summary);
+            }
           } else {
             hideLoading();
             showToast("\u91cd\u65b0\u751f\u6210\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5");
@@ -6778,6 +6801,8 @@
             if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
             renderReaderContent(summary);
             showToast("\u7b2c" + currentCh + "\u7ae0\u91cd\u65b0\u751f\u6210\u5b8c\u6210\uff01");
+            /* 第2+章重生后不润色（多章），但可以自动评论 */
+            if (state.settings.autoGenerateComments) { doAutoComment(summary); }
           } else {
             hideLoading();
             showToast("\u91cd\u65b0\u751f\u6210\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5");
@@ -7021,6 +7046,20 @@
             if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
             renderReaderContent(summary);
             showToast("\u8ffd\u66f4\u6210\u529f\uff01\u7b2c" + summary._currentChapter + "\u7ae0");
+            /* 续写后自动润色（多章时polishText会自动跳过） */
+            if (state.settings.autoPolish) {
+              polishText(summary, function(polished, err) {
+                if (polished) {
+                  if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+                  renderReaderContent(summary);
+                  showToast("\u6da6\u8272\u5b8c\u6210");
+                }
+                /* 续写后自动评论（无论润色是否成功） */
+                if (state.settings.autoGenerateComments) { doAutoComment(summary); }
+              });
+            } else if (state.settings.autoGenerateComments) {
+              doAutoComment(summary);
+            }
           } else { showToast("\u8ffd\u66f4\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
         } else { showToast("\u8ffd\u66f4\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
       });
@@ -7775,7 +7814,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.18.0",
+    version: "2.18.1",
     apps: [
       {
         id: "hofter-home",

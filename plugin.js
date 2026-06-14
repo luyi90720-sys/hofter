@@ -3743,9 +3743,13 @@
     var html = '<div class="hp-section-title">CP\u6807\u7b7e</div><div class="hp-tag-list">';
     for (var i = 0; i < state.cpTags.length; i++) {
       var t = state.cpTags[i];
-      html += '<div class="hp-tag-item"><span>' + escapeHtml(t.name) + '</span><span class="hp-tag-remove" onclick="window.__hofter.removeCpTag(\'' + t.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
+      html += '<div class="hp-tag-item"><input type="checkbox" value="' + t.id + '" class="hp-tag-check-cp" style="margin-right:8px;accent-color:var(--primary)"><span style="flex:1">' + escapeHtml(t.name) + '</span><span class="hp-tag-remove" onclick="window.__hofter.removeCpTag(\'' + t.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
     }
-    html += '</div><div style="padding:12px 20px"><div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">\u65b0\u5efaCP\u6807\u7b7e</div><div style="display:flex;gap:8px;align-items:center"><select id="hp-new-cp-left" class="hp-input" style="flex:1"><option value="">\u9009\u62e9\u5de6\u4f4d</option>';
+    html += '</div>';
+    if (state.cpTags.length > 0) {
+      html += '<div style="padding:8px 20px"><button class="hp-btn hp-btn-outline hp-btn-sm" style="width:100%;font-size:12px;color:var(--like-red);border-color:var(--like-red)" onclick="window.__hofter.batchRemoveTags(\'cp\')">\u5220\u9664\u9009\u4e2d\u7684CP\u6807\u7b7e</button></div>';
+    }
+    html += '<div style="padding:12px 20px"><div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">\u65b0\u5efaCP\u6807\u7b7e</div><div style="display:flex;gap:8px;align-items:center"><select id="hp-new-cp-left" class="hp-input" style="flex:1"><option value="">\u9009\u62e9\u5de6\u4f4d</option>';
     for (var ci = 0; ci < state.personas.length; ci++) { html += '<option value="' + state.personas[ci].id + '">' + escapeHtml(state.personas[ci].name || state.personas[ci].handle) + ' (\u4eba\u8bbe)</option>'; }
     for (var cj = 0; cj < state.characters.length; cj++) { html += '<option value="' + state.characters[cj].id + '">' + escapeHtml(state.characters[cj].name || state.characters[cj].handle) + ' (\u89d2\u8272)</option>'; }
     html += '</select><span style="color:var(--primary)">\u00d7</span><select id="hp-new-cp-right" class="hp-input" style="flex:1"><option value="">\u9009\u62e9\u53f3\u4f4d</option>';
@@ -3755,9 +3759,13 @@
     html += '<div class="hp-section-title">\u8bbe\u5b9a\u6807\u7b7e</div><div class="hp-tag-list">';
     for (var j = 0; j < state.tropeTags.length; j++) {
       var tr = state.tropeTags[j];
-      html += '<div class="hp-tag-item"><span>' + escapeHtml(tr.name) + '</span><span class="hp-tag-remove" onclick="window.__hofter.removeTropeTag(\'' + tr.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
+      html += '<div class="hp-tag-item"><input type="checkbox" value="' + tr.id + '" class="hp-tag-check-trope" style="margin-right:8px;accent-color:var(--primary)"><span style="flex:1">' + escapeHtml(tr.name) + '</span><span class="hp-tag-remove" onclick="window.__hofter.removeTropeTag(\'' + tr.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
     }
-    html += '</div><div style="padding:16px 20px"><div style="display:flex;gap:8px"><input class="hp-input" id="hp-new-trope" placeholder="\u65b0\u5efa\u8bbe\u5b9a\u6807\u7b7e..." style="flex:1"><button class="hp-btn hp-btn-primary hp-btn-sm" onclick="window.__hofter.addNewTrope()">\u6dfb\u52a0</button></div></div>';
+    html += '</div>';
+    if (state.tropeTags.length > 0) {
+      html += '<div style="padding:8px 20px"><button class="hp-btn hp-btn-outline hp-btn-sm" style="width:100%;font-size:12px;color:var(--like-red);border-color:var(--like-red)" onclick="window.__hofter.batchRemoveTags(\'trope\')">\u5220\u9664\u9009\u4e2d\u7684\u8bbe\u5b9a\u6807\u7b7e</button></div>';
+    }
+    html += '<div style="padding:16px 20px"><div style="display:flex;gap:8px"><input class="hp-input" id="hp-new-trope" placeholder="\u65b0\u5efa\u8bbe\u5b9a\u6807\u7b7e..." style="flex:1"><button class="hp-btn hp-btn-primary hp-btn-sm" onclick="window.__hofter.addNewTrope()">\u6dfb\u52a0</button></div></div>';
     body.innerHTML = html; page.appendChild(body); overlay.appendChild(page); state.containerEl.appendChild(overlay);
   }
 
@@ -4928,11 +4936,37 @@
     },
     removeCpTag: function(id) {
       for (var i = 0; i < state.cpTags.length; i++) { if (state.cpTags[i].id === id) { state.cpTags.splice(i, 1); break; } }
-      saveCpTags(state.cpTags); renderApp();
+      saveCpTags(state.cpTags);
+      /* 局部更新标签管理面板，避免退出 */
+      var tagManager = document.getElementById("tag-manager");
+      if (tagManager) { closeSheet("tag-manager"); showTagManager(); }
+      else { renderApp(); }
     },
     removeTropeTag: function(id) {
       for (var i = 0; i < state.tropeTags.length; i++) { if (state.tropeTags[i].id === id) { state.tropeTags.splice(i, 1); break; } }
-      saveTropeTags(state.tropeTags); renderApp();
+      saveTropeTags(state.tropeTags);
+      var tagManager = document.getElementById("tag-manager");
+      if (tagManager) { closeSheet("tag-manager"); showTagManager(); }
+      else { renderApp(); }
+    },
+    batchRemoveTags: function(type) {
+      var checkboxes = document.querySelectorAll('.hp-tag-item input[type="checkbox"]:checked');
+      var ids = [];
+      for (var i = 0; i < checkboxes.length; i++) { ids.push(checkboxes[i].value); }
+      if (ids.length === 0) { showToast("\u8bf7\u5148\u9009\u62e9\u8981\u5220\u9664\u7684\u6807\u7b7e"); return; }
+      if (type === "cp") {
+        for (var j = ids.length - 1; j >= 0; j--) {
+          for (var k = 0; k < state.cpTags.length; k++) { if (state.cpTags[k].id === ids[j]) { state.cpTags.splice(k, 1); break; } }
+        }
+        saveCpTags(state.cpTags);
+      } else {
+        for (var j2 = ids.length - 1; j2 >= 0; j2--) {
+          for (var k2 = 0; k2 < state.tropeTags.length; k2++) { if (state.tropeTags[k2].id === ids[j2]) { state.tropeTags.splice(k2, 1); break; } }
+        }
+        saveTropeTags(state.tropeTags);
+      }
+      closeSheet("tag-manager"); showTagManager();
+      showToast("\u5df2\u5220\u9664 " + ids.length + " \u4e2a\u6807\u7b7e");
     },
     openTagPage: function(tagId) {
       state.currentTagPage = null;
@@ -5140,7 +5174,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.11.2",
+          version: "2.11.3",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5155,7 +5189,7 @@
         };
       } else {
         data = {
-          version: "2.11.2",
+          version: "2.11.3",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -6847,7 +6881,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.11.2",
+    version: "2.11.3",
     apps: [
       {
         id: "hofter-home",

@@ -1695,6 +1695,14 @@
       userMsg.push("\u5de6\u4f4d\uff08" + (left.name || "\u672a\u77e5") + "\uff09\uff1a", left.persona || left.bio || "\u65e0\u63cf\u8ff0", "");
       userMsg.push("\u53f3\u4f4d\uff08" + (right.name || "\u672a\u77e5") + "\uff09\uff1a", right.persona || right.bio || "\u65e0\u63cf\u8ff0");
     }
+    /* 灵感创作：无标题时让模型补全标题 */
+    if (summary._needTitle) {
+      userMsg.push("", "【特殊指令】用户未提供标题，请根据创作内容为本文生成一个贴切、有艺术感的标题，填入chapter.title字段。标题格式参考：《xxx》，要有同人社区风格。");
+    }
+    /* 灵感创作：不生成作者碎碎念 */
+    if (summary._needTitle) {
+      userMsg.push("同时，author_notes字段请留空，不要生成作者碎碎念。");
+    }
     userMsg = userMsg.join("\n");
     debugLog("L2 left isPersona:" + !!(left.persona) + " right isPersona:" + !!(right.persona));
     if (cpTag.fandomTags && cpTag.fandomTags.length > 0) {
@@ -3281,15 +3289,26 @@
 
   /* ─── 人设切换 ─── */
   function showPersonaSwitcher() {
-    var overlay = document.createElement("div"); overlay.className = "hp-sheet-overlay"; overlay.id = "persona-switcher";
-    overlay.onclick = function(e) { if (e.target === overlay) closeSheet("persona-switcher"); };
-    var sheet = document.createElement("div"); sheet.className = "hp-sheet";
-    var html = '<div class="hp-sheet-handle"></div><div style="font-size:16px;font-weight:700;padding:0 8px 12px">\u5207\u6362\u8eab\u4efd</div>';
-    for (var i = 0; i < state.personas.length; i++) {
-      var p = state.personas[i]; var isActive = state.activePersona && state.activePersona.id === p.id;
-      html += '<div class="hp-list-item" style="' + (isActive?"background:rgba(232,160,191,0.08)":"") + '" onclick="window.__hofter.switchPersona(\'' + p.id + '\')"><div class="hp-list-item-avatar">' + (p.avatar ? '<img src="'+p.avatar+'">' : (p.name||p.handle||"?")[0]) + '</div><div class="hp-list-item-info"><div class="hp-list-item-name">' + escapeHtml(p.name||p.handle) + '</div><div class="hp-list-item-desc">' + escapeHtml((p.bio||"").substring(0,40)) + '</div></div>' + (isActive ? ICONS.check.replace("currentColor","var(--primary)") : "") + '</div>';
+    /* 先从Roche刷新人设列表，确保能看到新建的人设 */
+    var renderSwitcher = function() {
+      var overlay = document.createElement("div"); overlay.className = "hp-sheet-overlay"; overlay.id = "persona-switcher";
+      overlay.onclick = function(e) { if (e.target === overlay) closeSheet("persona-switcher"); };
+      var sheet = document.createElement("div"); sheet.className = "hp-sheet";
+      var html = '<div class="hp-sheet-handle"></div><div style="font-size:16px;font-weight:700;padding:0 8px 12px">\u5207\u6362\u8eab\u4efd</div>';
+      for (var i = 0; i < state.personas.length; i++) {
+        var p = state.personas[i]; var isActive = state.activePersona && state.activePersona.id === p.id;
+        html += '<div class="hp-list-item" style="' + (isActive?"background:rgba(232,160,191,0.08)":"") + '" onclick="window.__hofter.switchPersona(\'' + p.id + '\')"><div class="hp-list-item-avatar">' + (p.avatar ? '<img src="'+p.avatar+'">' : (p.name||p.handle||"?")[0]) + '</div><div class="hp-list-item-info"><div class="hp-list-item-name">' + escapeHtml(p.name||p.handle) + '</div><div class="hp-list-item-desc">' + escapeHtml((p.bio||"").substring(0,40)) + '</div></div>' + (isActive ? ICONS.check.replace("currentColor","var(--primary)") : "") + '</div>';
+      }
+      sheet.innerHTML = html; overlay.appendChild(sheet); state.containerEl.appendChild(overlay);
+    };
+    if (state.roche && state.roche.persona && state.roche.persona.getUserPersonas) {
+      state.roche.persona.getUserPersonas().then(function(list) {
+        state.personas = list || [];
+        renderSwitcher();
+      }).catch(function() { renderSwitcher(); });
+    } else {
+      renderSwitcher();
     }
-    sheet.innerHTML = html; overlay.appendChild(sheet); state.containerEl.appendChild(overlay);
   }
 
   /* ─── 记忆挂载管理 ─── */
@@ -3482,10 +3501,16 @@
   /* ─── 沉浸式阅读页 ─── */
   function openReader(summaryId, isUserWork) {
     var summary = null;
-    if (isUserWork) {
-      for (var i = 0; i < state.publishedWorks.length; i++) { if (state.publishedWorks[i].id === summaryId) { summary = state.publishedWorks[i]; break; } }
-    } else {
-      for (var j = 0; j < state.summaries.length; j++) { if (state.summaries[j].id === summaryId) { summary = state.summaries[j]; break; } }
+    /* 先在publishedWorks中查找 */
+    for (var i = 0; i < state.publishedWorks.length; i++) { if (state.publishedWorks[i].id === summaryId) { summary = state.publishedWorks[i]; isUserWork = true; break; } }
+    /* 再在summaries中查找 */
+    if (!summary) { for (var j = 0; j < state.summaries.length; j++) { if (state.summaries[j].id === summaryId) { summary = state.summaries[j]; break; } } }
+    /* 最后在收藏/稍后读中查找 */
+    if (!summary) {
+      for (var fi = 0; fi < state.favorites.length; fi++) { if (state.favorites[fi].id === summaryId) { summary = state.favorites[fi]; break; } }
+    }
+    if (!summary) {
+      for (var ri = 0; ri < state.readLater.length; ri++) { if (state.readLater[ri].id === summaryId) { summary = state.readLater[ri]; break; } }
     }
     if (!summary) { showToast("\u672a\u627e\u5230\u4f5c\u54c1"); return; }
     state.currentReadingSummary = summary;
@@ -3550,7 +3575,24 @@
     summary._currentChapter = currentCh;
     var cpTag = null;
     for (var i = 0; i < state.cpTags.length; i++) { if (state.cpTags[i].id === summary.cpTagId) { cpTag = state.cpTags[i]; break; } }
-    var html = '<div class="hp-reader-cover" style="background:' + (summary.coverGradient || randomGradient()) + '"><h1 style="font-size:22px;font-weight:800;line-height:1.4">' + escapeHtml(summary.title) + '</h1><div class="hp-reader-author"><div class="hp-reader-author-avatar">' + (summary.author||"?")[0] + '</div><div><div style="font-size:14px;font-weight:600">' + escapeHtml(summary.author||"\u533f\u540d") + '</div><div style="font-size:12px;opacity:.8">' + escapeHtml(summary.cp||summary.cpTagName||"") + (summary.tags && summary.tags.length > 0 ? " | " + summary.tags.join(", ") : "") + '</div></div></div></div>';
+    var html = '<div class="hp-reader-cover" style="background:' + (summary.coverGradient || randomGradient()) + '"><h1 style="font-size:22px;font-weight:800;line-height:1.4">' + escapeHtml(summary.title) + '</h1><div class="hp-reader-author"><div class="hp-reader-author-avatar">' + (summary.author||"?")[0] + '</div><div><div style="font-size:14px;font-weight:600">' + escapeHtml(summary.author||"\u533f\u540d") + '</div><div style="font-size:12px;opacity:.8">' + escapeHtml(summary.cp||summary.cpTagName||"") + '</div></div></div></div>';
+    /* 标签显示区域 */
+    var allTags = [];
+    if (summary.tropeTags && summary.tropeTags.length > 0) allTags = allTags.concat(summary.tropeTags);
+    if (summary.tags && summary.tags.length > 0) {
+      for (var ti = 0; ti < summary.tags.length; ti++) { if (allTags.indexOf(summary.tags[ti]) < 0) allTags.push(summary.tags[ti]); }
+    }
+    if (summary.warnings && summary.warnings.length > 0) {
+      for (var wi = 0; wi < summary.warnings.length; wi++) { if (allTags.indexOf(summary.warnings[wi]) < 0) allTags.push(summary.warnings[wi]); }
+    }
+    if (allTags.length > 0) {
+      html += '<div style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px">';
+      for (var t = 0; t < allTags.length; t++) {
+        var isWarning = summary.warnings && summary.warnings.indexOf(allTags[t]) >= 0;
+        html += '<span class="hp-tag hp-tag-sm" style="' + (isWarning ? "background:#fff0f0;color:#c44" : "") + '">' + escapeHtml(allTags[t]) + '</span>';
+      }
+      html += '</div>';
+    }
     if (chapters.length > 1) {
       html += '<div style="display:flex;justify-content:center;align-items:center;gap:12px;padding:8px 16px;font-size:13px;color:var(--text-secondary);border-bottom:1px solid var(--bg-secondary)">';
       if (currentCh > 1) html += '<span style="cursor:pointer;color:var(--primary);padding:4px 12px;border-radius:16px;background:var(--primary-light)" onclick="window.__hofter.goChapter(' + (currentCh - 1) + ')">\u25c0 \u4e0a\u4e00\u7ae0</span>';
@@ -3986,16 +4028,36 @@
         var existingText = latestFact.summaryText || latestFact.action || latestFact.text || "";
         /* 追加到该条记忆文本后面 */
         var updatedText = existingText + appendText;
-        /* 由于Roche memory API可能不支持更新，采用新建一条的方式 */
-        state.roche.memory.write({
-          conversationId: conversationId,
-          summaryText: updatedText,
-          who: latestFact.who || [charName],
-          action: latestFact.action || ("\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b"),
-          when: "\u521a\u521a",
-          where: where,
-          source: "hofter-plugin"
-        }).catch(function(e) { debugLog("writeCharFactMemory append error:" + e.message); });
+        /* 使用memory.update更新现有事实记忆，避免重复创建 */
+        if (latestFact.id) {
+          state.roche.memory.update(latestFact.id, {
+            summaryText: updatedText,
+            action: latestFact.action || ("\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b")
+          }).catch(function(e) {
+            debugLog("writeCharFactMemory update failed, falling back to write: " + e.message);
+            /* update失败时降级为新建一条 */
+            state.roche.memory.write({
+              conversationId: conversationId,
+              summaryText: updatedText,
+              who: latestFact.who || [charName],
+              action: latestFact.action || ("\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b"),
+              when: "\u521a\u521a",
+              where: where,
+              source: "hofter-plugin"
+            }).catch(function(e2) { debugLog("writeCharFactMemory fallback write error:" + e2.message); });
+          });
+        } else {
+          /* 没有id时降级为新建 */
+          state.roche.memory.write({
+            conversationId: conversationId,
+            summaryText: updatedText,
+            who: latestFact.who || [charName],
+            action: latestFact.action || ("\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b"),
+            when: "\u521a\u521a",
+            where: where,
+            source: "hofter-plugin"
+          }).catch(function(e) { debugLog("writeCharFactMemory append error:" + e.message); });
+        }
       } else {
         /* 没有现有事实记忆，新建一条 */
         state.roche.memory.write({
@@ -4067,15 +4129,15 @@
           });
           return;
         }
-        /* 方式2：getShortTerm兜底 - 检查聊天记录中是否包含 [HF] 标记 */
+        /* 方式2：getShortTerm兜底 - 检查对应会话最新150条短期记忆中是否包含 [HF] 标记 */
         if (state.roche && state.roche.memory) {
-          state.roche.memory.getShortTerm({ conversationId: s.conversationId, limit: 100 }).then(function(messages) {
+          state.roche.memory.getShortTerm({ conversationId: s.conversationId, limit: 150 }).then(function(messages) {
             var found = false;
             if (messages) {
               for (var k = 0; k < messages.length; k++) {
                 var msgText = messages[k].text || "";
-                /* 兼容新旧格式：检查 [HF] 标记或 "Hofter同人社区" 或 "Hofter" */
-                if (msgText.indexOf("[HF]") >= 0 || msgText.indexOf("Hofter\u540c\u4eba\u793e\u533a") >= 0 || msgText.indexOf("Hofter") >= 0) {
+                /* 只检查 [HF] 精确标记，避免旧消息中的Hofter关键词误触发char持续关注 */
+                if (msgText.indexOf("[HF]") >= 0) {
                   found = true; break;
                 }
               }
@@ -5250,7 +5312,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.12.0",
+          version: "2.13.0",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5265,7 +5327,7 @@
         };
       } else {
         data = {
-          version: "2.12.0",
+          version: "2.13.0",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -5696,18 +5758,26 @@
           cpTagIds.push(selectedCpTags[cni].id);
         }
         var primaryCp = selectedCpTags[0];
-        var inspireSummary = {title:promptText||"\u7075\u611f\u521b\u4f5c", cpTagId:primaryCp.id, cpTagName:primaryCp.name, cp:cpNames.join("\u3001"), excerpt:promptText, tropeTags:tropeNames, fandomTag:"", _allCpTags:selectedCpTags};
+        /* 如果用户没有输入标题或摘要，让模型补全 */
+        var needTitle = !promptText;
+        var inspireSummary = {title:promptText||"\u7075\u611f\u521b\u4f5c", cpTagId:primaryCp.id, cpTagName:primaryCp.name, cp:cpNames.join("\u3001"), excerpt:promptText, tropeTags:tropeNames, fandomTag:"", _allCpTags:selectedCpTags, _needTitle:needTitle};
         generateLayer2Full(inspireSummary, function(result) {
           hideLoading();
           if (result) {
             /* fullContent兼容处理 */
             if (result.chapter && !result.chapters) { result.chapters = [result.chapter]; }
             if (!result.comments) result.comments = [];
-            var work = {id:generateId(), title:promptText||"\u7075\u611f\u521b\u4f5c", author:state.activePersona?(state.activePersona.handle||state.activePersona.name):"\u6211", cpTagId:primaryCp.id, cpTagName:primaryCp.name, cp:cpNames.join("\u3001"), excerpt:promptText, fullContent:result, isByUser:true, coverGradient:randomGradient(), timeAgo:"\u521a\u521a"};
+            /* 从正文中提取标题（如果用户没输入） */
+            var finalTitle = promptText;
+            if (!finalTitle && result.chapters && result.chapters.length > 0 && result.chapters[0].title) {
+              finalTitle = result.chapters[0].title;
+            }
+            if (!finalTitle) finalTitle = "\u7075\u611f\u521b\u4f5c";
+            var work = {id:generateId(), title:finalTitle, author:state.activePersona?(state.activePersona.handle||state.activePersona.name):"\u6211", cpTagId:primaryCp.id, cpTagName:primaryCp.name, cp:cpNames.join("\u3001"), excerpt:promptText||finalTitle, fullContent:result, isByUser:true, coverGradient:randomGradient(), timeAgo:"\u521a\u521a", tropeTags:tropeNames, tags:tropeNames};
             /* 复制contentSummary和_debugContext到work */
             if (result.content_summary) work.contentSummary = result.content_summary;
             else if (result.continuation_summary) work.contentSummary = result.continuation_summary;
-            if (result.author_notes) work.authorNotes = result.author_notes;
+            /* 灵感创作不保存作者碎碎念 */
             if (inspireSummary._debugContext) work._debugContext = inspireSummary._debugContext;
             state.publishedWorks.push(work); savePublishedWorks(state.publishedWorks);
             closeSheet("create-page"); showToast("\u521b\u4f5c\u5b8c\u6210\uff01"); renderApp();
@@ -6375,6 +6445,8 @@
       if (!summary || !summary.fullContent) { showToast("\u65e0\u6cd5\u751f\u6210\u8bc4\u8bba"); return; }
       showCommentLoading();
       var chaptersText = JSON.stringify(summary.fullContent.chapters || []);
+      /* 传递已有评论，让新生成的评论可以与旧评论互动 */
+      var existingComments = summary.fullContent.comments || [];
       generateLayer3Comments(chaptersText, function(comments, annotations) {
         hideCommentLoading();
         if (comments && comments.length > 0) {
@@ -6389,12 +6461,14 @@
         if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
         renderReaderContent(summary);
         showToast("\u8bc4\u8bba\u751f\u6210\u6210\u529f\uff01");
-        /* 检查已分享的会话，生成char评论 */
+        /* 刷新评论时重新触发char评论（重置processed标记） */
+        var shared = summary._sharedConversations || [];
+        for (var si = 0; si < shared.length; si++) { shared[si].processed = false; }
         checkSharedInConversations(summary, function() {
           if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
           renderReaderContent(summary);
         });
-      });
+      }, existingComments);
     },
     replyToComment: function(name) {
       var indicator = document.getElementById("hp-reply-indicator");
@@ -6957,7 +7031,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.12.0",
+    version: "2.13.0",
     apps: [
       {
         id: "hofter-home",

@@ -1114,11 +1114,12 @@
   function _doSaveSummaries() {
     _saveSummariesPending = false;
     _saveSummariesTimer = null;
-    /* 清理大对象：_continuationContexts 和 _debugContext 不需要持久化 */
+    /* 清理大对象：_continuationContexts 保留最新10条，_debugContext 保留 */
     for (var i = 0; i < state.summaries.length; i++) {
       var s = state.summaries[i];
-      if (s._continuationContexts) delete s._continuationContexts;
-      if (s._debugContext) delete s._debugContext;
+      if (s._continuationContexts && s._continuationContexts.length > 10) {
+        s._continuationContexts = s._continuationContexts.slice(-10);
+      }
     }
     if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("summaries_cache"), state.summaries);
   }
@@ -1879,15 +1880,15 @@
     debugLog("L3 start, fullText len:" + fullText.length + " existingComments:" + (existingComments ? existingComments.length : 0));
     var chatFn = getActiveModelPreset() ? customAiChat : aiChatStream;
     var promptSrc = (state.settings.promptLanguage === "en" && PROMPTS.layer3CommentsEN) ? PROMPTS.layer3CommentsEN : PROMPTS.layer3Comments;
-    var userMsg = "\u4ee5\u4e0b\u662f\u540c\u4eba\u6587\u5185\u5bb9\uff0c\u8bf7\u751f\u6210\u8bc4\u8bba\uff1a\n\n" + fullText.substring(0, 3000);
+    var userMsg = "\u4ee5\u4e0b\u662f\u540c\u4eba\u6587\u5185\u5bb9\uff0c\u8bf7\u751f\u6210\u8bc4\u8bba\uff1a\n\n" + fullText.substring(0, 2500);
     /* 如果有已有评论（包括用户评论），传给L3让NPC可以回复 */
     if (existingComments && existingComments.length > 0) {
-      userMsg += "\n\n\u3010\u5df2\u6709\u8bc4\u8bba\u3011\n";
+      userMsg += "\n\n\u3010\u5df2\u6709\u8bc4\u8bba\u3011\u4ee5\u4e0b\u662f\u8bfb\u8005\u4eec\u5df2\u7ecf\u53d1\u8868\u7684\u8bc4\u8bba\uff0c\u4f60\u751f\u6210\u7684\u65b0\u8bc4\u8bba\u5fc5\u987b\u4e0e\u5176\u4e2d\u81f3\u5c11 2-3 \u6761\u4ea7\u751f\u4e92\u52a8\uff08\u56de\u590d\u3001\u5171\u9e23\u3001\u8865\u5145\u89c2\u70b9\u7b49\uff09\uff1a\n";
       for (var i = 0; i < existingComments.length; i++) {
         var ec = existingComments[i];
         userMsg += "- " + (ec.name || "\u533f\u540d") + "\uff1a" + (ec.text || "") + (ec.replyTo ? " \uff08\u56de\u590d " + ec.replyTo + "\uff09" : "") + "\n";
       }
-      userMsg += "\n\u8bf7\u751f\u6210\u65b0\u7684\u8bc4\u8bba\uff0c\u53ef\u4ee5\u56de\u590d\u5df2\u6709\u8bc4\u8bba\uff0c\u4e5f\u53ef\u4ee5\u72ec\u7acb\u53d1\u8868\u3002";
+      userMsg += "\n\u91cd\u8981\uff1a\u65b0\u8bc4\u8bba\u4e2d\u81f3\u5c11\u6709 2-3 \u6761\u4f7f\u7528 replyTo \u5b57\u6bb5\u56de\u590d\u4e0a\u8ff0\u5df2\u6709\u8bc4\u8bba\uff0c\u5176\u4f59\u53ef\u4ee5\u72ec\u7acb\u53d1\u8868\u3002";
     }
     chatFn([
       { role: "system", content: promptSrc },
@@ -5385,7 +5386,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.15.1",
+          version: "2.16.0",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5400,7 +5401,7 @@
         };
       } else {
         data = {
-          version: "2.15.1",
+          version: "2.16.0",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -6849,9 +6850,9 @@
     clearDebug: function() { debugLogs = []; var p = document.getElementById("hp-debug-content"); if (p) p.textContent = ""; debugLog("debug cleared"); },
     copyDebug: function() { var text = debugLogs.join("\n"); if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function() { debugLog("debug copied to clipboard"); }); } else { debugLog("clipboard API not available"); } },
     loadExploreTags: function() {
-      showLoading();
+      showRefreshBanner("\u6b63\u5728\u63a2\u7d22\u65b0\u6807\u7b7e...");
       generateExploreTags(function(tags) {
-        hideLoading();
+        hideRefreshBanner();
         if (tags && tags.length > 0) {
           state.exploreTagsCache = tags;
           var area = document.getElementById("hp-explore-area");
@@ -7117,7 +7118,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.15.1",
+    version: "2.16.0",
     apps: [
       {
         id: "hofter-home",
@@ -7219,24 +7220,21 @@
           state.eventListeners = [];
           /* 清理 URL 监听：setInterval + popstate + history hook */
           if (state._cleanupUrlWatch) { state._cleanupUrlWatch(); state._cleanupUrlWatch = null; }
-          /* 清理分享球 document 级事件监听器 */
-          if (state._cleanupShareBallDocListeners) { state._cleanupShareBallDocListeners(); state._cleanupShareBallDocListeners = null; }
+          /* 分享球的document级事件监听器不清理——球是全局的，unmount后仍需拖拽 */
           /* 清理 MutationObserver */
           if (state._chatMsgObserver) { state._chatMsgObserver.disconnect(); state._chatMsgObserver = null; }
           /* 清理 saveSummariesCache 节流定时器 */
           if (_saveSummariesTimer) { clearTimeout(_saveSummariesTimer); _saveSummariesTimer = null; }
           /* 清理批量生成进度提示条 */
           hideBatchGenTip();
-          /* 清理 document.body 上残留的 hofter 相关元素 */
+          /* 清理 document.body 上残留的 hofter 相关元素（不含分享球） */
           var bodyLeftovers = document.querySelectorAll('#hp-debug-panel, #annotation-panel, #hp-context-panel, #hp-batch-gen-tip, #hp-loading');
           for (var bi = 0; bi < bodyLeftovers.length; bi++) { if (bodyLeftovers[bi].parentNode) bodyLeftovers[bi].parentNode.removeChild(bodyLeftovers[bi]); }
-          /* 清理分享球 */
-          var shareBall = document.getElementById("hp-share-ball");
-          if (shareBall && shareBall.parentNode) shareBall.parentNode.removeChild(shareBall);
+          /* 分享球是全局的，unmount时不关闭，让用户可以继续使用 */
+          /* 只关闭分享面板（如果打开的话） */
           var sharePanel = document.getElementById("hp-share-panel");
           if (sharePanel && sharePanel.parentNode) sharePanel.parentNode.removeChild(sharePanel);
-          _shareBallState.visible = false;
-          _shareBallState._ball = null;
+          _shareBallState.panelVisible = false;
           if (container) container.innerHTML = "";
           console.log('[hofter] unmount done');
         }

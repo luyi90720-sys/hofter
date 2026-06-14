@@ -932,6 +932,14 @@
     if (!text) return "";
     return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   }
+  /* 清理段落文本中的JSON格式标记（AI有时会把 { "type": "p", 混入正文） */
+  function cleanParaText(text) {
+    if (!text) return "";
+    return text.replace(/\{\s*"type"\s*:\s*"(?:p|dialogue|narrator)"\s*,?\s*\}/g, "")
+               .replace(/\{\s*"type"\s*:\s*"(?:p|dialogue|narrator)"\s*,?\s*/g, "")
+               .replace(/^\s*\d+\s*$/gm, "")  /* 清理独立的数字行（如 "1"） */
+               .trim();
+  }
   /* 富文本渲染：双引号加粗斜体、翻译语言样式 */
   function renderRichText(text) {
     if (!text) return "";
@@ -1637,6 +1645,9 @@
       .replace(/<system_execution_directive>[\s\S]*?<\/system_execution_directive>/gi, "")
       .replace(/<!--[\s\S]*?-->/g, "")
       .replace(/<[^>]+>/g, "");
+    /* 清理混入正文的JSON格式标记 */
+    cleaned = cleaned.replace(/\{\s*"type"\s*:\s*"(?:p|dialogue|narrator)"\s*,?\s*\}/g, "")
+                     .replace(/\{\s*"type"\s*:\s*"(?:p|dialogue|narrator)"\s*,?\s*/g, "");
     /* 方法1: 从JSON的"text"字段提取 */
     var textParts = cleaned.split(/"text"\s*:\s*"/);
     for (var i = 1; i < textParts.length; i++) {
@@ -1656,6 +1667,8 @@
       }
       /* 跳过明显的JSON键值行 */
       if (/^"[a-zA-Z_]+"/.test(line)) { if (buffer.trim().length > 10) { paragraphs.push(buffer.trim()); buffer = ""; } continue; }
+      /* 跳过纯数字行（可能是JSON数组索引） */
+      if (/^\d+$/.test(line)) { continue; }
       buffer += (buffer ? " " : "") + line;
     }
     if (buffer.trim().length > 10) paragraphs.push(buffer.trim());
@@ -3705,7 +3718,7 @@
         } else {
           html += '<div class="hp-reader-text" style="' + pStyle + '">';
         }
-        html += renderRichText(para.text || "");
+        html += renderRichText(cleanParaText(para.text || ""));
         if (hasAnnotation) {
           var annKey = annMap[matchKey] ? matchKey : paraIdx;
           html += ' <span style="display:inline-flex;align-items:center;cursor:pointer;color:var(--primary);margin-left:4px" onclick="window.__hofter.showAnnotationPanel(' + annKey + ')">' + ICONS.comment.replace(/24/g,"14") + '<span style="font-size:10px;margin-left:2px">' + (annotationForPara.notes ? annotationForPara.notes.length : 0) + '</span></span>';
@@ -5372,7 +5385,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.15.0",
+          version: "2.15.1",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5387,7 +5400,7 @@
         };
       } else {
         data = {
-          version: "2.15.0",
+          version: "2.15.1",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -7104,7 +7117,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.15.0",
+    version: "2.15.1",
     apps: [
       {
         id: "hofter-home",

@@ -930,9 +930,7 @@
   /* ─── 工具函数 ─── */
   function escapeHtml(text) {
     if (!text) return "";
-    var div = document.createElement("div");
-    div.appendChild(document.createTextNode(text));
-    return div.innerHTML;
+    return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   }
   /* 富文本渲染：双引号加粗斜体、翻译语言样式 */
   function renderRichText(text) {
@@ -1102,6 +1100,20 @@
   function saveCpTags(t) { state.cpTags = t; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("cpTags"), t); }
   function saveTropeTags(t) { state.tropeTags = t; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("tropeTags"), t); }
   function saveFandomTags(t) { state.fandomTags = t; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("fandomTags"), t); }
+  /* saveSummariesCache 节流：避免短时间内多次写入大对象 */
+  var _saveSummariesTimer = null;
+  var _saveSummariesPending = false;
+  function _doSaveSummaries() {
+    _saveSummariesPending = false;
+    _saveSummariesTimer = null;
+    /* 清理大对象：_continuationContexts 和 _debugContext 不需要持久化 */
+    for (var i = 0; i < state.summaries.length; i++) {
+      var s = state.summaries[i];
+      if (s._continuationContexts) delete s._continuationContexts;
+      if (s._debugContext) delete s._debugContext;
+    }
+    if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("summaries_cache"), state.summaries);
+  }
   function saveSummariesCache(a) {
     state.summaries = a;
     /* 构建已保护ID集合：收藏+稍后读 */
@@ -1125,7 +1137,16 @@
       }
     }
     state.summaries = newSummaries;
-    if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("summaries_cache"), state.summaries);
+    /* 节流：500ms内只写入一次 */
+    if (_saveSummariesTimer) {
+      _saveSummariesPending = true;
+    } else {
+      _doSaveSummaries();
+      _saveSummariesTimer = setTimeout(function() {
+        if (_saveSummariesPending) _doSaveSummaries();
+        else _saveSummariesTimer = null;
+      }, 500);
+    }
   }
   function savePublishedWorks(a) { state.publishedWorks = a; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("published_works"), a); }
   function saveFavoritesData(d) { state.favorites = d.favorites || []; state.readHistory = d.readHistory || []; state.readLater = d.readLater || []; if (state.roche && state.roche.storage) state.roche.storage.set(personaKey("favorites"), d); }
@@ -4496,18 +4517,31 @@
         }
       }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    /* 限制观察范围：只观察直接子节点变化，不观察整个子树 */
+    observer.observe(document.body, { childList: true, subtree: false });
     state._chatMsgObserver = observer;
   }
 
   function enhanceShareCardInChat(node) {
     if (!node.querySelectorAll) return;
     try {
-      var allElements = [node];
-      var inner = node.querySelectorAll('*');
-      for (var k = 0; k < inner.length; k++) allElements.push(inner[k]);
-      for (var i = 0; i < allElements.length; i++) {
-        var el = allElements[i];
+      /* 只检查节点自身和直接子元素，避免 querySelectorAll('*') 遍历所有后代 */
+      var checkList = [node];
+      /* 最多检查3层深度 */
+      var children = node.children;
+      if (children) {
+        for (var c = 0; c < children.length && c < 20; c++) {
+          checkList.push(children[c]);
+          var grandChildren = children[c].children;
+          if (grandChildren) {
+            for (var gc = 0; gc < grandChildren.length && gc < 10; gc++) {
+              checkList.push(grandChildren[gc]);
+            }
+          }
+        }
+      }
+      for (var i = 0; i < checkList.length; i++) {
+        var el = checkList[i];
         var text = el.textContent || '';
         if (text.indexOf('\ud83d\udcd6') >= 0 && text.indexOf('Hofter\u540c\u4eba\u793e\u533a') >= 0 && !el.dataset.hofterCard) {
           el.dataset.hofterCard = '1';
@@ -4693,30 +4727,42 @@
       var t = e.touches[0];
       onStart(t.clientX, t.clientY);
     }, { passive: true });
-    document.addEventListener("touchmove", function(e) {
+    var _docTouchMove = function(e) {
       if (!_shareBallState._isDragging || Date.now() - _shareBallState._lastTouchTime > 5000) return;
       var t = e.touches[0];
       onMove(t.clientX, t.clientY);
-    }, { passive: true });
-    document.addEventListener("touchend", function() {
+    };
+    var _docTouchEnd = function() {
       if (Date.now() - _shareBallState._lastTouchTime > 5000) return;
       _shareBallState._lastTouchTime = Date.now();
       onEnd(true);
-    });
+    };
+    document.addEventListener("touchmove", _docTouchMove, { passive: true });
+    document.addEventListener("touchend", _docTouchEnd);
 
     ball.addEventListener("mousedown", function(e) {
       if (Date.now() - _shareBallState._lastTouchTime < 800) return;
       onStart(e.clientX, e.clientY);
       e.preventDefault();
     });
-    document.addEventListener("mousemove", function(e) {
+    var _docMouseMove = function(e) {
       if (!_shareBallState._isDragging || Date.now() - _shareBallState._lastTouchTime < 800) return;
       onMove(e.clientX, e.clientY);
-    });
-    document.addEventListener("mouseup", function() {
+    };
+    var _docMouseUp = function() {
       if (Date.now() - _shareBallState._lastTouchTime < 800) return;
       onEnd(true);
-    });
+    };
+    document.addEventListener("mousemove", _docMouseMove);
+    document.addEventListener("mouseup", _docMouseUp);
+
+    /* 保存清理引用 */
+    state._cleanupShareBallDocListeners = function() {
+      document.removeEventListener("touchmove", _docTouchMove);
+      document.removeEventListener("touchend", _docTouchEnd);
+      document.removeEventListener("mousemove", _docMouseMove);
+      document.removeEventListener("mouseup", _docMouseUp);
+    };
 
     ball.addEventListener("click", function(e) {
       /* 允许关闭按钮的点击事件通过 */
@@ -4917,11 +4963,17 @@
     setTimeout(_onUrlChange, 100);
   };
   /* 监听 popstate（浏览器前进/后退） */
-  window.addEventListener("popstate", function() {
-    setTimeout(_onUrlChange, 100);
-  });
-  /* 定时检测兜底（每 2 秒） */
-  setInterval(_onUrlChange, 2000);
+  var _popstateHandler = function() { setTimeout(_onUrlChange, 100); };
+  window.addEventListener("popstate", _popstateHandler);
+  /* 定时检测兜底（每 5 秒，降低频率） */
+  var _urlChangeTimer = setInterval(_onUrlChange, 5000);
+  /* 保存清理引用 */
+  state._cleanupUrlWatch = function() {
+    clearInterval(_urlChangeTimer);
+    window.removeEventListener("popstate", _popstateHandler);
+    history.pushState = _origPushState;
+    history.replaceState = _origReplaceState;
+  };
 
   function getCurrentConvNameFromSummary(summary) {
     if (!summary || !summary._sharedConversations) return "";
@@ -5320,7 +5372,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.14.0",
+          version: "2.15.0",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5335,7 +5387,7 @@
         };
       } else {
         data = {
-          version: "2.14.0",
+          version: "2.15.0",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -7052,7 +7104,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.14.0",
+    version: "2.15.0",
     apps: [
       {
         id: "hofter-home",
@@ -7152,14 +7204,28 @@
             ev.el.removeEventListener(ev.type, ev.fn);
           }
           state.eventListeners = [];
-          /* 清理 document.body 上残留的 hofter 相关元素（不含悬浮球） */
-          var bodyLeftovers = document.querySelectorAll('#hp-debug-panel, #annotation-panel, #hp-context-panel');
-          for (var bi = 0; bi < bodyLeftovers.length; bi++) { if (bodyLeftovers[bi].parentNode) bodyLeftovers[bi].parentNode.removeChild(bodyLeftovers[bi]); }
+          /* 清理 URL 监听：setInterval + popstate + history hook */
+          if (state._cleanupUrlWatch) { state._cleanupUrlWatch(); state._cleanupUrlWatch = null; }
+          /* 清理分享球 document 级事件监听器 */
+          if (state._cleanupShareBallDocListeners) { state._cleanupShareBallDocListeners(); state._cleanupShareBallDocListeners = null; }
+          /* 清理 MutationObserver */
           if (state._chatMsgObserver) { state._chatMsgObserver.disconnect(); state._chatMsgObserver = null; }
+          /* 清理 saveSummariesCache 节流定时器 */
+          if (_saveSummariesTimer) { clearTimeout(_saveSummariesTimer); _saveSummariesTimer = null; }
+          /* 清理批量生成进度提示条 */
+          hideBatchGenTip();
+          /* 清理 document.body 上残留的 hofter 相关元素 */
+          var bodyLeftovers = document.querySelectorAll('#hp-debug-panel, #annotation-panel, #hp-context-panel, #hp-batch-gen-tip, #hp-loading');
+          for (var bi = 0; bi < bodyLeftovers.length; bi++) { if (bodyLeftovers[bi].parentNode) bodyLeftovers[bi].parentNode.removeChild(bodyLeftovers[bi]); }
+          /* 清理分享球 */
+          var shareBall = document.getElementById("hp-share-ball");
+          if (shareBall && shareBall.parentNode) shareBall.parentNode.removeChild(shareBall);
+          var sharePanel = document.getElementById("hp-share-panel");
+          if (sharePanel && sharePanel.parentNode) sharePanel.parentNode.removeChild(sharePanel);
+          _shareBallState.visible = false;
+          _shareBallState._ball = null;
           if (container) container.innerHTML = "";
-          console.log('[hofter] unmount done, __hofter still exists:', !!window.__hofter);
-          /* 不再 delete window.__hofter，避免重进时 onclick 失效 */
-          /* mount 时会无条件重建 */
+          console.log('[hofter] unmount done');
         }
       }
     ]

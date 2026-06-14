@@ -1656,15 +1656,27 @@
       "- \u5708\u5b50\uff1a" + (summary.fandomTag || ""), "- \u8bbe\u5b9a/\u6897\uff1a" + (summary.tags ? summary.tags.join(", ") : (summary.tropeTags ? summary.tropeTags.join(", ") : "\u65e0")),
       "- \u6458\u8981\u53c2\u8003\uff1a" + (summary.summary || summary.excerpt || ""), "",
       "\u2501\u2501 \u89d2\u8272\u4eba\u8bbe \u2501\u2501"];
-    /* 支持多CP：如果有_allCpTags，写入所有CP的人设 */
+    /* 支持多CP：如果有_allCpTags，写入所有CP的人设（去重相同角色） */
     if (summary._allCpTags && summary._allCpTags.length > 0) {
+      var writtenCharIds = {};
       for (var aci = 0; aci < summary._allCpTags.length; aci++) {
         var acTag = summary._allCpTags[aci];
         var acLeft = acTag.leftSide || acTag.attackSide || {};
         var acRight = acTag.rightSide || acTag.defenseSide || {};
         userMsg.push("CP #" + (aci + 1) + ": " + acTag.name);
-        userMsg.push("\u5de6\u4f4d\uff08" + (acLeft.name || "\u672a\u77e5") + "\uff09\uff1a" + (acLeft.persona || acLeft.bio || "\u65e0\u63cf\u8ff0"));
-        userMsg.push("\u53f3\u4f4d\uff08" + (acRight.name || "\u672a\u77e5") + "\uff09\uff1a" + (acRight.persona || acRight.bio || "\u65e0\u63cf\u8ff0"));
+        /* 通过角色id去重，避免重复传入相同人设 */
+        if (acLeft.id && !writtenCharIds[acLeft.id]) {
+          userMsg.push("\u5de6\u4f4d\uff08" + (acLeft.name || "\u672a\u77e5") + "\uff09\uff1a" + (acLeft.persona || acLeft.bio || "\u65e0\u63cf\u8ff0"));
+          writtenCharIds[acLeft.id] = true;
+        } else if (acLeft.id && writtenCharIds[acLeft.id]) {
+          userMsg.push("\u5de6\u4f4d\uff08" + (acLeft.name || "\u672a\u77e5") + "\uff09\uff1a\u540c\u4e0a\u8ff0");
+        }
+        if (acRight.id && !writtenCharIds[acRight.id]) {
+          userMsg.push("\u53f3\u4f4d\uff08" + (acRight.name || "\u672a\u77e5") + "\uff09\uff1a" + (acRight.persona || acRight.bio || "\u65e0\u63cf\u8ff0"));
+          writtenCharIds[acRight.id] = true;
+        } else if (acRight.id && writtenCharIds[acRight.id]) {
+          userMsg.push("\u53f3\u4f4d\uff08" + (acRight.name || "\u672a\u77e5") + "\uff09\uff1a\u540c\u4e0a\u8ff0");
+        }
         if (acTag.fandomTags && acTag.fandomTags.length > 0) userMsg.push("\u5708\u5b50/\u4e16\u754c\u4e66\u8bbe\u5b9a\uff1a" + acTag.fandomTags.join("\u3001"));
         userMsg.push("");
       }
@@ -2941,7 +2953,7 @@
   /* ─── 下拉刷新 ─── */
   var _lastRefreshTime = 0;
   function initPullToRefresh(el) {
-    var startY = 0, pulling = false, currentDiff = 0;
+    var startY = 0, startX = 0, pulling = false, currentDiff = 0;
     var pullIndicator = null;
     var THRESHOLD = 120;
     var MAX_PULL = 160;
@@ -2967,28 +2979,33 @@
       if (text) text.textContent = diff >= THRESHOLD ? "\u91ca\u653e\u5237\u65b0" : "\u4e0b\u62c9\u5237\u65b0";
     }
     function isTabOrClickable(e) {
-      /* 只拦截真正的交互元素（tabs、按钮），不拦截卡片和普通内容区域 */
+      /* 只拦截真正的交互元素（tabs、按钮），不拦截卡片——卡片通过方向判断区分点击和下拉 */
       var target = e.target || e.srcElement;
       if (!target) return false;
-      if (target.closest && (target.closest('.hp-tabs') || target.closest('.hp-tab') || target.closest('button') || target.closest('a') || target.closest('[onclick]') || target.closest('.hp-icon-btn') || target.closest('.hp-btn') || target.closest('.hp-card'))) return true;
+      if (target.closest && (target.closest('.hp-tabs') || target.closest('.hp-tab') || target.closest('button') || target.closest('a') || target.closest('[onclick]') || target.closest('.hp-icon-btn') || target.closest('.hp-btn'))) return true;
       /* fallback: 检查className */
       var cn = target.className || "";
-      if (typeof cn === "string" && (cn.indexOf("hp-tab") >= 0 || cn.indexOf("hp-tabs") >= 0 || cn.indexOf("hp-btn") >= 0 || cn.indexOf("hp-card") >= 0)) return true;
+      if (typeof cn === "string" && (cn.indexOf("hp-tab") >= 0 || cn.indexOf("hp-tabs") >= 0 || cn.indexOf("hp-btn") >= 0)) return true;
       return false;
     }
     function onTS(e) {
       if (isTabOrClickable(e)) return;
       if (el.scrollTop > 15 || state.isLoading || Date.now() - _lastRefreshTime < COOLDOWN) return;
       startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
       pulling = true;
       currentDiff = 0;
     }
     function onTM(e) {
       if (!pulling) return;
-      var diff = e.touches[0].clientY - startY;
-      if (diff < 0) { currentDiff = 0; removeIndicator(); return; }
-      currentDiff = Math.min(diff * 0.5, MAX_PULL);
+      var diffY = e.touches[0].clientY - startY;
+      var diffX = Math.abs(e.touches[0].clientX - startX);
+      /* 水平滑动或向上滑动时不触发下拉 */
+      if (diffY < 0 || diffX > Math.abs(diffY)) { currentDiff = 0; removeIndicator(); return; }
+      currentDiff = Math.min(diffY * 0.5, MAX_PULL);
       if (currentDiff > 10) {
+        /* 正在下拉时阻止默认行为，防止同时触发卡片点击 */
+        e.preventDefault();
         if (!pullIndicator) createIndicator();
         el.style.transform = "translateY(" + currentDiff + "px)";
         el.style.transition = "none";
@@ -5276,20 +5293,19 @@
         for (var ti = 0; ti < trItems.length; ti++) { var trId = trItems[ti].getAttribute("data-trope-id"); if (trId) selectedTropes.push(trId); }
         var tropeNames = [];
         for (var tn = 0; tn < state.tropeTags.length; tn++) { if (selectedTropes.indexOf(state.tropeTags[tn].id) >= 0) tropeNames.push(state.tropeTags[tn].name); }
-        /* 收集所有选中的CP标签，去重相同人设 */
+        /* 收集所有选中的CP标签，去重相同人设（允许选不同cptag但避免重复传入人设） */
         var selectedCpTags = [];
         var seenCharIds = {};
         for (var sci = 0; sci < selectedCps.length; sci++) {
           var cpTag = null;
           for (var scj = 0; scj < state.cpTags.length; scj++) { if (state.cpTags[scj].id === selectedCps[sci]) { cpTag = state.cpTags[scj]; break; } }
           if (!cpTag) continue;
-          /* 通过角色id去重：如果左右位角色id组合已存在，跳过 */
+          selectedCpTags.push(cpTag);
+          /* 记录已出现的角色id，后续在prompt构建时去重 */
           var leftId = (cpTag.leftSide || cpTag.attackSide || {}).id || "";
           var rightId = (cpTag.rightSide || cpTag.defenseSide || {}).id || "";
-          var charKey = [leftId, rightId].sort().join("_");
-          if (leftId && rightId && seenCharIds[charKey]) continue;
-          if (leftId && rightId) seenCharIds[charKey] = true;
-          selectedCpTags.push(cpTag);
+          if (leftId) seenCharIds[leftId] = true;
+          if (rightId) seenCharIds[rightId] = true;
         }
         if (selectedCpTags.length === 0) { showToast("\u672a\u627e\u5230\u6709\u6548CP"); return; }
         showLoading();
@@ -6490,7 +6506,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.9.0",
+    version: "2.9.1",
     apps: [
       {
         id: "hofter-home",

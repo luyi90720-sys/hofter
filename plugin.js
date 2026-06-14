@@ -908,7 +908,7 @@
     tropeTags: [],
     fandomTags: [],
     worldbookCategories: [],
-    settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false, autoFollowTropeTags: false, modelPresets: [], activeModelPresetId: "", promptLanguage: "zh", shareMemoryMode: "auto" },
+    settings: { onboardCompleted: false, activePersonaId: "", cpMode: "default", mountedConversationIds: [], memoryAttachProbability: 30, theme: "light", fontSize: 17, wordCountMin: 3000, wordCountMax: 8000, autoGenerateComments: false, autoFollowTropeTags: false, modelPresets: [], activeModelPresetId: "", promptLanguage: "zh", shareMemoryMode: "auto", autoPolish: false, polishPresets: [], activePolishPresetId: "", polishMode: "direct", keepOriginalText: false, polishModelPresetId: "" },
     isLoading: false,
     batchSelectMode: false,
     batchSelectedIds: [],
@@ -1695,6 +1695,330 @@
       content_summary: ""
     };
     callback(fallbackData);
+  }
+
+  /* ─── 校正润色功能 ─── */
+
+  /* 默认润色预设模板（用户可编辑的中间部分） */
+  var DEFAULT_POLISH_PROMPT = [
+    "\u3010\u6da6\u8272\u6821\u6b63\u89c4\u5219\u3011",
+    "",
+    "\u4e00\u3001\u6bb5\u843d\u4e0e\u8282\u594f",
+    "1. \u62d2\u7edd\u6587\u5b57\u5899\uff1a\u5bf9\u8bdd\u4e0e\u80a2\u4f53\u5fae\u52a8\u4f5c\u62c6\u5206\u5448\u73b0\uff0c\u4ea4\u9519\u8fdb\u884c",
+    "2. \u6bb5\u843d\u957f\u77ed\u7531\u6587\u98ce\u51b3\u5b9a\uff1a\u6df1\u6c89\u53ef\u7ef5\u5bc6\u957f\u6bb5\uff0c\u950b\u5229\u53ef\u788e\u88c2\u77ed\u53e5",
+    "3. \u7a0b\u5ea6\u5185\u655b\uff1a\u7981\u7528\u300c\u6781\u5176\u300d\u300c\u65e0\u6bd4\u300d\u300c\u7279\u522b\u300d\u7b49\u5f3a\u70c8\u526f\u8bcd\uff0c\u7528\u5177\u4f53\u7ec6\u8282\u5e73\u5b9e\u5448\u73b0",
+    "",
+    "\u4e8c\u3001\u89d2\u8272\u5448\u73b0",
+    "4. \u7279\u5f81\u53ea\u901a\u8fc7\u884c\u4e3a/\u9009\u62e9/\u53cd\u5e94\u5448\u73b0\uff0c\u4e0d\u53ef\u65c1\u767d\u76f4\u63a5\u547d\u540d",
+    "5. \u7981\u6b62\u300c\u56e0\u4e3a[\u7279\u5f81]\u6240\u4ee5\u2026\u2026\u300d\u7b49\u56e0\u679c\u89e3\u8bf4\u53e5\u5f0f",
+    "6. \u89e6\u78b0/\u62c9\u8fd1\u8ddd\u79bb\u7684\u9a71\u52a8\u529b\u5fc5\u987b\u6765\u81ea\u89d2\u8272\u5185\u5fc3\u6e34\u671b\uff0c\u4e0d\u53ef\u7528\u5916\u90e8\u501f\u53e3",
+    "",
+    "\u4e09\u3001\u8bed\u8a00\u51c0\u5316",
+    "7. \u7981\u7528\u5143\u65c1\u767d\u7ffb\u8bd1\uff1a\u300c\u4e0d\u662f\u2026\u2026\u800c\u662f\u2026\u2026\u300d\u300c\u90a3\u662f\u4e00\u79cd\u2026\u2026\u300d\u300c\u4eff\u4f5b\u5728\u8bf4\u2026\u2026\u300d",
+    "8. \u7981\u6b62\u5c06\u5185\u5fc3\u72b6\u6001\u7ffb\u8bd1\u4e3a\u62bd\u8c61\u6bd4\u55bb\uff08\u300c\u88ab\u5265\u593a\u4e86\u76ae\u80a4\u300d\u300c\u9632\u7ebf\u88ab\u51fb\u4e2d\u300d\uff09",
+    "9. \u7981\u6b62\u8eab\u4f53\u96f6\u4ef6\u5316\u63cf\u5199\uff08\u5589\u7ed3\u6eda\u52a8\u3001\u808c\u8089\u7d27\u7ef7\u3001\u4e0b\u988c\u7ebf\u7ef7\u7d27\u2192\u6539\u4e3a\u6574\u4f53\u59ff\u52bf\u8bed\u8a00\uff09",
+    "10. \u5267\u70c8\u53cd\u5e94\u964d\u683c\uff1a\u300c\u5fc3\u810f\u6f0f\u8df3\u300d\u300c\u731b\u5730\u50f5\u4f4f\u300d\u2192 \u534a\u79d2\u505c\u987f\u3001\u547c\u5438\u6d45\u77ed\u3001\u88ab\u538b\u4f4f\u7684\u53f9\u606f",
+    "",
+    "\u56db\u3001\u60c5\u611f\u4e0e\u4e92\u52a8",
+    "11. \u4e0d\u8ffd\u6c42\u60c5\u611f\u5bf9\u9f50\uff1a\u5141\u8bb8\u4e00\u65b9\u7ed9\u51fa\u3001\u53e6\u4e00\u65b9\u6ca1\u6536\u5230\uff0c\u5141\u8bb8\u53cd\u5e94\u5ef6\u8fdf\u6d6e\u73b0",
+    "12. \u5360\u6709\u6b32/\u9634\u6697\u5fc3\u7406\u7528\u514b\u5236\u767d\u63cf\uff1a\u53ea\u5199\u53ef\u89c1\u52a8\u4f5c\u4e0e\u8a00\u8bed\uff0c\u7edd\u4e0d\u7aa5\u63a2\u51b0\u5c71\u4e4b\u4e0b",
+    "13. \u7981\u6b62\u7239\u5473/\u5f81\u8be2/\u8d85\u96c4\u7528\u8bed\uff1a\u300c\u6162\u70b9\u5403\u300d\u300c\u53ef\u4ee5\u5417\u300d\u300c\u72e0\u72e0\u5730\u300d\u300c\u538b\u5236\u300d",
+    "14. \u7981\u6b62\u5ec9\u4ef7\u6807\u7b7e\uff1a\u300c\u5c0f\u9a97\u5b50\u300d\u300c\u6211\u7684\u5149\u300d\u300c\u5634\u89d2\u52fe\u8d77\u62b9\u7b11\u300d\u300c\u6d8c\u8d77\u4e00\u80a1\u6696\u6d41\u300d",
+    "",
+    "\u4e94\u3001\u73af\u5883\u4e0e\u5e03\u666f",
+    "15. \u73af\u5883\u63cf\u5199\u5fc5\u987b\u4e0e\u89d2\u8272\u4ea7\u751f\u8fde\u63a5\uff0c\u7981\u6b62\u72ec\u7acb\u60ac\u6d6e\u7684\u98ce\u666f\u6bb5\u843d"
+  ].join("\n");
+
+  /* 润色提示词：身份定义（不可编辑） */
+  var POLISH_IDENTITY_PROMPT = "\u4f60\u662f\u4e00\u4f4d\u4e13\u4e1a\u7684\u6587\u5b66\u6da6\u8272\u7f16\u8f91\u3002\u4f60\u7684\u4efb\u52a1\u662f\u6821\u6b63\u548c\u6da6\u8272\u540c\u4eba\u6587\u7684\u6b63\u6587\u5185\u5bb9\u3002\n\u4f60\u5c06\u6536\u5230\uff1a\u539f\u59cb\u6b63\u6587\u3001\u5185\u5bb9\u603b\u7ed3\u3001\u89d2\u8272\u4eba\u8bbe\u4fe1\u606f\u3002\n\u4f60\u7684\u76ee\u6807\uff1a\u5728\u4e0d\u6539\u53d8\u6545\u4e8b\u60c5\u8282\u548c\u89d2\u8272\u884c\u4e3a\u7684\u524d\u63d0\u4e0b\uff0c\u63d0\u5347\u6587\u672c\u7684\u6587\u5b66\u8d28\u91cf\u3002\n\u91cd\u8981\uff1a\u4e0d\u8981\u6539\u53d8\u6545\u4e8b\u8d70\u5411\u3001\u4e0d\u8981\u5220\u9664\u60c5\u8282\u3001\u4e0d\u8981\u6dfb\u52a0\u65b0\u60c5\u8282\u3002\u53ea\u505a\u6587\u7b14\u5c42\u9762\u7684\u4f18\u5316\u3002";
+
+  /* 润色提示词：返回格式-内联模式（不可编辑） */
+  var POLISH_FORMAT_INLINE = "\u3010\u8fd4\u56de\u683c\u5f0f - \u5185\u8054\u9010\u6bb5\u6821\u9a8c\u3011\n\u5bf9\u6bcf\u4e2a\u6bb5\u843d\uff0c\u6309\u4ee5\u4e0b\u683c\u5f0f\u8fd4\u56de\uff1a\n\n<!-- \u6821\u9a8c\u00b7\u7b2c X \u6bb5\n[\u610f\u56fe]\uff1a\u672c\u6bb5\u6838\u5fc3\n[\u95ee\u9898]\uff1a\u53d1\u73b0\u7684\u95ee\u9898\uff08\u65e0\u5219\u5199\u201c\u65e0\u201d\uff09\n[\u4fee\u6539]\uff1a\u4fee\u6539\u8981\u70b9\n-->\n{修改后的段落正文}\n\n\u5168\u90e8\u6bb5\u843d\u6821\u9a8c\u5b8c\u6bd5\u540e\uff0c\u53e6\u8d77\u4e00\u884c\u8f93\u51fa\uff1a\n---CONTENT_SUMMARY---\n{修改后的内容总结}\n---END---";
+
+  /* 润色提示词：返回格式-直接模式（不可编辑） */
+  var POLISH_FORMAT_DIRECT = "\u3010\u8fd4\u56de\u683c\u5f0f - \u76f4\u63a5\u8fd4\u56de\u3011\n\u76f4\u63a5\u8fd4\u56de\u5b8c\u6574\u7684\u4fee\u6539\u540e\u6b63\u6587\uff0c\u683c\u5f0f\u4e0e\u8f93\u5165\u7684JSON\u7ed3\u6784\u4e00\u81f4\u3002\n\u5728\u6b63\u6587\u6700\u540e\u53e6\u8d77\u4e00\u884c\u8f93\u51fa\uff1a\n---CONTENT_SUMMARY---\n{修改后的内容总结}\n---END---";
+
+  /* 获取润色用的模型预设 */
+  function getPolishModelPreset() {
+    var s = state.settings;
+    /* 优先使用润色专用预设 */
+    if (s.polishModelPresetId && s.modelPresets) {
+      for (var i = 0; i < s.modelPresets.length; i++) {
+        if (s.modelPresets[i].id === s.polishModelPresetId) return s.modelPresets[i];
+      }
+    }
+    /* 回退到当前激活的轻型模型预设 */
+    return getActiveModelPreset();
+  }
+
+  /* 使用指定预设调用自定义API */
+  function customAiChatWithPreset(preset, messages, temperature, onProgress, onDone, onError) {
+    if (!preset || !preset.apiUrl || !preset.apiKey || !preset.model) {
+      if (onError) onError(new Error("\u672a\u914d\u7f6e\u6da6\u8272\u6a21\u578b\u9884\u8bbe"));
+      return;
+    }
+    var url = preset.apiUrl.replace(/\/+$/, "") + "/v1/chat/completions";
+    var body = JSON.stringify({ model: preset.model, messages: messages, temperature: temperature, stream: false });
+    var controller = new AbortController();
+    var _done = false;
+    var TIMEOUT_MS = 180000;
+    var timeoutId = setTimeout(function() {
+      controller.abort();
+      if (!_done) { _done = true; if (onError) onError(new Error("\u6da6\u8272\u8bf7\u6c42\u8d85\u65f6")); }
+    }, TIMEOUT_MS);
+    function finish(raw) { if (_done) return; _done = true; clearTimeout(timeoutId); onDone(raw); }
+    function fail(e) { if (_done) return; _done = true; clearTimeout(timeoutId); if (onError) onError(e); else onDone(""); }
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + preset.apiKey },
+      body: body,
+      signal: controller.signal
+    }).then(function(resp) {
+      if (!resp.ok) { resp.text().then(function(t) { fail(new Error("API " + resp.status + ": " + t.substring(0, 200))); }).catch(function() { fail(new Error("API " + resp.status)); }); return; }
+      resp.json().then(function(data) {
+        var content = "";
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          content = data.choices[0].message.content || "";
+        } else if (typeof data === "string") {
+          content = data;
+        } else {
+          content = JSON.stringify(data);
+        }
+        finish(content);
+      }).catch(function(e2) { fail(e2); });
+    }).catch(function(e) { fail(e); });
+  }
+
+  /* 解析润色返回结果 */
+  function parsePolishResult(rawText, originalChapters, mode) {
+    var result = { chapters: null, contentSummary: "" };
+    /* 提取内容总结 */
+    var summaryMatch = rawText.match(/---CONTENT_SUMMARY---\n?([\s\S]*?)---END---/);
+    if (summaryMatch) {
+      result.contentSummary = summaryMatch[1].trim();
+    }
+    if (mode === "inline") {
+      /* 内联模式：提取每个校验块后的段落 */
+      var blocks = rawText.split(/<!--\s*校验/);
+      var newParagraphs = [];
+      for (var bi = 1; bi < blocks.length; bi++) {
+        var blockEnd = blocks[bi].indexOf("-->");
+        if (blockEnd >= 0) {
+          var afterComment = blocks[bi].substring(blockEnd + 3).trim();
+          /* 取第一段作为修改后的段落 */
+          var lines = afterComment.split("\n");
+          for (var li = 0; li < lines.length; li++) {
+            var line = lines[li].trim();
+            if (line && !line.startsWith("<!--") && !line.startsWith("---")) {
+              newParagraphs.push(line);
+              break;
+            }
+          }
+        }
+      }
+      if (newParagraphs.length > 0) {
+        /* 用新段落替换原始章节中的段落 */
+        result.chapters = JSON.parse(JSON.stringify(originalChapters));
+        var pIdx = 0;
+        for (var ci = 0; ci < result.chapters.length && pIdx < newParagraphs.length; ci++) {
+          var ch = result.chapters[ci];
+          if (ch && ch.content) {
+            for (var pi = 0; pi < ch.content.length && pIdx < newParagraphs.length; pi++) {
+              ch.content[pi].text = newParagraphs[pIdx++];
+            }
+          }
+        }
+      }
+    } else {
+      /* 直接模式：尝试解析JSON */
+      var jsonStr = rawText;
+      /* 去掉内容总结部分 */
+      var endIdx = jsonStr.indexOf("---CONTENT_SUMMARY---");
+      if (endIdx > 0) jsonStr = jsonStr.substring(0, endIdx).trim();
+      /* 尝试提取JSON */
+      var jsonStart = jsonStr.indexOf("[");
+      var jsonEnd = jsonStr.lastIndexOf("]");
+      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+        try {
+          var parsed = JSON.parse(jsonStr.substring(jsonStart, jsonEnd + 1));
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            result.chapters = parsed;
+          }
+        } catch(e) {
+          debugLog("polish JSON parse error: " + e.message);
+        }
+      }
+      /* 如果JSON解析失败，尝试按段落拆分替换 */
+      if (!result.chapters) {
+        var cleanText = cleanParaText(jsonStr);
+        if (cleanText.length > 50) {
+          var paras = cleanText.split(/\n{2,}/);
+          result.chapters = JSON.parse(JSON.stringify(originalChapters));
+          var ppIdx = 0;
+          for (var ci2 = 0; ci2 < result.chapters.length && ppIdx < paras.length; ci2++) {
+            var ch2 = result.chapters[ci2];
+            if (ch2 && ch2.content) {
+              for (var pi2 = 0; pi2 < ch2.content.length && ppIdx < paras.length; pi2++) {
+                ch2.content[pi2].text = paras[ppIdx++].trim();
+              }
+            }
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  /* 核心润色函数 */
+  function polishText(summary, callback) {
+    var s = getSettings();
+    var preset = getPolishModelPreset();
+    if (!preset) {
+      if (callback) callback(null, new Error("\u672a\u914d\u7f6e\u6da6\u8272\u6a21\u578b\u9884\u8bbe\uff0c\u8bf7\u5728\u8bbe\u7f6e\u4e2d\u914d\u7f6e\u8f7b\u578b\u6a21\u578b\u6216\u6da6\u8272\u4e13\u7528\u6a21\u578b"));
+      return;
+    }
+    /* 获取当前激活的润色预设 */
+    var polishPreset = null;
+    if (s.activePolishPresetId && s.polishPresets) {
+      for (var i = 0; i < s.polishPresets.length; i++) {
+        if (s.polishPresets[i].id === s.activePolishPresetId) { polishPreset = s.polishPresets[i]; break; }
+      }
+    }
+    var customPrompt = polishPreset ? polishPreset.customPrompt : DEFAULT_POLISH_PROMPT;
+    var mode = s.polishMode || "direct";
+    var formatPrompt = mode === "inline" ? POLISH_FORMAT_INLINE : POLISH_FORMAT_DIRECT;
+
+    /* 构建system消息 */
+    var systemMsg = POLISH_IDENTITY_PROMPT + "\n\n" + customPrompt + "\n\n" + formatPrompt;
+
+    /* 构建user消息 */
+    var userMsg = "";
+    /* 角色人设 */
+    if (summary.cp || summary.cpTagName) {
+      userMsg += "\u3010CP\u3011" + (summary.cp || summary.cpTagName) + "\n";
+    }
+    /* 内容总结 */
+    var contentSummary = summary.contentSummary || summary.continuationSummary || summary.summary || "";
+    if (contentSummary) {
+      userMsg += "\u3010\u5185\u5bb9\u603b\u7ed3\u3011\n" + contentSummary + "\n\n";
+    }
+    /* 原始正文 */
+    userMsg += "\u3010\u539f\u59cb\u6b63\u6587\u3011\n" + JSON.stringify(summary.fullContent.chapters || []);
+
+    var messages = [
+      { role: "system", content: systemMsg },
+      { role: "user", content: userMsg }
+    ];
+
+    debugLog("polishText: calling API, mode=" + mode + " model=" + preset.model);
+
+    customAiChatWithPreset(preset, messages, 0.3, null, function(rawText) {
+      debugLog("polishText: got response len=" + rawText.length);
+      var parsed = parsePolishResult(rawText, summary.fullContent.chapters, mode);
+      if (parsed.chapters) {
+        /* 保留原始正文 */
+        if (s.keepOriginalText) {
+          if (!summary._originalTexts) summary._originalTexts = [];
+          summary._originalTexts.push({
+            chapters: JSON.parse(JSON.stringify(summary.fullContent.chapters)),
+            contentSummary: summary.contentSummary || summary.continuationSummary || "",
+            timestamp: Date.now()
+          });
+          if (summary._originalTexts.length > 5) {
+            summary._originalTexts = summary._originalTexts.slice(-5);
+          }
+        }
+        /* 替换正文 */
+        summary.fullContent.chapters = parsed.chapters;
+        if (parsed.contentSummary) {
+          summary.contentSummary = parsed.contentSummary;
+          summary.continuationSummary = parsed.contentSummary;
+        }
+        /* 润色后重新匹配段评位置 */
+        rematchAnnotations(summary);
+        if (callback) callback(summary);
+      } else {
+        if (callback) callback(null, new Error("\u6da6\u8272\u7ed3\u679c\u89e3\u6790\u5931\u8d25\uff0c\u5c06\u4f7f\u7528\u539f\u59cb\u6b63\u6587"));
+      }
+    }, function(err) {
+      debugLog("polishText error: " + (err && err.message ? err.message : String(err)));
+      if (callback) callback(null, err);
+    });
+  }
+
+  /* 润色后重新匹配段评位置 */
+  function rematchAnnotations(summary) {
+    if (!summary || !summary.fullContent) return;
+    var annotations = summary.fullContent.annotations || [];
+    if (annotations.length === 0) return;
+    var chapters = summary.fullContent.chapters || [];
+    for (var ai = 0; ai < annotations.length; ai++) {
+      var ann = annotations[ai];
+      ann._matchedParaIdx = -1;
+      if (!ann.quotes) continue;
+      var quoteSnippet = ann.quotes.substring(0, 30);
+      var found = false;
+      for (var ci = 0; ci < chapters.length && !found; ci++) {
+        var ch = chapters[ci];
+        if (!ch || !ch.content) continue;
+        for (var pi = 0; pi < ch.content.length; pi++) {
+          var paraText = ch.content[pi].text || "";
+          if (paraText.indexOf(quoteSnippet) >= 0) {
+            ann._matchedParaIdx = pi;
+            ann.paragraphIndex = pi;
+            found = true;
+            break;
+          }
+        }
+      }
+      /* 未匹配的段评标记为隐藏 */
+      if (!found) {
+        ann._hidden = true;
+      } else {
+        delete ann._hidden;
+      }
+    }
+  }
+
+  /* 确保有默认润色预设 */
+  function ensurePolishPresets() {
+    var s = state.settings;
+    if (!s.polishPresets) s.polishPresets = [];
+    if (s.polishPresets.length === 0) {
+      var defaultId = "polish_default_" + Date.now();
+      s.polishPresets.push({
+        id: defaultId,
+        name: "\u9ed8\u8ba4\u6da6\u8272\u9884\u8bbe",
+        customPrompt: DEFAULT_POLISH_PROMPT
+      });
+      s.activePolishPresetId = defaultId;
+      saveSettings(s);
+    }
+  }
+
+  /* 自动生成评论辅助函数 */
+  function doAutoComment(summary) {
+    debugLog("doAutoComment starting...");
+    var fullText = "";
+    var chapters = summary.fullContent ? (summary.fullContent.chapters || []) : [];
+    for (var ci = 0; ci < chapters.length; ci++) { var contents = chapters[ci].content || []; for (var cj = 0; cj < contents.length; cj++) fullText += (contents[cj].text || "") + "\n"; }
+    debugLog("autoComment fullText len:" + fullText.length);
+    if (fullText.length > 50) {
+      showCommentLoading();
+      generateLayer3Comments(fullText, function(comments, annotations) {
+        hideCommentLoading();
+        debugLog("autoComment done, comments:" + (comments?comments.length:0) + " annotations:" + (annotations?annotations.length:0));
+        if (comments && comments.length > 0) {
+          summary.fullContent.comments = comments;
+        }
+        if (annotations && annotations.length > 0) {
+          if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
+          summary.fullContent.annotations = summary.fullContent.annotations.concat(annotations);
+        }
+        if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+        renderReaderContent(summary);
+      }, null, "auto", summary);
+    }
   }
 
   function generateLayer2Full(summary, callback) {
@@ -3326,6 +3650,12 @@
       '<div class="hp-settings-row"><span>\u81ea\u52a8\u5173\u6ce8\u65b0\u6897\u6807\u7b7e</span><div class="hp-toggle ' + (s.autoFollowTropeTags?"on":"") + '" onclick="window.__hofter.toggleAutoFollowTropeTags()"></div></div>' +
       '<div class="hp-settings-row"><span>\u5206\u4eab\u8bb0\u5fc6\u6ce8\u5165</span><div style="display:flex;gap:6px;align-items:center"><button class="hp-btn hp-btn-sm ' + (s.shareMemoryMode==="auto"?"hp-btn-primary":"hp-btn-outline") + '" data-sm-mode="auto" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setShareMemoryMode(\'auto\')">\u81ea\u52a8\u6ce8\u5165</button><button class="hp-btn hp-btn-sm ' + (s.shareMemoryMode==="manual"?"hp-btn-primary":"hp-btn-outline") + '" data-sm-mode="manual" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setShareMemoryMode(\'manual\')">\u624b\u52a8\u9009\u62e9</button><button class="hp-btn hp-btn-sm ' + (s.shareMemoryMode==="none"?"hp-btn-primary":"hp-btn-outline") + '" data-sm-mode="none" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setShareMemoryMode(\'none\')">\u4e0d\u6ce8\u5165</button></div></div>' +
       '<div class="hp-settings-row"><span>\u9884\u8bbe\u8bed\u8a00\uff08\u6b63\u6587+\u8bc4\u8bba\uff09</span><div style="display:flex;gap:6px;align-items:center"><button class="hp-btn hp-btn-sm ' + (s.promptLanguage!=="en"?"hp-btn-primary":"hp-btn-outline") + '" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setPromptLanguage(\'zh\')">\u4e2d\u6587</button><button class="hp-btn hp-btn-sm ' + (s.promptLanguage==="en"?"hp-btn-primary":"hp-btn-outline") + '" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setPromptLanguage(\'en\')">English</button></div></div></div>' +
+      '<div class="hp-settings-section"><div class="hp-section-title">\u6821\u6b63\u6da6\u8272</div>' +
+      '<div style="font-size:12px;color:var(--text-hint);padding:0 0 8px">\u751f\u6210\u6b63\u6587\u540e\u81ea\u52a8\u6da6\u8272\u4f18\u5316\u6587\u7b14\uff0c\u4f7f\u7528\u526f\u6a21\u578b\u9884\u8bbe</div>' +
+      '<div class="hp-settings-row"><span>\u81ea\u52a8\u6da6\u8272</span><div class="hp-toggle ' + (s.autoPolish?"on":"") + '" onclick="window.__hofter.toggleAutoPolish()"></div></div>' +
+      '<div class="hp-settings-row"><span>\u6da6\u8272\u6a21\u5f0f</span><div style="display:flex;gap:6px;align-items:center"><button class="hp-btn hp-btn-sm ' + (s.polishMode!=="inline"?"hp-btn-primary":"hp-btn-outline") + '" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setPolishMode(\'direct\')">\u76f4\u63a5\u8fd4\u56de</button><button class="hp-btn hp-btn-sm ' + (s.polishMode==="inline"?"hp-btn-primary":"hp-btn-outline") + '" style="font-size:12px;padding:4px 10px" onclick="window.__hofter.setPolishMode(\'inline\')">\u5185\u8054\u6821\u9a8c</button></div></div>' +
+      '<div class="hp-settings-row"><span>\u4fdd\u7559\u539f\u59cb\u6b63\u6587</span><div class="hp-toggle ' + (s.keepOriginalText?"on":"") + '" onclick="window.__hofter.toggleKeepOriginalText()"></div></div>' +
+      '<div class="hp-menu-item" onclick="window.__hofter.showPolishPresetList()">' + ICONS.edit + '<span>\u7ba1\u7406\u6da6\u8272\u9884\u8bbe</span>' + ICONS.chevronRight.replace(/24/g,"16").replace("currentColor","var(--text-hint)") + '</div></div>' +
       '<div class="hp-settings-section"><div class="hp-section-title">\u8f7b\u578b\u6a21\u578b</div>' +
       '<div style="font-size:12px;color:var(--text-hint);padding:0 0 8px">\u7528\u4e8e\u6807\u7b7e\u63a2\u7d22\u548c\u8bc4\u8bba\u751f\u6210\uff0c\u53ef\u5207\u6362\u81f3\u4f4e\u6210\u672c\u6a21\u578b</div>' +
       (s.modelPresets && s.modelPresets.length > 0 ?
@@ -3626,32 +3956,30 @@
           summary.isByUser = isUserWork;
           if (result.chapter && !result.chapters) { result.chapters = [result.chapter]; }
           if (!summary.fullContent.comments) summary.fullContent.comments = [];
-          saveSummariesCache(state.summaries);
-          debugLog("L2 saved fullContent, summary now has fullContent:true");
-          renderReaderContent(summary);
-          /* 自动生成评论 */
-          if (state.settings.autoGenerateComments) {
-            debugLog("autoGenerateComments enabled, starting L3...");
-            var fullText = "";
-            if (result.chapters) { for (var ci = 0; ci < result.chapters.length; ci++) { var contents = result.chapters[ci].content || []; for (var cj = 0; cj < contents.length; cj++) fullText += (contents[cj].text || "") + "\n"; } }
-            debugLog("autoComment fullText len:" + fullText.length);
-            if (fullText.length > 50) {
-              showCommentLoading();
-              generateLayer3Comments(fullText, function(comments, annotations) {
-                hideCommentLoading();
-                debugLog("autoComment done, comments:" + (comments?comments.length:0) + " annotations:" + (annotations?annotations.length:0));
-                if (comments && comments.length > 0) {
-                  summary.fullContent.comments = comments;
-                } else {
-                  debugLog("autoComment: no comments generated, check L3 logs above");
-                }
-                if (annotations && annotations.length > 0) {
-                  if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
-                  summary.fullContent.annotations = summary.fullContent.annotations.concat(annotations);
-                }
-                saveSummariesCache(state.summaries);
-                renderReaderContent(summary);
-              }, null, "auto", summary);
+          /* 自动润色（在评论之前） */
+          if (state.settings.autoPolish) {
+            debugLog("autoPolish enabled, starting polish before comments...");
+            polishText(summary, function(polished, err) {
+              if (polished) {
+                debugLog("autoPolish success");
+                showToast("\u6da6\u8272\u5b8c\u6210");
+              } else {
+                debugLog("autoPolish failed: " + (err ? err.message : "unknown"));
+                showToast("\u6da6\u8272\u5931\u8d25\uff0c\u4f7f\u7528\u539f\u59cb\u6b63\u6587");
+              }
+              saveSummariesCache(state.summaries);
+              renderReaderContent(summary);
+              /* 润色后自动生成评论 */
+              if (state.settings.autoGenerateComments) {
+                doAutoComment(summary);
+              }
+            });
+          } else {
+            saveSummariesCache(state.summaries);
+            renderReaderContent(summary);
+            /* 自动生成评论 */
+            if (state.settings.autoGenerateComments) {
+              doAutoComment(summary);
             }
           }
         } else {
@@ -3717,6 +4045,8 @@
       var annMap = {}; /* paraIdx -> annotation */
       for (var ai = 0; ai < annotations.length; ai++) {
         var ann = annotations[ai];
+        /* 跳过已隐藏的段评（润色后文本不匹配） */
+        if (ann._hidden) continue;
         var matched = false;
         /* 优先用quotes文本匹配 */
         if (ann.quotes) {
@@ -5322,6 +5652,211 @@
         }
       }
     },
+    toggleAutoPolish: function() {
+      state.settings.autoPolish = !state.settings.autoPolish;
+      saveSettings(state.settings);
+      ensurePolishPresets();
+      var settingsPage = document.getElementById("settings-page");
+      if (settingsPage) {
+        var rows = settingsPage.querySelectorAll(".hp-settings-row");
+        for (var i = 0; i < rows.length; i++) {
+          var span = rows[i].querySelector("span");
+          if (span && span.textContent.indexOf("\u81ea\u52a8\u6da6\u8272") >= 0) {
+            var toggle = rows[i].querySelector(".hp-toggle");
+            if (toggle) { if (state.settings.autoPolish) toggle.classList.add("on"); else toggle.classList.remove("on"); }
+            break;
+          }
+        }
+      }
+    },
+    setPolishMode: function(mode) {
+      state.settings.polishMode = mode;
+      saveSettings(state.settings);
+      showSettings();
+    },
+    toggleKeepOriginalText: function() {
+      state.settings.keepOriginalText = !state.settings.keepOriginalText;
+      saveSettings(state.settings);
+      var settingsPage = document.getElementById("settings-page");
+      if (settingsPage) {
+        var rows = settingsPage.querySelectorAll(".hp-settings-row");
+        for (var i = 0; i < rows.length; i++) {
+          var span = rows[i].querySelector("span");
+          if (span && span.textContent.indexOf("\u4fdd\u7559\u539f\u59cb\u6b63\u6587") >= 0) {
+            var toggle = rows[i].querySelector(".hp-toggle");
+            if (toggle) { if (state.settings.keepOriginalText) toggle.classList.add("on"); else toggle.classList.remove("on"); }
+            break;
+          }
+        }
+      }
+    },
+    showPolishPresetList: function() {
+      ensurePolishPresets();
+      var s = getSettings();
+      var existing = document.getElementById("polish-preset-list");
+      if (existing) { existing.remove(); return; }
+      var overlay = document.createElement("div"); overlay.className = "hp-sheet-overlay"; overlay.id = "polish-preset-list"; overlay.style.alignItems = "stretch";
+      var page = document.createElement("div"); page.style.cssText = "background:var(--bg-primary);width:100%;height:100%;display:flex;flex-direction:column";
+      var header = document.createElement("div"); header.className = "hp-header";
+      header.innerHTML = '<div class="hp-header-left"><div class="hp-icon-btn" onclick="window.__hofter.closeSheet(\'polish-preset-list\');window.__hofter.showSettings()">' + ICONS.back + '</div></div><div class="hp-header-title">\u6da6\u8272\u9884\u8bbe\u7ba1\u7406</div><div class="hp-header-right"></div>';
+      page.appendChild(header);
+      var body = document.createElement("div"); body.style.cssText = "flex:1;overflow-y:auto;padding:16px";
+      var html = '<div style="font-size:12px;color:var(--text-hint);margin-bottom:12px">\u6da6\u8272\u9884\u8bbe\u7531\u4e09\u90e8\u5206\u7ec4\u6210\uff1a\u8eab\u4efd\u5b9a\u4e49\uff08\u4e0d\u53ef\u7f16\u8f91\uff09+ \u6da6\u8272\u89c4\u5219\uff08\u53ef\u81ea\u5b9a\u4e49\uff09+ \u8fd4\u56de\u683c\u5f0f\uff08\u4e0d\u53ef\u7f16\u8f91\uff09</div>';
+      if (s.polishPresets && s.polishPresets.length > 0) {
+        for (var i = 0; i < s.polishPresets.length; i++) {
+          var p = s.polishPresets[i];
+          var isActive = p.id === s.activePolishPresetId;
+          html += '<div style="padding:12px;margin-bottom:8px;background:var(--bg-secondary);border-radius:10px;border-left:3px solid ' + (isActive ? 'var(--primary)' : 'transparent') + '">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:600">' + escapeHtml(p.name) + (isActive ? ' <span style="color:var(--primary);font-size:12px">\u2713 \u4f7f\u7528\u4e2d</span>' : '') + '</span>';
+          html += '<div style="display:flex;gap:6px">';
+          if (!isActive) html += '<button class="hp-btn hp-btn-outline hp-btn-sm" style="font-size:11px;padding:3px 8px" onclick="window.__hofter.activatePolishPreset(\'' + p.id + '\')">\u542f\u7528</button>';
+          html += '<div class="hp-icon-btn" style="width:24px;height:24px" onclick="window.__hofter.editPolishPreset(\'' + p.id + '\')">' + ICONS.edit.replace(/24/g,"12") + '</div>';
+          html += '<div class="hp-icon-btn" style="width:24px;height:24px" onclick="window.__hofter.deletePolishPreset(\'' + p.id + '\')">' + ICONS.trash.replace(/24/g,"12") + '</div>';
+          html += '</div></div>';
+          html += '<div style="font-size:12px;color:var(--text-hint);margin-top:4px;max-height:40px;overflow:hidden">' + escapeHtml((p.customPrompt || "").substring(0, 80)) + '...</div>';
+          html += '</div>';
+        }
+      }
+      html += '<button class="hp-btn hp-btn-outline" style="width:100%;margin-top:8px" onclick="window.__hofter.showAddPolishPreset()">' + ICONS.plus.replace(/24/g,"14") + ' \u6dfb\u52a0\u6da6\u8272\u9884\u8bbe</button>';
+      html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--bg-secondary)">';
+      html += '<div style="font-size:13px;font-weight:600;margin-bottom:8px">\u6da6\u8272\u4e13\u7528\u6a21\u578b</div>';
+      html += '<div style="font-size:12px;color:var(--text-hint);margin-bottom:8px">\u4e3a\u6da6\u8272\u6307\u5b9a\u4e0d\u540c\u7684\u526f\u6a21\u578b\u9884\u8bbe\uff0c\u7559\u7a7a\u5219\u4f7f\u7528\u5f53\u524d\u8f7b\u578b\u6a21\u578b</div>';
+      html += '<select class="hp-input" style="width:100%" onchange="window.__hofter.setPolishModelPreset(this.value)">';
+      html += '<option value="">\u4f7f\u7528\u5f53\u524d\u8f7b\u578b\u6a21\u578b</option>';
+      if (s.modelPresets && s.modelPresets.length > 0) {
+        for (var mi = 0; mi < s.modelPresets.length; mi++) {
+          var mp = s.modelPresets[mi];
+          html += '<option value="' + mp.id + '"' + (s.polishModelPresetId === mp.id ? ' selected' : '') + '>' + escapeHtml(mp.name) + ' (' + escapeHtml(mp.model) + ')</option>';
+        }
+      }
+      html += '</select></div>';
+      body.innerHTML = html;
+      page.appendChild(body); overlay.appendChild(page); state.containerEl.appendChild(overlay);
+    },
+    setPolishModelPreset: function(id) {
+      state.settings.polishModelPresetId = id;
+      saveSettings(state.settings);
+    },
+    activatePolishPreset: function(id) {
+      state.settings.activePolishPresetId = id;
+      saveSettings(state.settings);
+      var el = document.getElementById("polish-preset-list");
+      if (el) el.remove();
+      window.__hofter.showPolishPresetList();
+    },
+    deletePolishPreset: function(id) {
+      if (!state.settings.polishPresets) return;
+      state.settings.polishPresets = state.settings.polishPresets.filter(function(p) { return p.id !== id; });
+      if (state.settings.activePolishPresetId === id) {
+        state.settings.activePolishPresetId = state.settings.polishPresets.length > 0 ? state.settings.polishPresets[0].id : "";
+      }
+      saveSettings(state.settings);
+      var el = document.getElementById("polish-preset-list");
+      if (el) el.remove();
+      window.__hofter.showPolishPresetList();
+    },
+    showAddPolishPreset: function() {
+      var existing = document.getElementById("polish-preset-edit");
+      if (existing) { existing.remove(); return; }
+      window.__hofter.editPolishPreset("");
+    },
+    editPolishPreset: function(editId) {
+      var s = getSettings();
+      var existing = null;
+      if (editId && s.polishPresets) {
+        for (var i = 0; i < s.polishPresets.length; i++) { if (s.polishPresets[i].id === editId) { existing = s.polishPresets[i]; break; } }
+      }
+      var overlay = document.createElement("div"); overlay.className = "hp-sheet-overlay"; overlay.id = "polish-preset-edit"; overlay.style.alignItems = "stretch";
+      var page = document.createElement("div"); page.style.cssText = "background:var(--bg-primary);width:100%;height:100%;display:flex;flex-direction:column";
+      var header = document.createElement("div"); header.className = "hp-header";
+      header.innerHTML = '<div class="hp-header-left"><div class="hp-icon-btn" onclick="window.__hofter.closeSheet(\'polish-preset-edit\');window.__hofter.showPolishPresetList()">' + ICONS.back + '</div></div><div class="hp-header-title">' + (existing ? '\u7f16\u8f91\u6da6\u8272\u9884\u8bbe' : '\u6dfb\u52a0\u6da6\u8272\u9884\u8bbe') + '</div><div class="hp-header-right"></div>';
+      page.appendChild(header);
+      var body = document.createElement("div"); body.style.cssText = "flex:1;overflow-y:auto;padding:16px";
+      var html = '<div class="hp-create-form">';
+      html += '<label>\u9884\u8bbe\u540d\u79f0</label><input class="hp-input" id="hp-polish-name" placeholder="\u5982\uff1a\u9ed8\u8ba4\u6da6\u8272" value="' + (existing ? escapeHtml(existing.name) : '') + '">';
+      html += '<div style="margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:8px;font-size:12px;color:var(--text-hint);line-height:1.6">';
+      html += '<div style="font-weight:600;color:var(--text-secondary);margin-bottom:4px">\u8eab\u4efd\u5b9a\u4e49\uff08\u4e0d\u53ef\u7f16\u8f91\uff09</div>';
+      html += escapeHtml(POLISH_IDENTITY_PROMPT);
+      html += '</div>';
+      html += '<label style="margin-top:12px">\u6da6\u8272\u4e0e\u6821\u6b63\u89c4\u5219\uff08\u53ef\u81ea\u7531\u7f16\u8f91\uff09</label>';
+      html += '<textarea class="hp-textarea" id="hp-polish-prompt" rows="12" style="font-size:13px;line-height:1.5" placeholder="\u8f93\u5165\u81ea\u5b9a\u4e49\u6da6\u8272\u89c4\u5219...">' + (existing ? escapeHtml(existing.customPrompt || "") : escapeHtml(DEFAULT_POLISH_PROMPT)) + '</textarea>';
+      html += '<div style="margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:8px;font-size:12px;color:var(--text-hint);line-height:1.6">';
+      html += '<div style="font-weight:600;color:var(--text-secondary);margin-bottom:4px">\u8fd4\u56de\u683c\u5f0f\uff08\u4e0d\u53ef\u7f16\u8f91\uff09</div>';
+      html += escapeHtml(state.settings.polishMode === "inline" ? POLISH_FORMAT_INLINE : POLISH_FORMAT_DIRECT);
+      html += '</div>';
+      html += '<div style="margin-top:16px;display:flex;gap:8px">';
+      html += '<button class="hp-btn hp-btn-primary" style="flex:1" onclick="window.__hofter.savePolishPreset(\'' + (editId || '') + '\')">\u4fdd\u5b58</button>';
+      html += '</div></div>';
+      body.innerHTML = html;
+      page.appendChild(body); overlay.appendChild(page); state.containerEl.appendChild(overlay);
+    },
+    savePolishPreset: function(editId) {
+      var nameEl = document.getElementById("hp-polish-name");
+      var promptEl = document.getElementById("hp-polish-prompt");
+      if (!nameEl || !promptEl) return;
+      var name = nameEl.value.trim();
+      var customPrompt = promptEl.value;
+      if (!name) { showToast("\u8bf7\u8f93\u5165\u9884\u8bbe\u540d\u79f0"); return; }
+      if (editId && state.settings.polishPresets) {
+        for (var i = 0; i < state.settings.polishPresets.length; i++) {
+          if (state.settings.polishPresets[i].id === editId) {
+            state.settings.polishPresets[i].name = name;
+            state.settings.polishPresets[i].customPrompt = customPrompt;
+            break;
+          }
+        }
+      } else {
+        if (!state.settings.polishPresets) state.settings.polishPresets = [];
+        var newId = "polish_" + Date.now();
+        state.settings.polishPresets.push({ id: newId, name: name, customPrompt: customPrompt });
+        if (!state.settings.activePolishPresetId) state.settings.activePolishPresetId = newId;
+      }
+      saveSettings(state.settings);
+      var el = document.getElementById("polish-preset-edit");
+      if (el) el.remove();
+      showToast("\u9884\u8bbe\u5df2\u4fdd\u5b58");
+      window.__hofter.showPolishPresetList();
+    },
+    manualPolish: function() {
+      var summary = state.currentReadingSummary;
+      if (!summary || !summary.fullContent) { showToast("\u65e0\u6cd5\u6da6\u8272"); return; }
+      ensurePolishPresets();
+      var preset = getPolishModelPreset();
+      if (!preset) { showToast("\u8bf7\u5148\u5728\u8bbe\u7f6e\u4e2d\u914d\u7f6e\u8f7b\u578b\u6a21\u578b\u6216\u6da6\u8272\u4e13\u7528\u6a21\u578b"); return; }
+      showLoading();
+      polishText(summary, function(polished, err) {
+        hideLoading();
+        if (polished) {
+          if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+          renderReaderContent(summary);
+          showToast("\u6da6\u8272\u5b8c\u6210\uff01");
+        } else {
+          showToast("\u6da6\u8272\u5931\u8d25\uff1a" + (err ? err.message : "\u8bf7\u91cd\u8bd5"));
+        }
+      });
+    },
+    showOriginalText: function() {
+      var summary = state.currentReadingSummary;
+      if (!summary || !summary._originalTexts || summary._originalTexts.length === 0) { showToast("\u65e0\u539f\u59cb\u6b63\u6587"); return; }
+      var existing = document.getElementById("original-text-sheet");
+      if (existing) { existing.remove(); return; }
+      var overlay = document.createElement("div"); overlay.className = "hp-sheet-overlay"; overlay.id = "original-text-sheet";
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+      var sheet = document.createElement("div"); sheet.className = "hp-sheet";
+      var html = '<div class="hp-sheet-handle"></div><div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u539f\u59cb\u6b63\u6587</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px">\u4fdd\u7559\u7684\u6700\u65b0 ' + summary._originalTexts.length + ' \u6b21\u539f\u59cb\u6b63\u6587</div></div>';
+      for (var i = summary._originalTexts.length - 1; i >= 0; i--) {
+        var orig = summary._originalTexts[i];
+        var timeStr = new Date(orig.timestamp).toLocaleString();
+        html += '<div style="padding:12px;margin:8px 16px;background:var(--bg-secondary);border-radius:8px">';
+        html += '<div style="font-size:12px;color:var(--text-hint);margin-bottom:6px">' + timeStr + '</div>';
+        var origText = "";
+        if (orig.chapters) { for (var ci = 0; ci < orig.chapters.length; ci++) { var contents = orig.chapters[ci].content || []; for (var cj = 0; cj < contents.length; cj++) origText += (contents[cj].text || "") + "\n"; } }
+        html += '<div style="font-size:13px;line-height:1.6;max-height:200px;overflow-y:auto">' + escapeHtml(origText.substring(0, 500)) + (origText.length > 500 ? "..." : "") + '</div>';
+        html += '</div>';
+      }
+      sheet.innerHTML = html;
+      overlay.appendChild(sheet); state.containerEl.appendChild(overlay);
+    },
     toggleAutoFollowTropeTags: function() {
       state.settings.autoFollowTropeTags = !state.settings.autoFollowTropeTags;
       saveSettings(state.settings);
@@ -5454,7 +5989,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.17.6",
+          version: "2.18.0",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5469,7 +6004,7 @@
         };
       } else {
         data = {
-          version: "2.17.6",
+          version: "2.18.0",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -5847,19 +6382,15 @@
         var work = {id:generateId(), title: "\u52a8\u6001", author: state.activePersona ? (state.activePersona.handle||state.activePersona.name) : "\u6211", cpTagId:"", cpTagName:"", excerpt: dynInput.value.trim(), isByUser: true, timeAgo: "\u521a\u521a"};
         state.publishedWorks.push(work); savePublishedWorks(state.publishedWorks);
         closeSheet("create-page"); showToast("\u53d1\u5e03\u6210\u529f"); renderApp();
-        /* 自动生成评论 */
-        if (state.settings.autoGenerateComments && dynInput.value.trim().length > 20) {
-          showCommentLoading();
-          generateLayer3Comments(dynInput.value.trim(), function(comments, annotations) {
-            hideCommentLoading();
-            if (comments && comments.length > 0) {
-              if (!work.fullContent) work.fullContent = {chapters:[],comments:[],annotations:[]};
-              work.fullContent.comments = comments;
-              if (annotations && annotations.length > 0) work.fullContent.annotations = annotations;
-              savePublishedWorks(state.publishedWorks);
-              if (state.currentReadingSummary && state.currentReadingSummary.id === work.id) renderReaderContent(work);
-            }
-          }, null, "auto", work);
+        /* 自动润色 + 自动评论 */
+        if (state.settings.autoPolish && dynInput.value.trim().length > 20) {
+          polishText(work, function(polished, err) {
+            savePublishedWorks(state.publishedWorks);
+            if (state.currentReadingSummary && state.currentReadingSummary.id === work.id) renderReaderContent(work);
+            if (state.settings.autoGenerateComments) { doAutoComment(work); }
+          });
+        } else if (state.settings.autoGenerateComments && dynInput.value.trim().length > 20) {
+          doAutoComment(work);
         }
         return;
       }
@@ -5923,23 +6454,17 @@
             if (inspireSummary._debugContext) work._debugContext = inspireSummary._debugContext;
             state.publishedWorks.push(work); savePublishedWorks(state.publishedWorks);
             closeSheet("create-page"); showToast("\u521b\u4f5c\u5b8c\u6210\uff01"); renderApp();
-            /* 自动生成评论 */
-            if (state.settings.autoGenerateComments) {
-              var fullText = "";
-              if (result.chapters) { for (var ci = 0; ci < result.chapters.length; ci++) { for (var cj = 0; cj < result.chapters[ci].content.length; cj++) fullText += result.chapters[ci].content[cj].text + "\n"; } }
-              if (fullText.length > 50) {
-                showCommentLoading();
-                generateLayer3Comments(fullText, function(comments, annotations) {
-                  hideCommentLoading();
-                  if (comments && comments.length > 0) {
-                    if (!work.fullContent) work.fullContent = {chapters:[],comments:[],annotations:[]};
-                    work.fullContent.comments = comments;
-                    if (annotations && annotations.length > 0) work.fullContent.annotations = annotations;
-                    savePublishedWorks(state.publishedWorks);
-                    if (state.currentReadingSummary && state.currentReadingSummary.id === work.id) renderReaderContent(work);
-                  }
-                }, null, "auto", work);
-              }
+            /* 自动润色 + 自动评论 */
+            if (state.settings.autoPolish) {
+              polishText(work, function(polished, err) {
+                if (polished) showToast("\u6da6\u8272\u5b8c\u6210");
+                else showToast("\u6da6\u8272\u5931\u8d25");
+                savePublishedWorks(state.publishedWorks);
+                if (state.currentReadingSummary && state.currentReadingSummary.id === work.id) renderReaderContent(work);
+                if (state.settings.autoGenerateComments) { doAutoComment(work); }
+              });
+            } else if (state.settings.autoGenerateComments) {
+              doAutoComment(work);
             }
           } else { showToast("\u521b\u4f5c\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
         });
@@ -5959,18 +6484,16 @@
         var work = {id:generateId(), title:writeTitle, author:state.activePersona?(state.activePersona.handle||state.activePersona.name):"\u6211", cpTagId:writeCpId, cpTagName:writeCpName, excerpt:writeContent.substring(0,150), fullContent:{chapters:[{title:"",content:[{type:"p",text:writeContent}]}],comments:[],annotations:[]}, isByUser:true, coverGradient:randomGradient(), timeAgo:"\u521a\u521a"};
         state.publishedWorks.push(work); savePublishedWorks(state.publishedWorks);
         closeSheet("create-page"); showToast("\u53d1\u5e03\u6210\u529f"); renderApp();
-        /* 自动生成评论 */
-        if (state.settings.autoGenerateComments && writeContent.length > 50) {
-          showCommentLoading();
-          generateLayer3Comments(writeContent, function(comments, annotations) {
-            hideCommentLoading();
-            if (comments && comments.length > 0) {
-              work.fullContent.comments = comments;
-              if (annotations && annotations.length > 0) work.fullContent.annotations = annotations;
-              savePublishedWorks(state.publishedWorks);
-              if (state.currentReadingSummary && state.currentReadingSummary.id === work.id) renderReaderContent(work);
-            }
-          }, null, "auto", work);
+        /* 自动润色 + 自动评论 */
+        if (state.settings.autoPolish && writeContent.length > 50) {
+          polishText(work, function(polished, err) {
+            if (polished) showToast("\u6da6\u8272\u5b8c\u6210");
+            savePublishedWorks(state.publishedWorks);
+            if (state.currentReadingSummary && state.currentReadingSummary.id === work.id) renderReaderContent(work);
+            if (state.settings.autoGenerateComments) { doAutoComment(work); }
+          });
+        } else if (state.settings.autoGenerateComments && writeContent.length > 50) {
+          doAutoComment(work);
         }
       }
     },
@@ -6056,6 +6579,8 @@
       sheet.innerHTML = '<div class="hp-sheet-handle"></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showRegenerateSheet()">' + ICONS.sparkle + '<span>\u91cd\u65b0\u751f\u6210\u6b63\u6587</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.continueReading()">' + ICONS.refresh + '<span>\u8ffd\u66f4\u7eed\u7ae0</span></div>' +
+        '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.manualPolish()">' + ICONS.edit + '<span>\u6821\u6b63\u6da6\u8272</span></div>' +
+        '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showOriginalText()">' + ICONS.fileText + '<span>\u67e5\u770b\u539f\u6587</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showModelContext()">' + ICONS.textSize + '<span>\u67e5\u770b\u6a21\u578b\u4e0a\u4e0b\u6587</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.showContentSummary()">' + ICONS.fileText + '<span>\u67e5\u770b\u603b\u7ed3</span></div>' +
         '<div class="hp-menu-item" onclick="document.getElementById(\'hp-reader-more\').remove();window.__hofter.shareWork()">' + ICONS.share + '<span>\u5206\u4eab</span></div>' +
@@ -6955,27 +7480,20 @@
             if (!summary.fullContent.comments) summary.fullContent.comments = [];
             saveSummariesCache(state.summaries);
 
-            if (state.settings.autoGenerateComments) {
-              var fullText = "";
-              if (result.chapters) {
-                for (var ci = 0; ci < result.chapters.length; ci++) {
-                  var contents = result.chapters[ci].content || [];
-                  for (var cj = 0; cj < contents.length; cj++) fullText += (contents[cj].text || "") + "\n";
+            /* 自动润色 + 自动评论 */
+            if (state.settings.autoPolish) {
+              polishText(summary, function(polished, err) {
+                saveSummariesCache(state.summaries);
+                if (state.settings.autoGenerateComments) {
+                  doAutoComment(summary);
                 }
-              }
-              if (fullText.length > 50) {
-                generateLayer3Comments(fullText, function(comments, annotations) {
-                  if (comments && comments.length > 0) summary.fullContent.comments = comments;
-                  if (annotations && annotations.length > 0) {
-                    if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
-                    summary.fullContent.annotations = summary.fullContent.annotations.concat(annotations);
-                  }
-                  saveSummariesCache(state.summaries);
-                  idx++;
-                  generateNext();
-                }, null, "auto", summary);
-                return;
-              }
+                idx++;
+                generateNext();
+              });
+              return;
+            }
+            if (state.settings.autoGenerateComments) {
+              doAutoComment(summary);
             }
           }
           idx++;
@@ -7257,7 +7775,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.17.6",
+    version: "2.18.0",
     apps: [
       {
         id: "hofter-home",

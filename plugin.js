@@ -2410,7 +2410,7 @@
     el.innerHTML = "";
     el.className = ROOT_CLASS;
     if (state.settings.theme === "dark") el.classList.add("hp-dark");
-    if (!state.settings.onboardCompleted) { renderOnboarding(); return; }
+    if (!state.settings.onboardCompleted || state.cpTags.length === 0) { renderOnboarding(); return; }
 
     var header = document.createElement("div"); header.className = "hp-header"; header.id = "hp-main-header"; renderHeaderContent(header);
     var content = document.createElement("div"); content.className = "hp-content"; content.id = "hp-main-content"; renderPageContent(content);
@@ -3733,22 +3733,25 @@
   }
 
   /* ─── 标签管理 ─── */
+  var _tagSelectMode = false;
+  var _tagSelectedIds = {};
   function showTagManager() {
+    _tagSelectMode = false;
+    _tagSelectedIds = {};
     var overlay = document.createElement("div"); overlay.className = "hp-sheet-overlay"; overlay.id = "tag-manager"; overlay.style.alignItems = "stretch";
     var page = document.createElement("div"); page.style.cssText = "background:var(--bg-primary);width:100%;height:100%;display:flex;flex-direction:column";
     var header = document.createElement("div"); header.className = "hp-header";
     header.innerHTML = '<div class="hp-header-left"><div class="hp-icon-btn" onclick="window.__hofter.closeSheet(\'tag-manager\')">' + ICONS.back + '</div></div><div class="hp-header-title">\u7ba1\u7406\u6807\u7b7e</div><div class="hp-header-right"></div>';
     page.appendChild(header);
     var body = document.createElement("div"); body.style.cssText = "flex:1;overflow-y:auto";
-    var html = '<div class="hp-section-title">CP\u6807\u7b7e</div><div class="hp-tag-list">';
+    var html = '<div style="padding:12px 20px;font-size:12px;color:var(--text-hint)">\u957f\u6309\u6807\u7b7e\u8fdb\u5165\u591a\u9009\u6a21\u5f0f</div>';
+    html += '<div class="hp-section-title">CP\u6807\u7b7e</div><div class="hp-tag-list" id="hp-cp-tag-list">';
     for (var i = 0; i < state.cpTags.length; i++) {
       var t = state.cpTags[i];
-      html += '<div class="hp-tag-item"><input type="checkbox" value="' + t.id + '" class="hp-tag-check-cp" style="margin-right:8px;accent-color:var(--primary)"><span style="flex:1">' + escapeHtml(t.name) + '</span><span class="hp-tag-remove" onclick="window.__hofter.removeCpTag(\'' + t.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
+      html += '<div class="hp-tag-item" data-tag-id="' + t.id + '" data-tag-type="cp"><span style="flex:1">' + escapeHtml(t.name) + '</span><span class="hp-tag-remove" onclick="event.stopPropagation();window.__hofter.removeCpTag(\'' + t.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
     }
     html += '</div>';
-    if (state.cpTags.length > 0) {
-      html += '<div style="padding:8px 20px"><button class="hp-btn hp-btn-outline hp-btn-sm" style="width:100%;font-size:12px;color:var(--like-red);border-color:var(--like-red)" onclick="window.__hofter.batchRemoveTags(\'cp\')">\u5220\u9664\u9009\u4e2d\u7684CP\u6807\u7b7e</button></div>';
-    }
+    html += '<div style="padding:8px 20px" id="hp-cp-batch-bar"></div>';
     html += '<div style="padding:12px 20px"><div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">\u65b0\u5efaCP\u6807\u7b7e</div><div style="display:flex;gap:8px;align-items:center"><select id="hp-new-cp-left" class="hp-input" style="flex:1"><option value="">\u9009\u62e9\u5de6\u4f4d</option>';
     for (var ci = 0; ci < state.personas.length; ci++) { html += '<option value="' + state.personas[ci].id + '">' + escapeHtml(state.personas[ci].name || state.personas[ci].handle) + ' (\u4eba\u8bbe)</option>'; }
     for (var cj = 0; cj < state.characters.length; cj++) { html += '<option value="' + state.characters[cj].id + '">' + escapeHtml(state.characters[cj].name || state.characters[cj].handle) + ' (\u89d2\u8272)</option>'; }
@@ -3756,17 +3759,47 @@
     for (var ck = 0; ck < state.personas.length; ck++) { html += '<option value="' + state.personas[ck].id + '">' + escapeHtml(state.personas[ck].name || state.personas[ck].handle) + ' (\u4eba\u8bbe)</option>'; }
     for (var cl = 0; cl < state.characters.length; cl++) { html += '<option value="' + state.characters[cl].id + '">' + escapeHtml(state.characters[cl].name || state.characters[cl].handle) + ' (\u89d2\u8272)</option>'; }
     html += '</select></div><button class="hp-btn hp-btn-primary hp-btn-sm" style="margin-top:8px;width:100%" onclick="window.__hofter.addNewCpTag()">\u521b\u5efaCP\u6807\u7b7e</button></div>';
-    html += '<div class="hp-section-title">\u8bbe\u5b9a\u6807\u7b7e</div><div class="hp-tag-list">';
+    html += '<div class="hp-section-title">\u8bbe\u5b9a\u6807\u7b7e</div><div class="hp-tag-list" id="hp-trope-tag-list">';
     for (var j = 0; j < state.tropeTags.length; j++) {
       var tr = state.tropeTags[j];
-      html += '<div class="hp-tag-item"><input type="checkbox" value="' + tr.id + '" class="hp-tag-check-trope" style="margin-right:8px;accent-color:var(--primary)"><span style="flex:1">' + escapeHtml(tr.name) + '</span><span class="hp-tag-remove" onclick="window.__hofter.removeTropeTag(\'' + tr.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
+      html += '<div class="hp-tag-item" data-tag-id="' + tr.id + '" data-tag-type="trope"><span style="flex:1">' + escapeHtml(tr.name) + '</span><span class="hp-tag-remove" onclick="event.stopPropagation();window.__hofter.removeTropeTag(\'' + tr.id + '\')">' + ICONS.close.replace(/24/g,"14") + '</span></div>';
     }
     html += '</div>';
-    if (state.tropeTags.length > 0) {
-      html += '<div style="padding:8px 20px"><button class="hp-btn hp-btn-outline hp-btn-sm" style="width:100%;font-size:12px;color:var(--like-red);border-color:var(--like-red)" onclick="window.__hofter.batchRemoveTags(\'trope\')">\u5220\u9664\u9009\u4e2d\u7684\u8bbe\u5b9a\u6807\u7b7e</button></div>';
-    }
+    html += '<div style="padding:8px 20px" id="hp-trope-batch-bar"></div>';
     html += '<div style="padding:16px 20px"><div style="display:flex;gap:8px"><input class="hp-input" id="hp-new-trope" placeholder="\u65b0\u5efa\u8bbe\u5b9a\u6807\u7b7e..." style="flex:1"><button class="hp-btn hp-btn-primary hp-btn-sm" onclick="window.__hofter.addNewTrope()">\u6dfb\u52a0</button></div></div>';
     body.innerHTML = html; page.appendChild(body); overlay.appendChild(page); state.containerEl.appendChild(overlay);
+    /* 绑定长按事件 */
+    var tagItems = body.querySelectorAll('.hp-tag-item');
+    for (var ti = 0; ti < tagItems.length; ti++) {
+      (function(item) {
+        var lpTimer = null;
+        item.addEventListener('touchstart', function(e) {
+          lpTimer = setTimeout(function() {
+            lpTimer = null;
+            _tagSelectMode = true;
+            window.__hofter.toggleTagSelect(item.getAttribute('data-tag-id'), item.getAttribute('data-tag-type'));
+          }, 500);
+        }, { passive: true });
+        item.addEventListener('touchend', function() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } });
+        item.addEventListener('touchmove', function() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } });
+        item.addEventListener('mousedown', function() {
+          lpTimer = setTimeout(function() {
+            lpTimer = null;
+            _tagSelectMode = true;
+            window.__hofter.toggleTagSelect(item.getAttribute('data-tag-id'), item.getAttribute('data-tag-type'));
+          }, 500);
+        });
+        item.addEventListener('mouseup', function() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } });
+        item.addEventListener('mouseleave', function() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } });
+        /* 选择模式下点击切换选中 */
+        item.addEventListener('click', function(e) {
+          if (e.target.closest('.hp-tag-remove')) return;
+          if (_tagSelectMode) {
+            window.__hofter.toggleTagSelect(item.getAttribute('data-tag-id'), item.getAttribute('data-tag-type'));
+          }
+        });
+      })(tagItems[ti]);
+    }
   }
 
   /* ─── 分享给角色：辅助函数 ─── */
@@ -4950,10 +4983,11 @@
       else { renderApp(); }
     },
     batchRemoveTags: function(type) {
-      var checkboxes = document.querySelectorAll('.hp-tag-item input[type="checkbox"]:checked');
       var ids = [];
-      for (var i = 0; i < checkboxes.length; i++) { ids.push(checkboxes[i].value); }
-      if (ids.length === 0) { showToast("\u8bf7\u5148\u9009\u62e9\u8981\u5220\u9664\u7684\u6807\u7b7e"); return; }
+      for (var key in _tagSelectedIds) {
+        if (_tagSelectedIds[key] === type) ids.push(key);
+      }
+      if (ids.length === 0) { showToast("\u8bf7\u5148\u957f\u6309\u9009\u62e9\u8981\u5220\u9664\u7684\u6807\u7b7e"); return; }
       if (type === "cp") {
         for (var j = ids.length - 1; j >= 0; j--) {
           for (var k = 0; k < state.cpTags.length; k++) { if (state.cpTags[k].id === ids[j]) { state.cpTags.splice(k, 1); break; } }
@@ -4965,8 +4999,50 @@
         }
         saveTropeTags(state.tropeTags);
       }
+      _tagSelectMode = false;
+      _tagSelectedIds = {};
       closeSheet("tag-manager"); showTagManager();
       showToast("\u5df2\u5220\u9664 " + ids.length + " \u4e2a\u6807\u7b7e");
+    },
+    toggleTagSelect: function(tagId, tagType) {
+      if (_tagSelectedIds[tagId]) {
+        delete _tagSelectedIds[tagId];
+      } else {
+        _tagSelectedIds[tagId] = tagType;
+      }
+      /* 局部更新：切换选中样式 */
+      var item = document.querySelector('[data-tag-id="' + tagId + '"]');
+      if (item) {
+        if (_tagSelectedIds[tagId]) {
+          item.classList.add("selected");
+        } else {
+          item.classList.remove("selected");
+        }
+      }
+      /* 更新批量删除按钮 */
+      var cpCount = 0, tropeCount = 0;
+      for (var key in _tagSelectedIds) {
+        if (_tagSelectedIds[key] === "cp") cpCount++;
+        else tropeCount++;
+      }
+      var cpBar = document.getElementById("hp-cp-batch-bar");
+      if (cpBar) {
+        cpBar.innerHTML = cpCount > 0 ? '<button class="hp-btn hp-btn-outline hp-btn-sm" style="width:100%;font-size:12px;color:var(--like-red);border-color:var(--like-red)" onclick="window.__hofter.batchRemoveTags(\'cp\')">\u5220\u9664\u9009\u4e2d\u7684 ' + cpCount + ' \u4e2aCP\u6807\u7b7e</button><button class="hp-btn hp-btn-outline hp-btn-sm" style="width:100%;font-size:12px;margin-top:6px" onclick="window.__hofter.exitTagSelect()">\u53d6\u6d88\u9009\u62e9</button>' : '';
+      }
+      var tropeBar = document.getElementById("hp-trope-batch-bar");
+      if (tropeBar) {
+        tropeBar.innerHTML = tropeCount > 0 ? '<button class="hp-btn hp-btn-outline hp-btn-sm" style="width:100%;font-size:12px;color:var(--like-red);border-color:var(--like-red)" onclick="window.__hofter.batchRemoveTags(\'trope\')">\u5220\u9664\u9009\u4e2d\u7684 ' + tropeCount + ' \u4e2a\u8bbe\u5b9a\u6807\u7b7e</button><button class="hp-btn hp-btn-outline hp-btn-sm" style="width:100%;font-size:12px;margin-top:6px" onclick="window.__hofter.exitTagSelect()">\u53d6\u6d88\u9009\u62e9</button>' : '';
+      }
+    },
+    exitTagSelect: function() {
+      _tagSelectMode = false;
+      _tagSelectedIds = {};
+      var items = document.querySelectorAll('.hp-tag-item.selected');
+      for (var i = 0; i < items.length; i++) items[i].classList.remove("selected");
+      var cpBar = document.getElementById("hp-cp-batch-bar");
+      if (cpBar) cpBar.innerHTML = '';
+      var tropeBar = document.getElementById("hp-trope-batch-bar");
+      if (tropeBar) tropeBar.innerHTML = '';
     },
     openTagPage: function(tagId) {
       state.currentTagPage = null;
@@ -5174,7 +5250,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.11.3",
+          version: "2.12.0",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5189,7 +5265,7 @@
         };
       } else {
         data = {
-          version: "2.11.3",
+          version: "2.12.0",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -6881,7 +6957,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.11.3",
+    version: "2.12.0",
     apps: [
       {
         id: "hofter-home",

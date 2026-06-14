@@ -2358,13 +2358,18 @@
         window.__hofter.toggleBatchSelect(summary.id);
         return;
       }
+      if (_longPressTriggered) { _longPressTriggered = false; return; }
       window.__hofter.openReader(summary.id);
     };
     /* 长按检测进入批量选择模式 */
     var longPressTimer = null;
+    var _longPressTriggered = false;
     card.addEventListener("touchstart", function(e) {
+      if (state.batchSelectMode) return;
+      _longPressTriggered = false;
       longPressTimer = setTimeout(function() {
         longPressTimer = null;
+        _longPressTriggered = true;
         if (!state.batchSelectMode) {
           window.__hofter.enterBatchSelect();
           window.__hofter.toggleBatchSelect(summary.id);
@@ -2379,8 +2384,11 @@
     });
     /* 鼠标长按（桌面端） */
     card.addEventListener("mousedown", function(e) {
+      if (state.batchSelectMode) return;
+      _longPressTriggered = false;
       longPressTimer = setTimeout(function() {
         longPressTimer = null;
+        _longPressTriggered = true;
         if (!state.batchSelectMode) {
           window.__hofter.enterBatchSelect();
           window.__hofter.toggleBatchSelect(summary.id);
@@ -4018,70 +4026,20 @@
     var where = isGroup ? "Hofter\u7fa4\u804a" : "Hofter";
     var now = new Date();
     var timeStr = now.getHours() + ":" + (now.getMinutes() < 10 ? "0" : "") + now.getMinutes();
-    var appendText = "\uff1b[" + timeStr + "] " + charName + "\u8bc4\u8bba\u4e86\u300a" + title + "\u300b\uff1a" + (commentText || "").substring(0, 100);
-    /* 尝试获取现有事实记忆，追加到最新一条 */
-    state.roche.memory.getLongTerm({ conversationId: conversationId }).then(function(lt) {
-      var facts = (lt && lt.facts) ? lt.facts : [];
-      if (facts.length > 0) {
-        /* 找到最新一条事实记忆（数组最后一条） */
-        var latestFact = facts[facts.length - 1];
-        var existingText = latestFact.summaryText || latestFact.action || latestFact.text || "";
-        /* 追加到该条记忆文本后面 */
-        var updatedText = existingText + appendText;
-        /* 使用memory.update更新现有事实记忆，避免重复创建 */
-        if (latestFact.id) {
-          state.roche.memory.update(latestFact.id, {
-            summaryText: updatedText,
-            action: latestFact.action || ("\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b")
-          }).catch(function(e) {
-            debugLog("writeCharFactMemory update failed, falling back to write: " + e.message);
-            /* update失败时降级为新建一条 */
-            state.roche.memory.write({
-              conversationId: conversationId,
-              summaryText: updatedText,
-              who: latestFact.who || [charName],
-              action: latestFact.action || ("\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b"),
-              when: "\u521a\u521a",
-              where: where,
-              source: "hofter-plugin"
-            }).catch(function(e2) { debugLog("writeCharFactMemory fallback write error:" + e2.message); });
-          });
-        } else {
-          /* 没有id时降级为新建 */
-          state.roche.memory.write({
-            conversationId: conversationId,
-            summaryText: updatedText,
-            who: latestFact.who || [charName],
-            action: latestFact.action || ("\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b"),
-            when: "\u521a\u521a",
-            where: where,
-            source: "hofter-plugin"
-          }).catch(function(e) { debugLog("writeCharFactMemory append error:" + e.message); });
-        }
-      } else {
-        /* 没有现有事实记忆，新建一条 */
-        state.roche.memory.write({
-          conversationId: conversationId,
-          summaryText: "[" + timeStr + "] " + charName + "\u5728" + where + "\u540c\u4eba\u793e\u533a\u8bc4\u8bba\u4e86\u300a" + title + "\u300b\uff1a" + (commentText || "").substring(0, 100),
-          who: [charName],
-          action: "\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b",
-          when: "\u521a\u521a",
-          where: where,
-          source: "hofter-plugin"
-        }).catch(function(e) { debugLog("writeCharFactMemory new error:" + e.message); });
-      }
+    var factText = charName + "\u5728" + where + "\u540c\u4eba\u793e\u533a\u8bc4\u8bba\u4e86\u300a" + title + "\u300b\uff1a" + (commentText || "").substring(0, 100);
+    /* 直接新建一条事实记忆，确保可靠写入 */
+    state.roche.memory.write({
+      conversationId: conversationId,
+      summaryText: factText,
+      who: [charName],
+      action: "\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b",
+      when: "\u521a\u521a",
+      where: where,
+      source: "hofter-plugin"
+    }).then(function() {
+      debugLog("writeCharFactMemory success: " + factText.substring(0, 30));
     }).catch(function(e) {
-      debugLog("writeCharFactMemory getLongTerm error:" + e.message);
-      /* 获取失败时降级：直接新建一条 */
-      state.roche.memory.write({
-        conversationId: conversationId,
-        summaryText: "[" + timeStr + "] " + charName + "\u5728" + where + "\u540c\u4eba\u793e\u533a\u8bc4\u8bba\u4e86\u300a" + title + "\u300b\uff1a" + (commentText || "").substring(0, 100),
-        who: [charName],
-        action: "\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b",
-        when: "\u521a\u521a",
-        where: where,
-        source: "hofter-plugin"
-      }).catch(function(e2) { debugLog("writeCharFactMemory fallback error:" + e2.message); });
+      debugLog("writeCharFactMemory error: " + e.message);
     });
   }
 
@@ -5312,7 +5270,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.13.3",
+          version: "2.13.4",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5327,7 +5285,7 @@
         };
       } else {
         data = {
-          version: "2.13.3",
+          version: "2.13.4",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -7031,7 +6989,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.13.3",
+    version: "2.13.4",
     apps: [
       {
         id: "hofter-home",

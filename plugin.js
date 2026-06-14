@@ -4161,7 +4161,7 @@
       conversationId: conversationId,
       summaryText: factText,
       who: [charName],
-      action: "\u8bc4\u8bba\u4e86\u540c\u4eba\u6587\u300a" + title + "\u300b",
+      action: factText,
       when: "\u521a\u521a",
       where: where,
       source: "hofter-plugin"
@@ -5430,7 +5430,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.17.3",
+          version: "2.17.4",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5445,7 +5445,7 @@
         };
       } else {
         data = {
-          version: "2.17.3",
+          version: "2.17.4",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -7162,7 +7162,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.17.3",
+    version: "2.17.4",
     apps: [
       {
         id: "hofter-home",

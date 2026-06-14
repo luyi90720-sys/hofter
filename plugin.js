@@ -5430,7 +5430,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.17.4",
+          version: "2.17.5",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5445,7 +5445,7 @@
         };
       } else {
         data = {
-          version: "2.17.4",
+          version: "2.17.5",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -6118,13 +6118,18 @@
       if (!summary) { showToast("\u65e0\u6cd5\u91cd\u65b0\u751f\u6210"); return; }
       var existing = document.getElementById("hp-regenerate-sheet");
       if (existing) { existing.remove(); return; }
+      var currentCh = summary._currentChapter || 1;
+      var totalCh = (summary.fullContent && summary.fullContent.chapters) ? summary.fullContent.chapters.length : 1;
+      var descText = currentCh <= 1
+        ? "\u5c06\u91cd\u65b0\u751f\u6210\u5168\u90e8\u6b63\u6587\uff0c\u5f53\u524d\u5185\u5bb9\u5c06\u88ab\u66ff\u6362\u3002"
+        : "\u5c06\u91cd\u65b0\u751f\u6210\u7b2c" + currentCh + "\u7ae0\uff08\u5171" + totalCh + "\u7ae0\uff09\uff0c\u8be5\u7ae0\u53ca\u4e4b\u540e\u7684\u7ae0\u8282\u5c06\u88ab\u91cd\u65b0\u751f\u6210\uff0c\u4e4b\u524d\u7684\u7ae0\u8282\u4fdd\u6301\u4e0d\u53d8\u3002";
       var overlay = document.createElement("div"); overlay.id = "hp-regenerate-sheet";
       overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99998;display:flex;align-items:flex-end;justify-content:center";
       overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
       var sheet = document.createElement("div"); sheet.className = "hp-sheet";
       sheet.innerHTML = '<div class="hp-sheet-handle"></div>' +
         '<div style="padding:0 16px 4px"><div style="font-size:16px;font-weight:700">\u91cd\u65b0\u751f\u6210\u6b63\u6587</div>' +
-        '<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">\u5c06\u57fa\u4e8e\u5f53\u524d\u6458\u8981\u91cd\u65b0\u751f\u6210\u5168\u90e8\u6b63\u6587\uff0c\u5f53\u524d\u6b63\u6587\u5c06\u88ab\u66ff\u6362\u3002</div></div>' +
+        '<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">' + descText + '</div></div>' +
         '<div style="padding:12px 16px"><textarea id="hp-regenerate-feedback" class="hp-textarea" placeholder="\u7ed9\u201c\u4f5c\u8005\u201d\u63d0\u70b9\u610f\u89c1\u5427\uff08\u53ef\u9009\uff0c\u5982\uff1a\u5e0c\u671b\u66f4\u751c\u4e00\u70b9\u3001\u8282\u594f\u518d\u5feb\u4e00\u4e9b...\uff09" rows="3" style="font-size:14px"></textarea></div>' +
         '<div style="display:flex;gap:12px;padding:0 16px 16px">' +
         '<button class="hp-btn hp-btn-outline" style="flex:1" onclick="document.getElementById(\'hp-regenerate-sheet\').remove()">\u53d6\u6d88</button>' +
@@ -6137,6 +6142,8 @@
       if (!summary) { showToast("\u65e0\u6cd5\u91cd\u65b0\u751f\u6210"); return; }
       var feedbackEl = document.getElementById("hp-regenerate-feedback");
       var feedback = feedbackEl ? feedbackEl.value.trim() : "";
+      var currentCh = summary._currentChapter || 1;
+      var totalCh = (summary.fullContent && summary.fullContent.chapters) ? summary.fullContent.chapters.length : 1;
       showLoading();
       /* 确保cpTagId存在，如果找不到则尝试按名称匹配 */
       if (!summary.cpTagId && summary.cpTagName) {
@@ -6144,37 +6151,90 @@
           if (state.cpTags[ci].name === summary.cpTagName) { summary.cpTagId = state.cpTags[ci].id; break; }
         }
       }
-      /* 构建摘要对象，附加用户反馈 */
-      var regenSummary = {
-        id: summary.id,
-        title: summary.title,
-        cpTagId: summary.cpTagId,
-        cp: summary.cp || summary.cpTagName || "",
-        cpTagName: summary.cpTagName || "",
-        excerpt: summary.excerpt || summary.summary || "",
-        summary: summary.summary || summary.excerpt || "",
-        tags: summary.tags || [],
-        tropeTags: summary.tropeTags || summary.tags || [],
-        fandomTag: summary.fandomTag || "",
-        author_note_optional: summary.author_note_optional || "",
-        _regenerateFeedback: feedback
-      };
-      generateLayer2Full(regenSummary, function(result) {
-        hideLoading();
-        if (result) {
-          summary.fullContent = result;
-          if (result.continuation_summary) summary.continuationSummary = result.continuation_summary;
-          if (result.content_summary) summary.contentSummary = result.content_summary;
-          else if (result.continuation_summary) summary.contentSummary = result.continuation_summary;
-          if (regenSummary._debugContext) summary._debugContext = regenSummary._debugContext;
-          summary._currentChapter = 1;
-          saveSummariesCache(state.summaries);
-          renderReaderContent(summary);
-          showToast("\u91cd\u65b0\u751f\u6210\u5b8c\u6210\uff01");
-        } else {
-          showToast("\u91cd\u65b0\u751f\u6210\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5");
+      if (currentCh <= 1) {
+        /* 第1章：重新生成全部正文 */
+        var regenSummary = {
+          id: summary.id,
+          title: summary.title,
+          cpTagId: summary.cpTagId,
+          cp: summary.cp || summary.cpTagName || "",
+          cpTagName: summary.cpTagName || "",
+          excerpt: summary.excerpt || summary.summary || "",
+          summary: summary.summary || summary.excerpt || "",
+          tags: summary.tags || [],
+          tropeTags: summary.tropeTags || summary.tags || [],
+          fandomTag: summary.fandomTag || "",
+          author_note_optional: summary.author_note_optional || "",
+          _regenerateFeedback: feedback
+        };
+        generateLayer2Full(regenSummary, function(result) {
+          hideLoading();
+          if (result) {
+            summary.fullContent = result;
+            if (result.continuation_summary) summary.continuationSummary = result.continuation_summary;
+            if (result.content_summary) summary.contentSummary = result.content_summary;
+            else if (result.continuation_summary) summary.contentSummary = result.continuation_summary;
+            if (regenSummary._debugContext) summary._debugContext = regenSummary._debugContext;
+            summary._currentChapter = 1;
+            if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+            renderReaderContent(summary);
+            showToast("\u91cd\u65b0\u751f\u6210\u5b8c\u6210\uff01");
+          } else {
+            hideLoading();
+            showToast("\u91cd\u65b0\u751f\u6210\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5");
+          }
+        });
+      } else {
+        /* 第2+章：只重新生成当前章节，保留之前的章节 */
+        /* 构建前文内容：将第1章到当前章之前的所有章节内容拼接 */
+        var prevContent = "";
+        for (var pi = 0; pi < currentCh - 1 && pi < summary.fullContent.chapters.length; pi++) {
+          var ch = summary.fullContent.chapters[pi];
+          if (ch && ch.content) {
+            for (var pj = 0; pj < ch.content.length; pj++) {
+              prevContent += (ch.content[pj].text || "") + "\n";
+            }
+          }
         }
-      });
+        var prevSummary = summary.contentSummary || summary.continuationSummary || "";
+        /* 删除当前章节及之后的章节 */
+        summary.fullContent.chapters = summary.fullContent.chapters.slice(0, currentCh - 1);
+        /* 删除当前章节对应的续写上下文 */
+        if (summary._continuationContexts) {
+          summary._continuationContexts = summary._continuationContexts.slice(0, currentCh - 2);
+        }
+        generateContinuation(summary, prevContent, prevSummary, feedback, function(result) {
+          hideLoading();
+          if (result && result.chapters && result.chapters.length > 0) {
+            /* 追加新章节 */
+            for (var ri = 0; ri < result.chapters.length; ri++) {
+              summary.fullContent.chapters.push(result.chapters[ri]);
+            }
+            if (result.continuation_summary) {
+              summary.continuationSummary = result.continuation_summary;
+              if (summary.contentSummary) {
+                summary.contentSummary += "\n" + result.continuation_summary;
+              } else {
+                summary.contentSummary = result.continuation_summary;
+              }
+            }
+            if (result.content_summary) {
+              if (summary.contentSummary) {
+                summary.contentSummary += "\n" + result.content_summary;
+              } else {
+                summary.contentSummary = result.content_summary;
+              }
+            }
+            summary._currentChapter = currentCh;
+            if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
+            renderReaderContent(summary);
+            showToast("\u7b2c" + currentCh + "\u7ae0\u91cd\u65b0\u751f\u6210\u5b8c\u6210\uff01");
+          } else {
+            hideLoading();
+            showToast("\u91cd\u65b0\u751f\u6210\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5");
+          }
+        });
+      }
     },
     shareWork: function() {
       var summary = state.currentReadingSummary;
@@ -7162,7 +7222,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.17.4",
+    version: "2.17.5",
     apps: [
       {
         id: "hofter-home",

@@ -3835,7 +3835,7 @@
         repliesMap[c.replyTo].push(c);
       }
     }
-    function renderCommentNode(comment, depth) {
+    function renderCommentNode(comment, depth, threadId) {
       var indent = depth > 0 ? 'margin-left:' + (depth * 28) + 'px;padding-left:8px;border-left:2px solid var(--primary-light)' : '';
       var replyLabel = comment.replyTo ? '<span style="font-size:11px;color:var(--primary);margin-right:4px">\u56de\u590d ' + escapeHtml(comment.replyTo) + '</span>' : '';
       var isChar = comment.isCharacter === true;
@@ -3853,13 +3853,37 @@
       var deleteBtn = '<span class="hp-comment-delete" data-cid="' + comment._cid + '" onclick="event.stopPropagation();window.__hofter.deleteComment(this,\'' + comment._cid + '\')" style="cursor:pointer;margin-left:8px;font-size:11px;color:var(--text-hint)">\u5220\u9664</span>';
       var h = '<div class="hp-comment-item' + charClass + '" style="' + indent + '" onclick="window.__hofter.replyToComment(\'' + escapeHtml(comment.name||"").replace(/'/g,"\\'") + '\')"><div class="hp-comment-avatar">' + charAvatar + '</div><div class="hp-comment-body"><div class="hp-comment-name">' + replyLabel + escapeHtml(comment.name||"\u533f\u540d") + charBadge + '</div><div class="hp-comment-text">' + escapeHtml(comment.text||"") + translationHtml + '</div><div class="hp-comment-time">' + escapeHtml(comment.time||"") + charConvInfo + '<span class="hp-comment-report" onclick="event.stopPropagation();window.__hofter.reportComment(this)">\u4e3e\u62a5</span>' + deleteBtn + '</div></div></div>';
       var replies = repliesMap[comment.name] || [];
-      for (var r = 0; r < replies.length; r++) {
-        h += renderCommentNode(replies[r], depth + 1);
+      if (replies.length > 0 && depth === 0) {
+        /* 顶级评论的回复默认折叠，点击展开 */
+        var rplId = 'hp-rpl-' + Math.random().toString(36).substr(2, 8);
+        h += '<div class="hp-reply-toggle" onclick="var el=document.getElementById(\'' + rplId + '\');if(el.style.display===\'none\'){el.style.display=\'block\';this.style.display=\'none\'}" style="margin-left:28px;padding:4px 0;font-size:12px;color:var(--primary);cursor:pointer">\u5c55\u5f00 ' + replies.length + ' \u6761\u56de\u590d</div>';
+        h += '<div id="' + rplId + '" style="display:none">';
+        for (var r = 0; r < replies.length; r++) {
+          h += renderCommentNode(replies[r], depth + 1, threadId);
+        }
+        h += '</div>';
+      } else {
+        for (var r2 = 0; r2 < replies.length; r2++) {
+          h += renderCommentNode(replies[r2], depth + 1, threadId);
+        }
       }
       return h;
     }
-    for (var t = 0; t < topLevel.length; t++) {
-      html += renderCommentNode(topLevel[t], 0);
+    /* 评论区折叠：只显示前3条顶级评论，点击展开 */
+    var COLLAPSE_THRESHOLD = 3;
+    var needCollapse = topLevel.length > COLLAPSE_THRESHOLD;
+    var showCount = needCollapse ? COLLAPSE_THRESHOLD : topLevel.length;
+    for (var t = 0; t < showCount; t++) {
+      html += renderCommentNode(topLevel[t], 0, t);
+    }
+    if (needCollapse) {
+      var expandId = 'hp-comment-expand-' + Math.random().toString(36).substr(2, 8);
+      html += '<div id="' + expandId + '-hidden" style="display:none">';
+      for (var t2 = showCount; t2 < topLevel.length; t2++) {
+        html += renderCommentNode(topLevel[t2], 0, t2);
+      }
+      html += '</div>';
+      html += '<div id="' + expandId + '-btn" onclick="document.getElementById(\'' + expandId + '-hidden\').style.display=\'block\';this.style.display=\'none\'" style="text-align:center;padding:12px;font-size:13px;color:var(--primary);cursor:pointer;background:var(--primary-light);border-radius:8px;margin:8px 0">\u67e5\u770b\u66f4\u591a\u8bc4\u8bba\uff08\u8fd8\u6709 ' + (topLevel.length - COLLAPSE_THRESHOLD) + ' \u6761\uff09</div>';
     }
     html += '<div style="padding:12px 0"><div id="hp-reply-indicator" style="display:none;font-size:12px;color:var(--primary);margin-bottom:6px;padding:4px 8px;background:var(--primary-light);border-radius:4px"></div><div style="display:flex;gap:8px"><input class="hp-input" id="hp-comment-input" placeholder="\u5199\u8bc4\u8bba..." style="flex:1"><button class="hp-btn hp-btn-primary hp-btn-sm" onclick="window.__hofter.submitComment()">\u53d1\u9001</button></div></div></div>';
     return html;
@@ -5430,7 +5454,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.17.5",
+          version: "2.17.6",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5445,7 +5469,7 @@
         };
       } else {
         data = {
-          version: "2.17.5",
+          version: "2.17.6",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -6628,9 +6652,16 @@
       generateLayer3Comments(chaptersText, function(comments, annotations) {
         hideCommentLoading();
         if (comments && comments.length > 0) {
-          /* 追加而非替换 */
+          /* 新评论插入顶部（独立评论在前，回复在后） */
           if (!summary.fullContent.comments) summary.fullContent.comments = [];
-          summary.fullContent.comments = summary.fullContent.comments.concat(comments);
+          var newTopLevel = [];
+          var newReplies = [];
+          for (var ni = 0; ni < comments.length; ni++) {
+            if (comments[ni].replyTo) { newReplies.push(comments[ni]); }
+            else { newTopLevel.push(comments[ni]); }
+          }
+          /* 独立评论插入顶部，回复追加到底部 */
+          summary.fullContent.comments = newTopLevel.concat(summary.fullContent.comments).concat(newReplies);
         }
         if (annotations && annotations.length > 0) {
           if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
@@ -6689,10 +6720,14 @@
       generateLayer3Comments(chaptersText, function(comments, annotations) {
         hideCommentLoading();
         if (comments && comments.length > 0) {
-          /* 追加新评论，不覆盖用户评论 */
+          /* 新评论插入顶部（独立评论在前，回复在后），不覆盖用户评论 */
+          var newTopLevel2 = [];
+          var newReplies2 = [];
           for (var i = 0; i < comments.length; i++) {
-            summary.fullContent.comments.push(comments[i]);
+            if (comments[i].replyTo) { newReplies2.push(comments[i]); }
+            else { newTopLevel2.push(comments[i]); }
           }
+          summary.fullContent.comments = newTopLevel2.concat(summary.fullContent.comments).concat(newReplies2);
         }
         if (annotations && annotations.length > 0) {
           if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
@@ -7222,7 +7257,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.17.5",
+    version: "2.17.6",
     apps: [
       {
         id: "hofter-home",

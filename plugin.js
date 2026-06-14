@@ -2418,7 +2418,7 @@
     el.innerHTML = "";
     el.className = ROOT_CLASS;
     if (state.settings.theme === "dark") el.classList.add("hp-dark");
-    if (!state.settings.onboardCompleted || state.cpTags.length === 0) { renderOnboarding(); return; }
+    if (!state.settings.onboardCompleted) { renderOnboarding(); return; }
 
     var header = document.createElement("div"); header.className = "hp-header"; header.id = "hp-main-header"; renderHeaderContent(header);
     var content = document.createElement("div"); content.className = "hp-content"; content.id = "hp-main-content"; renderPageContent(content);
@@ -5312,7 +5312,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.13.2",
+          version: "2.13.3",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -5327,7 +5327,7 @@
         };
       } else {
         data = {
-          version: "2.13.2",
+          version: "2.13.3",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -7031,7 +7031,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.13.2",
+    version: "2.13.3",
     apps: [
       {
         id: "hofter-home",

@@ -4090,6 +4090,7 @@
   function getChapterComments(summary) {
     if (!summary || !summary.fullContent) return [];
     var fc = summary.fullContent;
+    if (fc.chapter && !fc.chapters) fc.chapters = [fc.chapter];
     var chIdx = (summary._currentChapter || 1) - 1;
     var chapters = fc.chapters || [];
     if (chIdx >= 0 && chIdx < chapters.length && chapters[chIdx].comments) {
@@ -4101,6 +4102,7 @@
   function getChapterAnnotations(summary) {
     if (!summary || !summary.fullContent) return [];
     var fc = summary.fullContent;
+    if (fc.chapter && !fc.chapters) fc.chapters = [fc.chapter];
     var chIdx = (summary._currentChapter || 1) - 1;
     var chapters = fc.chapters || [];
     if (chIdx >= 0 && chIdx < chapters.length && chapters[chIdx].annotations) {
@@ -6247,7 +6249,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.22.0",
+          version: "2.22.1",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -6262,7 +6264,7 @@
         };
       } else {
         data = {
-          version: "2.22.0",
+          version: "2.22.1",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -8153,7 +8155,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.22.0",
+    version: "2.22.1",
     apps: [
       {
         id: "hofter-home",
@@ -8236,6 +8238,23 @@
               }
               Promise.all(dataPromises).then(function() {
                 console.log('[hofter] loadData done, calling renderApp, __hofter:', !!window.__hofter, 'containerEl:', !!state.containerEl);
+                /* 批量迁移旧数据：将fullContent.comments/annotations移到chapter级别 */
+                var needSave = false;
+                var allWorks = state.summaries.concat(state.publishedWorks);
+                for (var mi = 0; mi < allWorks.length; mi++) {
+                  var w = allWorks[mi];
+                  if (w && w.fullContent) {
+                    var before = w.fullContent.comments ? w.fullContent.comments.length : 0;
+                    migrateCommentsToChapters(w);
+                    var after = w.fullContent.comments ? w.fullContent.comments.length : 0;
+                    if (before !== after) needSave = true;
+                  }
+                }
+                if (needSave) {
+                  saveSummariesCache(state.summaries);
+                  savePublishedWorks(state.publishedWorks);
+                  debugLog("migrated old comments data to chapter-level");
+                }
                 renderApp();
                 /* 应用安全区域适配 */
                 window.__hofter.applySafeArea();

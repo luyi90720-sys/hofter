@@ -1958,20 +1958,19 @@
   /* 润色后重新匹配段评位置 */
   function rematchAnnotations(summary) {
     if (!summary || !summary.fullContent) return;
-    var annotations = summary.fullContent.annotations || [];
-    if (annotations.length === 0) return;
     var chapters = summary.fullContent.chapters || [];
-    for (var ai = 0; ai < annotations.length; ai++) {
-      var ann = annotations[ai];
-      ann._matchedParaIdx = -1;
-      if (!ann.quotes) continue;
-      var quoteSnippet = ann.quotes.substring(0, 30);
-      var found = false;
-      for (var ci = 0; ci < chapters.length && !found; ci++) {
-        var ch = chapters[ci];
-        if (!ch || !ch.content) continue;
-        for (var pi = 0; pi < ch.content.length; pi++) {
-          var paraText = ch.content[pi].text || "";
+    for (var chi = 0; chi < chapters.length; chi++) {
+      var annotations = chapters[chi].annotations || [];
+      if (annotations.length === 0) continue;
+      for (var ai = 0; ai < annotations.length; ai++) {
+        var ann = annotations[ai];
+        ann._matchedParaIdx = -1;
+        if (!ann.quotes) continue;
+        var quoteSnippet = ann.quotes.substring(0, 30);
+        var found = false;
+        var chContent = chapters[chi].content || [];
+        for (var pi = 0; pi < chContent.length; pi++) {
+          var paraText = chContent[pi].text || "";
           if (paraText.indexOf(quoteSnippet) >= 0) {
             ann._matchedParaIdx = pi;
             ann.paragraphIndex = pi;
@@ -1979,12 +1978,11 @@
             break;
           }
         }
-      }
-      /* 未匹配的段评标记为隐藏 */
-      if (!found) {
-        ann._hidden = true;
-      } else {
-        delete ann._hidden;
+        if (!found) {
+          ann._hidden = true;
+        } else {
+          delete ann._hidden;
+        }
       }
     }
   }
@@ -2010,29 +2008,35 @@
     debugLog("doAutoComment starting... chapterIndex:" + chapterIndex);
     var fullText = "";
     var chapters = summary.fullContent ? (summary.fullContent.chapters || []) : [];
-    /* 如果指定了章节索引，只取该章节的正文；否则取全部 */
-    if (typeof chapterIndex === "number" && chapterIndex >= 0 && chapterIndex < chapters.length) {
-      var ch = chapters[chapterIndex];
+    /* 如果指定了章节索引，只取该章节的正文；否则取当前章节 */
+    var targetChIdx = (typeof chapterIndex === "number") ? chapterIndex : ((summary._currentChapter || 1) - 1);
+    if (targetChIdx >= 0 && targetChIdx < chapters.length) {
+      var ch = chapters[targetChIdx];
       var contents = ch.content || [];
       for (var cj = 0; cj < contents.length; cj++) fullText += (contents[cj].text || "") + "\n";
     } else {
       for (var ci = 0; ci < chapters.length; ci++) { var contents2 = chapters[ci].content || []; for (var cj2 = 0; cj2 < contents2.length; cj2++) fullText += (contents2[cj2].text || "") + "\n"; }
     }
-    debugLog("autoComment fullText len:" + fullText.length + " chapterIndex:" + chapterIndex);
+    debugLog("autoComment fullText len:" + fullText.length + " targetChIdx:" + targetChIdx);
     if (fullText.length > 50) {
+      ensureChapterComments(summary);
+      var existingComments = getChapterComments(summary);
       showCommentLoading();
-      var existingComments = summary.fullContent.comments || [];
       generateLayer3Comments(fullText, function(comments, annotations) {
         hideCommentLoading();
         debugLog("autoComment done, comments:" + (comments?comments.length:0) + " annotations:" + (annotations?annotations.length:0));
-        if (comments && comments.length > 0) {
-          /* 追加新评论，而不是替换 */
-          if (!summary.fullContent.comments) summary.fullContent.comments = [];
-          for (var ni = 0; ni < comments.length; ni++) summary.fullContent.comments.push(comments[ni]);
-        }
-        if (annotations && annotations.length > 0) {
-          if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
-          summary.fullContent.annotations = summary.fullContent.annotations.concat(annotations);
+        /* 将评论和段评存入目标章节 */
+        var chIdx2 = (typeof chapterIndex === "number") ? chapterIndex : ((summary._currentChapter || 1) - 1);
+        var chapters2 = summary.fullContent.chapters || [];
+        if (chIdx2 >= 0 && chIdx2 < chapters2.length) {
+          if (!chapters2[chIdx2].comments) chapters2[chIdx2].comments = [];
+          if (!chapters2[chIdx2].annotations) chapters2[chIdx2].annotations = [];
+          if (comments && comments.length > 0) {
+            for (var ni = 0; ni < comments.length; ni++) chapters2[chIdx2].comments.push(comments[ni]);
+          }
+          if (annotations && annotations.length > 0) {
+            chapters2[chIdx2].annotations = chapters2[chIdx2].annotations.concat(annotations);
+          }
         }
         if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
         renderReaderContent(summary);
@@ -3941,7 +3945,14 @@
       /* 遍历所有已发布作品的评论，显示实际的评论内容 */
       for (var j = 0; j < works.length; j++) {
         var w = works[j];
-        var comments = (w.fullContent && w.fullContent.comments) ? w.fullContent.comments : [];
+        var comments = [];
+        if (w.fullContent) {
+          var wChapters = w.fullContent.chapters || [];
+          for (var wci = 0; wci < wChapters.length; wci++) {
+            if (wChapters[wci].comments) comments = comments.concat(wChapters[wci].comments);
+          }
+          if (comments.length === 0 && w.fullContent.comments) comments = w.fullContent.comments;
+        }
         for (var c = 0; c < comments.length; c++) {
           var cm = comments[c];
           var cmName = cm.author || cm.name || cm.handle || randomAuthorName();
@@ -3954,7 +3965,14 @@
       for (var si = 0; si < state.summaries.length; si++) {
         var sw = state.summaries[si];
         if (sw.isByUser) continue;
-        var sComments = (sw.fullContent && sw.fullContent.comments) ? sw.fullContent.comments : [];
+        var sComments = [];
+        if (sw.fullContent) {
+          var swChapters = sw.fullContent.chapters || [];
+          for (var swci = 0; swci < swChapters.length; swci++) {
+            if (swChapters[swci].comments) sComments = sComments.concat(swChapters[swci].comments);
+          }
+          if (sComments.length === 0 && sw.fullContent.comments) sComments = sw.fullContent.comments;
+        }
         for (var sc = 0; sc < sComments.length; sc++) {
           var scm = sComments[sc];
           var scmName = scm.author || scm.name || scm.handle || randomAuthorName();
@@ -4031,7 +4049,8 @@
           summary.fullContent = result;
           summary.isByUser = isUserWork;
           if (result.chapter && !result.chapters) { result.chapters = [result.chapter]; }
-          if (!summary.fullContent.comments) summary.fullContent.comments = [];
+          /* 确保第一章有comments和annotations */
+          ensureChapterComments(summary);
           /* 自动润色（在评论之前） */
           if (state.settings.autoPolish) {
             debugLog("autoPolish enabled, starting polish before comments...");
@@ -4067,11 +4086,65 @@
     if (state.readHistory.indexOf(summary) < 0) { state.readHistory.unshift(summary); if (state.readHistory.length > 50) state.readHistory = state.readHistory.slice(0, 50); saveFavoritesData({favorites:state.favorites,readHistory:state.readHistory,readLater:state.readLater}); }
   }
 
+  /* 获取当前章节的评论和段评（按章节隔离） */
+  function getChapterComments(summary) {
+    if (!summary || !summary.fullContent) return [];
+    var fc = summary.fullContent;
+    var chIdx = (summary._currentChapter || 1) - 1;
+    var chapters = fc.chapters || [];
+    if (chIdx >= 0 && chIdx < chapters.length && chapters[chIdx].comments) {
+      return chapters[chIdx].comments;
+    }
+    /* 兼容旧数据：如果chapter没有comments，回退到fullContent.comments */
+    return fc.comments || [];
+  }
+  function getChapterAnnotations(summary) {
+    if (!summary || !summary.fullContent) return [];
+    var fc = summary.fullContent;
+    var chIdx = (summary._currentChapter || 1) - 1;
+    var chapters = fc.chapters || [];
+    if (chIdx >= 0 && chIdx < chapters.length && chapters[chIdx].annotations) {
+      return chapters[chIdx].annotations;
+    }
+    /* 兼容旧数据 */
+    return fc.annotations || [];
+  }
+  /* 确保当前章节有comments和annotations数组 */
+  function ensureChapterComments(summary) {
+    if (!summary || !summary.fullContent) return;
+    var fc = summary.fullContent;
+    if (fc.chapter && !fc.chapters) fc.chapters = [fc.chapter];
+    var chIdx = (summary._currentChapter || 1) - 1;
+    var chapters = fc.chapters || [];
+    if (chIdx >= 0 && chIdx < chapters.length) {
+      if (!chapters[chIdx].comments) chapters[chIdx].comments = [];
+      if (!chapters[chIdx].annotations) chapters[chIdx].annotations = [];
+    }
+  }
+  /* 迁移旧数据：将fullContent.comments/annotations迁移到chapter[0] */
+  function migrateCommentsToChapters(summary) {
+    if (!summary || !summary.fullContent) return;
+    var fc = summary.fullContent;
+    if (fc.chapter && !fc.chapters) fc.chapters = [fc.chapter];
+    var chapters = fc.chapters || [];
+    /* 只在chapter没有自己的comments但fullContent有时才迁移 */
+    if (fc.comments && fc.comments.length > 0 && chapters.length > 0 && (!chapters[0].comments || chapters[0].comments.length === 0)) {
+      chapters[0].comments = fc.comments;
+      fc.comments = [];
+    }
+    if (fc.annotations && fc.annotations.length > 0 && chapters.length > 0 && (!chapters[0].annotations || chapters[0].annotations.length === 0)) {
+      chapters[0].annotations = fc.annotations;
+      fc.annotations = [];
+    }
+  }
+
   function renderReaderContent(summary) {
     var contentEl = document.getElementById("hp-reader-content");
     if (!contentEl || !summary || !summary.fullContent) return;
     var fc = summary.fullContent;
     if (fc.chapter && !fc.chapters) fc.chapters = [fc.chapter];
+    /* 迁移旧数据：将fullContent.comments/annotations移到chapter */
+    migrateCommentsToChapters(summary);
     var chapters = fc.chapters || [];
     var currentCh = summary._currentChapter || 1;
     if (currentCh < 1) currentCh = 1;
@@ -4194,14 +4267,14 @@
       else html += '<span style="cursor:pointer;color:#fff;padding:8px 20px;border-radius:20px;background:var(--primary)" onclick="window.__hofter.continueReading()">\u8ffd\u66f4\u7eed\u7ae0 \u25b6</span>';
       html += '</div>';
     }
-    html += renderComments(fc.comments || [], summary.isByUser);
+    html += renderComments(getChapterComments(summary), summary.isByUser);
     html += '<div class="hp-reader-action-bar"><div class="hp-action-btn" onclick="window.__hofter.toggleLike(this)">' + ICONS.heart + '<span>\u8d5e</span></div><div class="hp-action-btn" onclick="window.__hofter.showCommentInput()">' + ICONS.comment + '<span>\u8bc4\u8bba</span></div><div class="hp-action-btn" onclick="window.__hofter.toggleCollect()">' + ICONS.bookmark + '<span>\u6536\u85cf</span></div><div class="hp-action-btn" onclick="window.__hofter.toggleReadLater()">' + ICONS.clock + '<span>\u7a0d\u540e\u770b</span></div><div class="hp-action-btn" onclick="window.__hofter.showReaderMore()">' + ICONS.moreHorizontal + '<span>\u66f4\u591a</span></div></div>';
     contentEl.innerHTML = html;
   }
 
   function renderComments(comments, isUserWork) {
     var summary = state.currentReadingSummary;
-    var annotations = (summary && summary.fullContent) ? (summary.fullContent.annotations || []) : [];
+    var annotations = getChapterAnnotations(summary);
     var html = '<div class="hp-comment-list"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:16px;font-weight:700">\u8bc4\u8bba (' + comments.length + ')</div><div class="hp-icon-btn" style="width:28px;height:28px" onclick="window.__hofter.refreshComments()">' + ICONS.refresh.replace(/24/g,"16") + '</div></div>';
     if (annotations.length > 0) {
       html += '<div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--bg-secondary)">';
@@ -4298,7 +4371,7 @@
   function showAnnotationPanel(paraIdx) {
     var currentSummary = state.currentReadingSummary;
     if (!currentSummary || !currentSummary.fullContent) return;
-    var annotations = currentSummary.fullContent.annotations || [];
+    var annotations = getChapterAnnotations(currentSummary);
     var annotation = null;
     /* 先按_matchedParaIdx查找，再按paragraphIndex查找 */
     for (var j = 0; j < annotations.length; j++) { if (annotations[j]._matchedParaIdx === paraIdx) { annotation = annotations[j]; break; } }
@@ -4455,11 +4528,23 @@
       }
       if (fullText.trim()) text += "[FULLTEXT]" + fullText.trim() + "[/FULLTEXT]";
     }
-    /* 拼入用户评论 */
-    if (summary.fullContent && summary.fullContent.comments) {
+    /* 拼入用户评论（取当前章节） */
+    var allComments = [];
+    if (summary.fullContent) {
+      var allChapters = summary.fullContent.chapters || [];
+      for (var chi = 0; chi < allChapters.length; chi++) {
+        var chComms = allChapters[chi].comments || [];
+        for (var j = 0; j < chComms.length; j++) allComments.push(chComms[j]);
+      }
+      /* 兼容旧数据 */
+      if (allComments.length === 0 && summary.fullContent.comments) {
+        allComments = summary.fullContent.comments;
+      }
+    }
+    if (allComments.length > 0) {
       var userComments = [];
-      for (var j = 0; j < summary.fullContent.comments.length; j++) {
-        var c = summary.fullContent.comments[j];
+      for (var j2 = 0; j2 < allComments.length; j2++) {
+        var c = allComments[j2];
         var cName = c.name || "\u533f\u540d";
         var isUser = (cName === userName);
         if (isUser || c.isCharacter) {
@@ -4774,12 +4859,13 @@
         .replace(/\{coreMemory\}/g, coreMemory || "\uff08\u65e0\uff09")
         .replace(/\{shortTermMemory\}/g, shortTermText || "\uff08\u65e0\uff09");
       var cardText = buildShareCardText(summary, sharedInfo.sendSummary !== false);
-      /* 已有评论 */
+      /* 已有评论（取当前章节） */
       var existingComments = "";
-      if (summary.fullContent && summary.fullContent.comments) {
+      var chComments = getChapterComments(summary);
+      if (chComments.length > 0) {
         var parts = [];
-        for (var i = 0; i < summary.fullContent.comments.length; i++) {
-          var c = summary.fullContent.comments[i];
+        for (var i = 0; i < chComments.length; i++) {
+          var c = chComments[i];
           parts.push((c.name || "\u533f\u540d") + "\uff1a" + (c.text || "") + (c.replyTo ? "\uff08\u56de\u590d" + c.replyTo + "\uff09" : ""));
         }
         existingComments = parts.join("\n");
@@ -4799,10 +4885,14 @@
             var data = JSON.parse(jsonStr);
             var comments = data.comments || [];
             if (!summary.fullContent) summary.fullContent = {};
-            if (!summary.fullContent.comments) summary.fullContent.comments = [];
+            /* 将char评论写入当前章节 */
+            ensureChapterComments(summary);
+            var chIdx = (summary._currentChapter || 1) - 1;
+            var chapters = summary.fullContent.chapters || [];
+            var targetComments = (chIdx >= 0 && chIdx < chapters.length && chapters[chIdx].comments) ? chapters[chIdx].comments : (summary.fullContent.comments || []);
             for (var i = 0; i < comments.length; i++) {
               var cc = comments[i];
-              summary.fullContent.comments.push({
+              targetComments.push({
                 name: charName,
                 text: cc.text || "",
                 translation: cc.translation || "",
@@ -4929,10 +5019,11 @@
           .replace(/\{individualMemories\}/g, indMemText || "\uff08\u65e0\uff09");
         var cardText = buildShareCardText(summary, sharedInfo.sendSummary !== false);
         var existingComments = "";
-        if (summary.fullContent && summary.fullContent.comments) {
+        var gChComments = getChapterComments(summary);
+        if (gChComments.length > 0) {
           var parts = [];
-          for (var i = 0; i < summary.fullContent.comments.length; i++) {
-            var c = summary.fullContent.comments[i];
+          for (var i = 0; i < gChComments.length; i++) {
+            var c = gChComments[i];
             parts.push((c.name || "\u533f\u540d") + "\uff1a" + (c.text || "") + (c.replyTo ? "\uff08\u56de\u590d" + c.replyTo + "\uff09" : ""));
           }
           existingComments = parts.join("\n");
@@ -4952,7 +5043,11 @@
               var data = JSON.parse(jsonStr);
               var comments = data.comments || [];
               if (!summary.fullContent) summary.fullContent = {};
-              if (!summary.fullContent.comments) summary.fullContent.comments = [];
+              /* 将群聊char评论写入当前章节 */
+              ensureChapterComments(summary);
+              var gChIdx = (summary._currentChapter || 1) - 1;
+              var gChapters = summary.fullContent.chapters || [];
+              var gTargetComments = (gChIdx >= 0 && gChIdx < gChapters.length && gChapters[gChIdx].comments) ? gChapters[gChIdx].comments : (summary.fullContent.comments || []);
               for (var i = 0; i < comments.length; i++) {
                 var cc = comments[i];
                 var cName = cc.name || "\u89d2\u8272";
@@ -4965,7 +5060,7 @@
                     break;
                   }
                 }
-                summary.fullContent.comments.push({
+                gTargetComments.push({
                   name: cName,
                   text: cc.text || "",
                   time: "\u521a\u521a",
@@ -6152,7 +6247,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.21.1",
+          version: "2.22.0",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -6167,7 +6262,7 @@
         };
       } else {
         data = {
-          version: "2.21.1",
+          version: "2.22.0",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -7169,15 +7264,20 @@
         if (result) {
           if (result.chapter && !result.chapters) result.chapters = [result.chapter];
           if (result.chapters && result.chapters.length > 0) {
-            if (!summary.fullContent) summary.fullContent = {chapters:[], comments:[], annotations:[]};
-            for (var ci = 0; ci < result.chapters.length; ci++) summary.fullContent.chapters.push(result.chapters[ci]);
+            if (!summary.fullContent) summary.fullContent = {chapters:[]};
+            for (var ci = 0; ci < result.chapters.length; ci++) {
+              /* 确保新章节有comments和annotations */
+              result.chapters[ci].comments = result.chapters[ci].comments || [];
+              result.chapters[ci].annotations = result.chapters[ci].annotations || [];
+              summary.fullContent.chapters.push(result.chapters[ci]);
+            }
+            /* L3返回的comments/annotations存入最新章节 */
+            var newChIdx = summary.fullContent.chapters.length - 1;
             if (result.comments && result.comments.length > 0) {
-              if (!summary.fullContent.comments) summary.fullContent.comments = [];
-              for (var di = 0; di < result.comments.length; di++) summary.fullContent.comments.push(result.comments[di]);
+              summary.fullContent.chapters[newChIdx].comments = (summary.fullContent.chapters[newChIdx].comments || []).concat(result.comments);
             }
             if (result.annotations && result.annotations.length > 0) {
-              if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
-              summary.fullContent.annotations = summary.fullContent.annotations.concat(result.annotations);
+              summary.fullContent.chapters[newChIdx].annotations = (summary.fullContent.chapters[newChIdx].annotations || []).concat(result.annotations);
             }
             if (result.continuation_summary) {
               summary.continuationSummary = result.continuation_summary;
@@ -7365,14 +7465,25 @@
       var summary = state.currentReadingSummary;
       if (!summary || !summary.fullContent) { showToast("\u65e0\u6cd5\u751f\u6210\u8bc4\u8bba"); return; }
       showCommentLoading();
-      var chaptersText = JSON.stringify(summary.fullContent.chapters || []);
+      /* 只取当前章节的正文 */
+      var chIdx = (summary._currentChapter || 1) - 1;
+      var chapters = summary.fullContent.chapters || [];
+      var fullText = "";
+      if (chIdx >= 0 && chIdx < chapters.length) {
+        var chContent = chapters[chIdx].content || [];
+        for (var ci = 0; ci < chContent.length; ci++) fullText += (chContent[ci].text || "") + "\n";
+      }
+      if (!fullText) fullText = JSON.stringify(chapters);
       /* 传递已有评论，让新生成的评论可以与旧评论互动 */
-      var existingComments = summary.fullContent.comments || [];
-      generateLayer3Comments(chaptersText, function(comments, annotations) {
+      var existingComments = getChapterComments(summary);
+      generateLayer3Comments(fullText, function(comments, annotations) {
         hideCommentLoading();
+        /* 将评论和段评存入当前章节 */
+        ensureChapterComments(summary);
+        var chIdx2 = (summary._currentChapter || 1) - 1;
+        var chapters2 = summary.fullContent.chapters || [];
         if (comments && comments.length > 0) {
-          /* 新评论插入顶部（独立评论在前，回复在后） */
-          if (!summary.fullContent.comments) summary.fullContent.comments = [];
+          var chComments = (chIdx2 >= 0 && chIdx2 < chapters2.length) ? chapters2[chIdx2].comments : [];
           var newTopLevel = [];
           var newReplies = [];
           for (var ni = 0; ni < comments.length; ni++) {
@@ -7380,11 +7491,12 @@
             else { newTopLevel.push(comments[ni]); }
           }
           /* 独立评论插入顶部，回复追加到底部 */
-          summary.fullContent.comments = newTopLevel.concat(summary.fullContent.comments).concat(newReplies);
+          var merged = newTopLevel.concat(chComments).concat(newReplies);
+          if (chIdx2 >= 0 && chIdx2 < chapters2.length) chapters2[chIdx2].comments = merged;
         }
         if (annotations && annotations.length > 0) {
-          if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
-          summary.fullContent.annotations = summary.fullContent.annotations.concat(annotations);
+          var chAnnotations = (chIdx2 >= 0 && chIdx2 < chapters2.length) ? chapters2[chIdx2].annotations : [];
+          if (chIdx2 >= 0 && chIdx2 < chapters2.length) chapters2[chIdx2].annotations = chAnnotations.concat(annotations);
         }
         if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
         renderReaderContent(summary);
@@ -7423,8 +7535,12 @@
       var userName = state.activePersona ? (state.activePersona.handle || state.activePersona.name || "\u6211") : "\u6211";
       var replyTo = state._replyToName || "";
       var userComment = { name: userName, text: input.value.trim(), time: "\u521a\u521a", likes: 0, replyTo: replyTo, isUserComment: true };
-      if (!summary.fullContent.comments) summary.fullContent.comments = [];
-      summary.fullContent.comments.push(userComment);
+      /* 将用户评论写入当前章节 */
+      ensureChapterComments(summary);
+      var chIdx = (summary._currentChapter || 1) - 1;
+      var chapters = summary.fullContent.chapters || [];
+      var chComments = (chIdx >= 0 && chIdx < chapters.length) ? chapters[chIdx].comments : [];
+      chComments.push(userComment);
       input.value = "";
       state._replyToName = "";
       var indicator = document.getElementById("hp-reply-indicator");
@@ -7435,26 +7551,38 @@
       showToast("\u8bc4\u8bba\u53d1\u5e03\u6210\u529f");
       /* 用户评论后触发新一轮评论生成（NPC可能回复用户，也可能自己互动） */
       showCommentLoading();
-      var chaptersText = JSON.stringify(summary.fullContent.chapters || []);
-      generateLayer3Comments(chaptersText, function(comments, annotations) {
+      var fullText = "";
+      if (chIdx >= 0 && chIdx < chapters.length) {
+        var chContent = chapters[chIdx].content || [];
+        for (var ci = 0; ci < chContent.length; ci++) fullText += (chContent[ci].text || "") + "\n";
+      }
+      if (!fullText) fullText = JSON.stringify(chapters);
+      generateLayer3Comments(fullText, function(comments, annotations) {
         hideCommentLoading();
         if (comments && comments.length > 0) {
-          /* 新评论插入顶部（独立评论在前，回复在后），不覆盖用户评论 */
           var newTopLevel2 = [];
           var newReplies2 = [];
           for (var i = 0; i < comments.length; i++) {
             if (comments[i].replyTo) { newReplies2.push(comments[i]); }
             else { newTopLevel2.push(comments[i]); }
           }
-          summary.fullContent.comments = newTopLevel2.concat(summary.fullContent.comments).concat(newReplies2);
+          var chIdx2 = (summary._currentChapter || 1) - 1;
+          var chapters2 = summary.fullContent.chapters || [];
+          if (chIdx2 >= 0 && chIdx2 < chapters2.length && chapters2[chIdx2].comments) {
+            chapters2[chIdx2].comments = newTopLevel2.concat(chapters2[chIdx2].comments).concat(newReplies2);
+          }
         }
         if (annotations && annotations.length > 0) {
-          if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
-          summary.fullContent.annotations = summary.fullContent.annotations.concat(annotations);
+          var chIdx3 = (summary._currentChapter || 1) - 1;
+          var chapters3 = summary.fullContent.chapters || [];
+          if (chIdx3 >= 0 && chIdx3 < chapters3.length) {
+            if (!chapters3[chIdx3].annotations) chapters3[chIdx3].annotations = [];
+            chapters3[chIdx3].annotations = chapters3[chIdx3].annotations.concat(annotations);
+          }
         }
         if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
         renderReaderContent(summary);
-      }, summary.fullContent.comments, "userComment", summary);
+      }, getChapterComments(summary), "userComment", summary);
     },
     reportComment: function(el) { if (el) el.textContent = "\u5df2\u4e3e\u62a5"; el.style.color = "var(--text-hint)"; showToast("\u5df2\u4e3e\u62a5\uff0c\u611f\u8c22\u53cd\u9988"); },
     deleteComment: function(el, cid) {
@@ -7463,15 +7591,14 @@
       if (el.getAttribute("data-confirm") === "true") {
         /* 第二次点击：执行删除 */
         var summary = state.currentReadingSummary;
-        if (!summary || !summary.fullContent || !summary.fullContent.comments) { showToast("\u65e0\u6cd5\u5220\u9664"); return; }
+        if (!summary || !summary.fullContent) { showToast("\u65e0\u6cd5\u5220\u9664"); return; }
         var comment = state._commentMap ? state._commentMap[cid] : null;
         if (!comment) { showToast("\u8bc4\u8bba\u5df2\u4e0d\u5b58\u5728"); return; }
         var commentName = comment.name || "";
-        var commentText = comment.text || "";
         var isCharComment = comment.isCharacter === true;
         var conversationId = comment.conversationId || "";
-        /* 递归删除该评论及所有回复该评论的评论 */
-        var commentsArr = summary.fullContent.comments;
+        /* 从当前章节的评论中删除 */
+        var commentsArr = getChapterComments(summary);
         var namesToRemove = [commentName];
         /* 找出所有间接回复的评论名 */
         var changed = true;
@@ -7494,7 +7621,10 @@
           if (namesToRemove.indexOf(commentsArr[j].name) >= 0 && commentsArr[j].replyTo && namesToRemove.indexOf(commentsArr[j].replyTo) >= 0) shouldRemove = true;
           if (!shouldRemove) newComments.push(commentsArr[j]);
         }
-        summary.fullContent.comments = newComments;
+        /* 更新当前章节的评论 */
+        var chIdx = (summary._currentChapter || 1) - 1;
+        var chapters = summary.fullContent.chapters || [];
+        if (chIdx >= 0 && chIdx < chapters.length) chapters[chIdx].comments = newComments;
         if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
         renderReaderContent(summary);
         showToast("\u8bc4\u8bba\u5df2\u5220\u9664");
@@ -7724,7 +7854,8 @@
           if (result) {
             summary.fullContent = result;
             if (result.chapter && !result.chapters) result.chapters = [result.chapter];
-            if (!summary.fullContent.comments) summary.fullContent.comments = [];
+            /* 确保第一章有comments和annotations */
+            ensureChapterComments(summary);
             saveSummariesCache(state.summaries);
 
             /* 自动润色 + 自动评论 */
@@ -8022,7 +8153,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.21.1",
+    version: "2.22.0",
     apps: [
       {
         id: "hofter-home",

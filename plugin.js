@@ -2031,6 +2031,19 @@
   }
 
   function generateLayer2Full(summary, callback) {
+    /* 防止重复生成：如果正在生成中，直接返回 */
+    if (summary._isGenerating) {
+      debugLog("L2 already generating, skip duplicate call for: " + (summary.title || "?"));
+      callback(null);
+      return;
+    }
+    summary._isGenerating = true;
+    /* 包装callback，确保无论成功失败都清除标记 */
+    var origCallback = callback;
+    callback = function(result) {
+      summary._isGenerating = false;
+      origCallback(result);
+    };
     try {
     debugLog("L2 start, title:" + (summary.title || "?") + " cpTagId:" + (summary.cpTagId || "?"));
     var cpTag = null;
@@ -2277,6 +2290,18 @@
   }
 
   function generateContinuation(summary, previousContent, previousSummary, feedback, callback) {
+    /* 防止重复续写 */
+    if (summary._isGenerating) {
+      debugLog("Cont already generating, skip duplicate for: " + (summary.title || "?"));
+      callback(null);
+      return;
+    }
+    summary._isGenerating = true;
+    var origCallback = callback;
+    callback = function(result) {
+      summary._isGenerating = false;
+      origCallback(result);
+    };
     try {
     debugLog("Cont start, title:" + (summary.title || "?"));
     var cpTag = null;
@@ -3966,12 +3991,30 @@
     state.currentReadingSummary = summary;
     /* 已有正文时不显示spinner，直接渲染内容 */
     var hasContent = !!summary.fullContent;
-    var spinnerHtml = hasContent ? '' : '<div id="hp-reader-spinner" style="text-align:center;padding:40px 20px;color:var(--text-hint)"><div class="hp-spinner" style="margin:0 auto"></div><p style="margin-top:12px">\u7075\u611f\u521b\u4f5c\u4e2d...</p></div><div id="hp-reader-stream" style="padding:16px;display:none"></div>';
+    var isGenerating = !!summary._isGenerating;
+    var spinnerHtml = (hasContent && !isGenerating) ? '' : '<div id="hp-reader-spinner" style="text-align:center;padding:40px 20px;color:var(--text-hint)"><div class="hp-spinner" style="margin:0 auto"></div><p style="margin-top:12px">\u7075\u611f\u521b\u4f5c\u4e2d...</p></div><div id="hp-reader-stream" style="padding:16px;display:none"></div>';
     var readerEl = document.createElement("div"); readerEl.className = "hp-reader-page"; readerEl.id = "hp-reader";
     readerEl.innerHTML = '<div class="hp-reader-header"><div class="hp-header-left"><div class="hp-icon-btn" onclick="window.__hofter.closeReader()">' + ICONS.back + '</div></div><div style="flex:1;text-align:center;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">' + escapeHtml(summary.title) + '</div><div class="hp-header-right"><div class="hp-icon-btn" onclick="window.__hofter.showReaderSettings()">' + ICONS.textSize + '</div></div></div><div id="hp-reader-content" style="padding-bottom:calc(60px + var(--safe-bottom))">' + spinnerHtml + '</div>';
     state.containerEl.appendChild(readerEl);
-    if (hasContent) {
+    if (hasContent && !isGenerating) {
       renderReaderContent(summary);
+    } else if (isGenerating) {
+      /* 正在生成中，不重复触发，等待生成完成后自动渲染 */
+      debugLog("openReader: already generating, waiting for completion...");
+      /* 轮询等待生成完成 */
+      var _pollTimer = setInterval(function() {
+        if (!summary._isGenerating) {
+          clearInterval(_pollTimer);
+          state._readerPollTimer = null;
+          if (summary.fullContent) {
+            renderReaderContent(summary);
+          } else {
+            showToast("\u52a0\u8f7d\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5");
+            closeReader();
+          }
+        }
+      }, 500);
+      state._readerPollTimer = _pollTimer;
     } else {
       generateLayer2Full(summary, function(result) {
         if (result) {
@@ -4270,7 +4313,7 @@
     document.body.appendChild(overlay);
   }
 
-  function closeReader() { var el = document.getElementById("hp-reader"); if (el) el.remove(); }
+  function closeReader() { if (state._readerPollTimer) { clearInterval(state._readerPollTimer); state._readerPollTimer = null; } var el = document.getElementById("hp-reader"); if (el) el.remove(); }
 
   function showReaderSettings() {
     var overlay = document.createElement("div"); overlay.className = "hp-sheet-overlay"; overlay.id = "reader-settings";
@@ -6099,7 +6142,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.20.1",
+          version: "2.21.0",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -6114,7 +6157,7 @@
         };
       } else {
         data = {
-          version: "2.20.1",
+          version: "2.21.0",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -6799,6 +6842,7 @@
     regenerateContent: function() {
       var summary = state.currentReadingSummary;
       if (!summary) { showToast("\u65e0\u6cd5\u91cd\u65b0\u751f\u6210"); return; }
+      if (summary._isGenerating) { showToast("\u6b63\u5728\u751f\u6210\u4e2d\uff0c\u8bf7\u7a0d\u5019"); return; }
       var feedbackEl = document.getElementById("hp-regenerate-feedback");
       var feedback = feedbackEl ? feedbackEl.value.trim() : "";
       var currentCh = summary._currentChapter || 1;
@@ -7967,7 +8011,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.20.1",
+    version: "2.21.0",
     apps: [
       {
         id: "hofter-home",

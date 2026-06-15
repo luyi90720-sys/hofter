@@ -2006,19 +2006,29 @@
   }
 
   /* 自动生成评论辅助函数 */
-  function doAutoComment(summary) {
-    debugLog("doAutoComment starting...");
+  function doAutoComment(summary, chapterIndex) {
+    debugLog("doAutoComment starting... chapterIndex:" + chapterIndex);
     var fullText = "";
     var chapters = summary.fullContent ? (summary.fullContent.chapters || []) : [];
-    for (var ci = 0; ci < chapters.length; ci++) { var contents = chapters[ci].content || []; for (var cj = 0; cj < contents.length; cj++) fullText += (contents[cj].text || "") + "\n"; }
-    debugLog("autoComment fullText len:" + fullText.length);
+    /* 如果指定了章节索引，只取该章节的正文；否则取全部 */
+    if (typeof chapterIndex === "number" && chapterIndex >= 0 && chapterIndex < chapters.length) {
+      var ch = chapters[chapterIndex];
+      var contents = ch.content || [];
+      for (var cj = 0; cj < contents.length; cj++) fullText += (contents[cj].text || "") + "\n";
+    } else {
+      for (var ci = 0; ci < chapters.length; ci++) { var contents2 = chapters[ci].content || []; for (var cj2 = 0; cj2 < contents2.length; cj2++) fullText += (contents2[cj2].text || "") + "\n"; }
+    }
+    debugLog("autoComment fullText len:" + fullText.length + " chapterIndex:" + chapterIndex);
     if (fullText.length > 50) {
       showCommentLoading();
+      var existingComments = summary.fullContent.comments || [];
       generateLayer3Comments(fullText, function(comments, annotations) {
         hideCommentLoading();
         debugLog("autoComment done, comments:" + (comments?comments.length:0) + " annotations:" + (annotations?annotations.length:0));
         if (comments && comments.length > 0) {
-          summary.fullContent.comments = comments;
+          /* 追加新评论，而不是替换 */
+          if (!summary.fullContent.comments) summary.fullContent.comments = [];
+          for (var ni = 0; ni < comments.length; ni++) summary.fullContent.comments.push(comments[ni]);
         }
         if (annotations && annotations.length > 0) {
           if (!summary.fullContent.annotations) summary.fullContent.annotations = [];
@@ -2026,7 +2036,7 @@
         }
         if (summary.isByUser) savePublishedWorks(state.publishedWorks); else saveSummariesCache(state.summaries);
         renderReaderContent(summary);
-      }, null, "auto", summary);
+      }, existingComments, "auto", summary);
     }
   }
 
@@ -6142,7 +6152,7 @@
       var data;
       if (scope === "current") {
         data = {
-          version: "2.21.0",
+          version: "2.21.1",
           scope: "current",
           persona: state.activePersona ? { id: state.activePersona.id, name: state.activePersona.name || state.activePersona.handle } : null,
           summaries: state.summaries,
@@ -6157,7 +6167,7 @@
         };
       } else {
         data = {
-          version: "2.21.0",
+          version: "2.21.1",
           scope: "all",
           settings: state.settings,
           personas: state.personas,
@@ -7191,6 +7201,7 @@
             renderReaderContent(summary);
             showToast("\u8ffd\u66f4\u6210\u529f\uff01\u7b2c" + summary._currentChapter + "\u7ae0");
             /* 续写后自动润色（多章时polishText会自动跳过） */
+            var newChapterIdx = summary.fullContent.chapters.length - 1;
             if (state.settings.autoPolish) {
               polishText(summary, function(polished, err) {
                 if (polished) {
@@ -7198,11 +7209,11 @@
                   renderReaderContent(summary);
                   showToast("\u6da6\u8272\u5b8c\u6210");
                 }
-                /* 续写后自动评论（无论润色是否成功） */
-                if (state.settings.autoGenerateComments) { doAutoComment(summary); }
+                /* 续写后自动评论（只针对新章节） */
+                if (state.settings.autoGenerateComments) { doAutoComment(summary, newChapterIdx); }
               });
             } else if (state.settings.autoGenerateComments) {
-              doAutoComment(summary);
+              doAutoComment(summary, newChapterIdx);
             }
           } else { showToast("\u8ffd\u66f4\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
         } else { showToast("\u8ffd\u66f4\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"); }
@@ -8011,7 +8022,7 @@
   window.RochePlugin.register({
     id: "hofter",
     name: "hofter",
-    version: "2.21.0",
+    version: "2.21.1",
     apps: [
       {
         id: "hofter-home",

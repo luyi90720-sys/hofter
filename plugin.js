@@ -2698,7 +2698,7 @@
     '}' +
     /* ── 移动端小屏适配 (<480px) ── */
     '@media(max-width:479px){' +
-      '.' + ROOT_CLASS + ' .hp-header{padding:8px 10px;gap:4px;min-height:44px}' +
+      '.' + ROOT_CLASS + ' .hp-header{padding:8px 10px;padding-top:calc(8px + var(--safe-top));gap:4px;min-height:44px}' +
       '.' + ROOT_CLASS + ' .hp-header-title{font-size:15px}' +
       '.' + ROOT_CLASS + ' .hp-icon-btn{width:32px;height:32px;min-width:32px;min-height:32px}' +
       '.' + ROOT_CLASS + ' .hp-icon-btn svg{width:20px;height:20px;max-width:20px;max-height:20px}' +
